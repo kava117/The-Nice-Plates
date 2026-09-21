@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="sidebar">
+    <div class="app-name"><span class="icon-placeholder"></span> App Name</div>
+
+    <nav>
+      <a class="nav-item" href="#"><span class="icon-placeholder"></span> Home</a>
+      <a class="nav-item" href="#"><span class="icon-placeholder"></span> Library</a>
+      <a class="nav-item" href="#"><span class="icon-placeholder"></span> Progress</a>
+      <a class="nav-item" href="#"><span class="icon-placeholder"></span> Settings</a>
+    </nav>
+
+    <div class="storage-box">Storage</div>
+
+    <div class="account">
+      <span class="icon-placeholder"></span>
+      <div>
+        <div class="account-name">Account Name</div>
+        <div class="account-type">Account Type</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <section class="hero">
+      <p class="label">Continue Practicing</p>
+      <h1>Song Name</h1>
+      <div class="progress-track"></div>
+      <button class="btn-resume">Resume &#9656;</button>
+    </section>
+
+    <section class="stats-row">
+      <div class="stat-box">
+        <p>Current Streak</p>
+        <h2>X days</h2>
+      </div>
+      <div class="stat-box">
+        <p>This week</p>
+        <h2>Xh Xm</h2>
+      </div>
+      <div class="stat-box">
+        <p>Pieces in progress <span>X</span></p>
+        <p>Pieces mastered <span>X</span></p>
+      </div>
+    </section>
+
+    <section class="chart-row">
+      <div class="chart-box">
+        <h3>Practice Time</h3>
+        <div class="bars">
+          <div class="bar-group"><div class="bar bar-m"></div><span>M</span></div>
+          <div class="bar-group"><div class="bar bar-t"></div><span>T</span></div>
+          <div class="bar-group"><div class="bar bar-w"></div><span>W</span></div>
+          <div class="bar-group"><div class="bar bar-th"></div><span>TH</span></div>
+          <div class="bar-group"><div class="bar bar-f"></div><span>F</span></div>
+          <div class="bar-group"><div class="bar bar-s"></div><span>S</span></div>
+          <div class="bar-group"><div class="bar bar-su"></div><span>SU</span></div>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <label><input type="checkbox" checked> Time spent</label>
+        <label><input type="checkbox"> Goal</label>
+      </div>
+    </section>
+
+    <section class="library-row">
+      <h3>Your recent sheet music</h3>
+      <div class="library-grid">
+        <div class="piece-box"><div class="piece-thumb"></div><p>Title</p></div>
+        <div class="piece-box"><div class="piece-thumb"></div><p>Title</p></div>
+        <div class="piece-box"><div class="piece-thumb"></div><p>Title</p></div>
+        <div class="piece-box"><div class="piece-thumb"></div><p>Title</p></div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+</body>
+</html>

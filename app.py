@@ -1,12 +1,12 @@
-from flask import Flask
+from flask import Flask, render_template
 
 app = Flask(__name__)
 portNum = 8001
 
 
-@app.route("/")
+@app.route("/dashboard")
 def test():
-    return "<p>Wow we tested<p>"
+    return render_template("dashboard.html")
 
 if __name__ == "__main__":
-    app.run(port=portNum)
+    app.run(port=portNum, debug=True)

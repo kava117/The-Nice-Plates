@@ -1,0 +1,382 @@
+/* ==========================================================================
+   Shared stylesheet for index.html (signed out) and home.html (signed in).
+   Sections: 1 Tokens, 2 Base, 3 Banner, 4 Buttons, 5 Intro, 6 Cards,
+             7 Responsive, 8 Reduced motion
+   ========================================================================== */
+
+/* 1. Design tokens ------------------------------------------------------- */
+
+/* Light theme is the default. */
+:root {
+  --bg: #F2E8D0;          /* cream */
+  --surface: #FAF3E1;
+  --band: #DDE5D0;        /* pale sage */
+  --ink: #2D2418;
+  --ink-muted: #5E5040;
+  --accent: #2F5D3E;      /* forest green */
+  --on-accent: #F6EEDA;
+  --accent-2: #7B4F2E;    /* brown */
+  --on-accent-2: #F6EEDA;
+
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --column-max: 1080px;
+  --page-pad: clamp(1.25rem, 4vw, 2.5rem);
+  --radius-button: 2px;
+  --card-gap: 1.5rem;
+  --block-height: clamp(14rem, 32vh, 18.5rem);
+}
+
+/* Dark theme: theme.js sets data-theme="dark" on <html>. */
+:root[data-theme="dark"] {
+  --bg: #212327;          /* soot grey */
+  --surface: #2B2E33;
+  --band: #263A3B;        /* dark teal */
+  --ink: #F0E6CF;
+  --ink-muted: #B9B09C;
+  --accent: #3EC5BB;      /* turquoise */
+  --on-accent: #14201F;
+  --accent-2: #E9DCBC;    /* cream */
+  --on-accent-2: #1D1F22;
+}
+
+/* 2. Base ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;   /* 15px */
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+}
+
+/* Skip link: first focusable element, only visible while focused. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.5rem 0.9rem;
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+  border-radius: var(--radius-button);
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* One consistent, visible keyboard focus ring. */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  width: 100%;
+  max-width: var(--column-max);
+  margin: 0 auto;
+  padding: 0 var(--page-pad) 2.5rem;
+}
+
+/* 3. Top banner ---------------------------------------------------------- */
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  min-height: 56px;
+  padding: 8px clamp(1rem, 3vw, 2.5rem);
+  background: var(--band);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.brand svg {
+  color: var(--accent);
+}
+
+.banner nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;      /* stays right-aligned even when the banner wraps */
+}
+
+/* 4. Buttons ------------------------------------------------------------- */
+
+.btn {
+  display: inline-block;
+  padding: 7px 17px;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-button);
+  font: inherit;
+  font-size: 0.8125rem;   /* 13px */
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.5;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  background: var(--ink);
+  color: var(--band);
+}
+
+.btn-solid {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-solid:hover {
+  background: color-mix(in srgb, var(--ink) 18%, var(--accent));
+  border-color: color-mix(in srgb, var(--ink) 18%, var(--accent));
+}
+
+/* Theme toggle: 34px square. Moon shows in light theme, sun in dark. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.theme-toggle:hover {
+  border-color: var(--ink);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-toggle .icon-sun,
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+/* 5. Intro (headline + subline) ------------------------------------------ */
+
+.intro {
+  margin-top: clamp(2.5rem, 8vh, 4.5rem);
+  text-align: center;
+}
+
+.intro h1 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 2.6vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.intro p {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+/* 6. Cards --------------------------------------------------------------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--card-gap);
+  margin: 2.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cards li {
+  display: flex;          /* lets each card stretch to equal height */
+}
+
+.card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 20px -14px rgb(0 0 0 / 0.45);
+}
+
+.card:focus-visible {
+  outline-offset: 3px;
+}
+
+/* Color block: fixed height, content centered. Border is always 2px
+   (transparent by default) so every variant is exactly the same size. */
+.card-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: var(--block-height);
+  padding: 24px;
+  border: 2px solid transparent;
+  text-align: center;
+}
+
+.card-word {
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 4.2vw, 3.6rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.card-note {
+  max-width: 26ch;
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.88;
+}
+
+/* Caption: stretches so the color blocks line up even if a title wraps. */
+.card-caption {
+  flex: 1;
+  padding: 17.6px 20px 20px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.card-caption::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin-bottom: 13.6px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: background-color 0.2s;
+}
+
+.card:hover .card-caption::before {
+  background: var(--accent);
+}
+
+.card-caption h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Block variants. Signed-in: past = accent-2, present = accent,
+   future = dashed surface. Signed-out: A = accent, B = accent-2,
+   C = solid-outlined surface. */
+.card--accent .card-block {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.card--accent-2 .card-block {
+  background: var(--accent-2);
+  color: var(--on-accent-2);
+}
+
+.card--outlined .card-block,
+.card--dashed .card-block {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.card--outlined .card-block {
+  border-style: solid;
+}
+
+.card--dashed .card-block {
+  border-style: dashed;
+}
+
+/* 7. Responsive ---------------------------------------------------------- */
+
+@media (max-width: 860px) {
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .card-block {
+    height: 176px;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 6px 12px;
+  }
+}
+
+/* 8. Reduced motion ------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}

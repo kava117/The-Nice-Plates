@@ -1,13 +1,13 @@
 from flask import Flask, g
 import sqlite3
-import database.database
+from database import database
 
 app = Flask(__name__)
 portNum = 8001
 DATABASE = "niceplates.db"
 
 with app.app_context():
-    database.init_db(DATABASE)
+    database.init_db()
 
 def access_db():
     if 'db' not in g:

@@ -1,34 +1,46 @@
 # ml
 
-Audio file -> text (OpenAI Whisper) -> tempo / key / time signature.
+Turns a recording into text, then pulls tempo / key / time signature out of the text.
 
-## Setup
-    pip install -r requirements.txt
-    cp .env.example .env        # paste your OpenAI key into .env
+## 1. Install
+```
+pip install -r requirements.txt
+```
 
-Get a key at https://platform.openai.com/api-keys. Never commit `.env`.
+## 2. Add your OpenAI key
+```
+cp .env.example .env
+```
+Open `.env`, replace `sk-your-key-here` with your key from https://platform.openai.com/api-keys.
 
-## Run
-    python ml/run.py clip.mp3
+`.env` is gitignored. Do not commit it.
 
-Prints:
+## 3. Check it works (no key needed)
+```
+python ml/test_text.py
+```
+Should print `ok`.
 
-    {
-      "text": "Minuet in G major at 80 bpm, three four.",
-      "segments": [{"start": 0.0, "end": 3.2, "text": "..."}],
-      "music": {"tempo": 80, "key": "G major", "time_signature": "3/4"}
-    }
+## 4. Run on a recording
+```
+python ml/run.py clip.mp3
+```
+Should print:
+```
+{
+  "text": "Minuet in G major at 80 bpm, three four.",
+  "segments": [{"start": 0.0, "end": 3.2, "text": "Minuet in G major at 80 bpm, three four."}],
+  "music": {"tempo": 80, "key": "G major", "time_signature": "3/4"}
+}
+```
+Any mp3, m4a, wav or webm under 25 MB works.
 
-Whisper accepts mp3, mp4, m4a, wav, webm (max 25 MB).
+## What each file does
+- `transcribe.py` sends the audio to Whisper, gets text back.
+- `text.py` reads the text, finds tempo / key / time signature.
+- `run.py` runs both and prints the result.
+- `test_text.py` checks `text.py` on three example sentences.
 
-## Test without a key
-    python ml/test_text.py
-
-## Files
-| file            | does                                              |
-|-----------------|---------------------------------------------------|
-| `transcribe.py` | audio -> text + timestamps. One Whisper call.     |
-| `text.py`       | text -> tempo, key, time signature. Regex only.   |
-| `run.py`        | glues the two, prints JSON.                       |
-
-To add more music info, add a regex to `text.py`. To feed the UI, import `transcribe` and `process`.
+## To extend
+- New music info: add one regex line in `text.py`.
+- Use from the website: `from ml.transcribe import transcribe` and `from ml.text import process`.

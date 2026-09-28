@@ -1,2 +1,5 @@
+# Python 3.11 or 3.12
 pymupdf
 music21
+homr[cpu]
+opencv-python-headless

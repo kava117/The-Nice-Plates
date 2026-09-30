@@ -59,14 +59,18 @@ def init_db():
                 title TEXT NOT NULL,
                 composer TEXT DEFAULT NULL,
                 bpm INTEGER DEFAULT NULL,
-                date_created DATETIME DEFAULT CURRENT_TIMESTAMP
+                date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_viewed DATETIME,
+                midi BLOB,
+                xml BLOB
             );
 
             CREATE TABLE IF NOT EXISTS Sections (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 piece_id INTEGER NOT NULL REFERENCES Pieces(id),
                 start_measure INTEGER NOT NULL DEFAULT 0,
-                end_measure INTEGER NOT NULL DEFAULT 0
+                end_measure INTEGER NOT NULL DEFAULT 0,
+                times_practiced INTEGER NOT NULL DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS Session_Pieces (
@@ -134,7 +138,7 @@ def addUser(name, email):
 def addPiece(user_id, title, composer=None, bpm=None):
     with get_db() as database:
         cur = database.execute(
-            "INSERT INTO Pieces (user_id, title, composer, bpm) VALUES (?, ?, ?, ?)",
+            "INSERT INTO Pieces (user_id, title, composer, bpm, xml) VALUES (?, ?, ?, ?)",
             (user_id, title, composer, bpm),
         )
         return cur.lastrowid #use this to reference the piece in any next steps

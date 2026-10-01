@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Shared stylesheet for index.html (guest) and home.html (signed in).
+   Shared stylesheet for all pages (templates/ in this folder).
    Sections: 1 Tokens, 2 Base, 3 Press effect, 4 Frame, 5 Top bar,
              6 Sidebar, 7 Buttons, 8 Content, 9 Piece tiles, 10 Actions tile,
-             11 Stat tiles, 12 Responsive, 13 Reduced motion
+             11 Stat tiles, 12 Footer, 13 Responsive, 14 Reduced motion
    ========================================================================== */
 
 /* 1. Design tokens ------------------------------------------------------- */
@@ -547,7 +547,21 @@ main {
   line-height: 1.3;
 }
 
-/* 12. Responsive --------------------------------------------------------- */
+/* 12. Footer ------------------------------------------------------------- */
+
+/* Bar at the bottom of the main content (footer.html). Flat: not interactive. */
+.site-footer {
+  max-width: 960px;         /* lines up with .content */
+  margin-top: 28px;
+  padding: 14px 18px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-tile);
+  background: var(--band);
+  color: var(--ink-muted);
+  font-size: 0.8125rem;     /* 13px */
+}
+
+/* 13. Responsive --------------------------------------------------------- */
 
 /* At 900px and below the sidebar becomes a wrapping row under the top bar
    (logo, nav items, account tile at the right) and the page scrolls normally. */
@@ -606,7 +620,7 @@ main {
   }
 }
 
-/* 13. Reduced motion ----------------------------------------------------- */
+/* 14. Reduced motion ----------------------------------------------------- */
 
 /* Keep the pressed look, but make every change instant. */
 @media (prefers-reduced-motion: reduce) {

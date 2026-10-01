@@ -1,0 +1,56 @@
+{# Guest home page. Uses the signed-in header and sidebar; the content below is still the guest version (no progress bars or stats). #}
+{% set title = "Home" %}
+{% set active = "home" %}
+{% set auth = "guest" %}
+{% include "header.html" %}
+      <h1 class="visually-hidden">Home</h1>
+
+      <div class="content">
+        <!-- SAMPLE DATA: the same three sample pieces as home.html. Guests get no progress bars.
+             TODO: link each tile to the practice page for that piece. -->
+        <ul class="tiles">
+          <li>
+            <a class="card press" href="#">
+              <div class="card-art">
+                <img src="home_imgs/sheet-fur-elise.jpg" alt="">
+              </div>
+              <div class="card-caption">
+                <h2 class="card-title">Insert advertisement flavortext 1 here</h2>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="card press" href="#">
+              <div class="card-art">
+                <img src="home_imgs/sheet-moonlight-sonata.jpg" alt="">
+              </div>
+              <div class="card-caption">
+                <h2 class="card-title">Insert advertisement flavortext 2 here</h2>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a class="card press" href="#">
+              <div class="card-art">
+                <img src="home_imgs/sheet-ode-to-joy.jpg" alt="">
+              </div>
+              <div class="card-caption">
+                <h2 class="card-title">Insert advertisement flavortext 3 here</h2>
+              </div>
+            </a>
+          </li>
+          <li>
+            <div class="actions">
+              <!-- TODO: link to the Library page. -->
+              <a class="btn btn-solid press" href="#">Sign up to view your full library</a>
+              <!-- STATE-SPECIFIC: guest goes to sign-up, because uploading needs an account.
+                   TODO: point at the real sign-up page. -->
+              <a class="btn btn-ghost press" href="#">Sign up to upload new sheets</a>
+            </div>
+          </li>
+        </ul>
+
+        <!-- STATE-SPECIFIC: stat tiles are not rendered for guests. -->
+      </div>
+
+{% include "footer.html" %}

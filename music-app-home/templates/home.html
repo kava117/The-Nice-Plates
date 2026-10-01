@@ -1,0 +1,85 @@
+{# Signed-in home page. #}
+{% set title = "Home" %}
+{% set active = "home" %}
+{% set auth = "signed-in" %}
+{% include "header.html" %}
+      <h1 class="visually-hidden">Home</h1>
+
+      <div class="content">
+        <!-- SAMPLE DATA: the three most recently practiced pieces, newest first.
+             TODO: fill from the user's real pieces. Progress values are PLACEHOLDERS;
+             they will come from the sheet-music parsing feature. -->
+        <ul class="tiles">
+          <li>
+            <!-- TODO: link to the practice page for this piece. -->
+            <a class="card press" href="#">
+              <div class="card-art">
+                <img src="home_imgs/sheet-fur-elise.jpg" alt="">
+                <!-- STATE-SPECIFIC: progress bars are for signed-in users only. -->
+                <span class="progress" data-progress="60" style="--progress: 60%">
+                  <span class="progress-fill"></span>
+                  <span class="progress-label">Progress 60%</span>
+                  <span class="progress-label progress-label--fill" aria-hidden="true">Progress 60%</span>
+                </span>
+              </div>
+              <div class="card-caption">
+                <h2 class="card-title">Für Elise</h2>
+              </div>
+            </a>
+          </li>
+          <li>
+            <!-- TODO: link to the practice page for this piece. -->
+            <a class="card press" href="#">
+              <div class="card-art">
+                <img src="home_imgs/sheet-moonlight-sonata.jpg" alt="">
+                <span class="progress" data-progress="30" style="--progress: 30%">
+                  <span class="progress-fill"></span>
+                  <span class="progress-label">Progress 30%</span>
+                  <span class="progress-label progress-label--fill" aria-hidden="true">Progress 30%</span>
+                </span>
+              </div>
+              <div class="card-caption">
+                <h2 class="card-title">Moonlight Sonata</h2>
+              </div>
+            </a>
+          </li>
+          <li>
+            <!-- TODO: link to the practice page for this piece. -->
+            <a class="card press" href="#">
+              <div class="card-art">
+                <img src="home_imgs/sheet-ode-to-joy.jpg" alt="">
+                <span class="progress" data-progress="90" style="--progress: 90%">
+                  <span class="progress-fill"></span>
+                  <span class="progress-label">Progress 90%</span>
+                  <span class="progress-label progress-label--fill" aria-hidden="true">Progress 90%</span>
+                </span>
+              </div>
+              <div class="card-caption">
+                <h2 class="card-title">Ode to Joy</h2>
+              </div>
+            </a>
+          </li>
+          <li>
+            <div class="actions">
+              <!-- TODO: link to the Library page. -->
+              <a class="btn btn-solid press" href="#">View your library</a>
+              <!-- STATE-SPECIFIC: signed in goes to the upload flow. TODO: link to the upload flow. -->
+              <a class="btn btn-ghost press" href="#">Upload new sheets</a>
+            </div>
+          </li>
+        </ul>
+
+        <!-- STATE-SPECIFIC: stat tiles are for signed-in users only. SAMPLE DATA. -->
+        <ul class="stats">
+          <li class="stat">
+            <p class="stat-label">Time practiced</p>
+            <p class="stat-value" data-stat="time">12h 40m</p>
+          </li>
+          <li class="stat">
+            <p class="stat-label">Current streak</p>
+            <p class="stat-value" data-stat="streak">5 days</p>
+          </li>
+        </ul>
+      </div>
+
+{% include "footer.html" %}

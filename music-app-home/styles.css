@@ -630,3 +630,183 @@ main {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Additions for practice.html (Progress page): Practice Time bar chart,
+   Overall Time line chart, and the two donut stat cards.
+   ========================================================================== */
+
+/* 14. Chart panels --------------------------------------------------------- */
+
+.section-title {
+  margin-bottom: 14px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.panel {
+  padding: 20px 22px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+}
+
+.panel + .panel {
+  margin-top: 20px;
+}
+
+/* Practice Time ------------------------------------------------------------ */
+
+.practice-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.practice-chart {
+  flex: 1;
+  min-width: 0;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 140px;
+}
+
+.bar-group {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 8px;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  background: var(--accent);
+}
+
+.bar-group span {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+/* Placeholder heights — wire these up to real data (or set via an inline
+   style like style="height: 62%" from the server) when you're ready. */
+.bar-m { height: 55%; }
+.bar-t { height: 80%; }
+.bar-w { height: 30%; }
+.bar-th { height: 62%; }
+.bar-f { height: 18%; }
+.bar-s { height: 72%; }
+.bar-su { height: 46%; }
+
+.chart-legend {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.chart-legend label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.chart-legend input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+
+/* Overall Time --------------------------------------------------------------- */
+
+.overall-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.overall-chart .line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.overall-chart .baseline {
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+/* Donut stat cards ------------------------------------------------------------ */
+
+.donut-row {
+  margin-top: 20px;
+}
+
+.donut-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+}
+
+.donut-chart {
+  flex: none;
+  width: 76px;
+  height: 76px;
+}
+
+.donut-track {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 12;
+}
+
+.donut-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 12;
+  stroke-linecap: round;
+}
+
+.donut-value {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  fill: var(--ink);
+}
+
+.donut-label {
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+/* Responsive: stack the Practice Time chart and legend on narrow screens -- */
+@media (max-width: 900px) {
+  .practice-panel {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .chart-legend {
+    flex-direction: row;
+    gap: 20px;
+  }
+}

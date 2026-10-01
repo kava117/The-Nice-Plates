@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Nice Plates | Home</title>
+
+  <!-- Google Fonts is the only external resource; the CSS falls back to system fonts if it fails. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&family=Young+Serif&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- No defer: sets the theme before first paint to avoid a flash. -->
+  <script src="theme.js"></script>
+</head>
+<div class="content">
+
+  <section class="panel practice-panel" aria-label="Practice time this week">
+    <div class="practice-chart">
+      <h2 class="section-title">Practice Time</h2>
+      <div class="bars">
+        <div class="bar-group"><div class="bar bar-m"></div><span>M</span></div>
+        <div class="bar-group"><div class="bar bar-t"></div><span>T</span></div>
+        <div class="bar-group"><div class="bar bar-w"></div><span>W</span></div>
+        <div class="bar-group"><div class="bar bar-th"></div><span>TH</span></div>
+        <div class="bar-group"><div class="bar bar-f"></div><span>F</span></div>
+        <div class="bar-group"><div class="bar bar-s"></div><span>S</span></div>
+        <div class="bar-group"><div class="bar bar-su"></div><span>SU</span></div>
+      </div>
+    </div>
+    <div class="chart-legend">
+      <label><input type="checkbox" checked> Time spent</label>
+      <label><input type="checkbox"> Goal</label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">Overall Time</h2>
+    <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend">
+      <polyline
+        class="line"
+        points="0,150 55,58 115,95 165,95 225,28 265,22 325,30 375,58 425,140 465,118 515,128 600,150" />
+      <line class="baseline" x1="0" y1="150" x2="600" y2="150" />
+    </svg>
+  </section>
+
+  <div class="tiles donut-row">
+    <div class="donut-card">
+      <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="5 pieces in progress">
+        <circle class="donut-track" cx="60" cy="60" r="50" />
+        <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="188 314" transform="rotate(-90 60 60)" />
+        <text class="donut-value" x="60" y="68" text-anchor="middle">5</text>
+      </svg>
+      <div class="donut-label">Pieces in Progress</div>
+    </div>
+    <div class="donut-card">
+      <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="12 pieces mastered">
+        <circle class="donut-track" cx="60" cy="60" r="50" />
+        <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="110 314" transform="rotate(-90 60 60)" />
+        <text class="donut-value" x="60" y="68" text-anchor="middle">12</text>
+      </svg>
+      <div class="donut-label">Pieces Mastered</div>
+    </div>
+  </div>
+
+</div>

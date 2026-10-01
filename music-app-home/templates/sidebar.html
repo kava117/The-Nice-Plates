@@ -1,0 +1,34 @@
+{# Sidebar: logo, main nav and account tile. Included by header.html.
+   The link matching `active` gets aria-current="page", which styles.css highlights. #}
+{% macro nav_attr(name) %}{% if active == name %} aria-current="page"{% endif %}{% endmacro %}
+    <div class="sidebar">
+      <a class="brand" href="home.html">
+        <!-- Stand-in quarter-note logo (open item: real logo). -->
+        <svg width="16" height="20" viewBox="0 0 16 20" fill="currentColor" aria-hidden="true">
+          <ellipse cx="5.5" cy="16" rx="4.5" ry="3.2" transform="rotate(-20 5.5 16)"/>
+          <rect x="9" y="1" width="1.8" height="15.5"/>
+        </svg>
+        <span>The Nice Plates</span>
+      </a>
+
+      <nav aria-label="Main">
+        <ul class="nav-list">
+          <li><a class="nav-link press" href="home.html"{{ nav_attr("home") }}>Home</a></li>
+          <!-- TODO: link to the Library page. -->
+          <li><a class="nav-link press" href="#"{{ nav_attr("library") }}>Library</a></li>
+          <!-- TODO: link to the Progress page. -->
+          <li><a class="nav-link press" href="#"{{ nav_attr("progress") }}>Progress</a></li>
+          <!-- TODO: link to the Settings page. -->
+          <li><a class="nav-link press" href="#"{{ nav_attr("settings") }}>Settings</a></li>
+        </ul>
+      </nav>
+
+      <!-- TODO: link to the Account page; a later step fills the name and initials from the account. -->
+      <a class="account press" href="#" aria-label="Account: Sample User">
+        <span class="avatar" aria-hidden="true"><span data-user-initials>SU</span></span>
+        <span class="account-text">
+          <span class="account-name" data-user-name>Sample User</span>
+          <span class="account-role">Account</span>
+        </span>
+      </a>
+    </div>

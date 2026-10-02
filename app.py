@@ -19,7 +19,9 @@ portNum = 8001
 def inject_year():
     return {"year": date.today().year}
 
-
+# ==================================================================
+# LOADING ALL OF OUR HTML PAGES
+# ==================================================================   
 @app.route("/")
 @app.route("/index.html")
 def index():
@@ -29,6 +31,22 @@ def index():
 @app.route("/home.html")
 def home():
     return render_template("home.html")
+
+@app.route("/library.html")
+def library():
+    return render_template("library.html")
+
+@app.route("/progress.html")
+def progress():
+    return render_template("progress.html")
+
+@app.route("/settings.html")
+def settings():
+    return render_template("settings.html")
+
+@app.route("/practice.html")
+def practice():
+    return render_template("practice.html")
 
 
 if __name__ == "__main__":

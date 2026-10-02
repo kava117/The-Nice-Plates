@@ -1,0 +1,73 @@
+{# Signed-in home page. #}
+{% set title = "Home" %}
+{% set active = "home" %}
+{% set auth = "signed-in" %}
+{% include "header.html" %}
+
+      <h1 class="visually-hidden">Settings</h1>
+
+      <!-- TODO: none of these controls are wired up yet; Save and the
+           account buttons do nothing. Values below are SAMPLE DATA. -->
+      <div class="content">
+        <form class="settings" action="#" onsubmit="return false">
+          <section class="panel" aria-labelledby="settings-account">
+            <h2 class="section-title" id="settings-account">Account</h2>
+            <div class="field">
+              <label for="display-name">Display name</label>
+              <input class="input" id="display-name" type="text" value="Sample User" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input class="input" id="email" type="email" value="sample.user@example.com" autocomplete="email">
+            </div>
+            <div class="field-actions">
+              <button type="button" class="btn btn-ghost press">Change password</button>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="settings-practice">
+            <h2 class="section-title" id="settings-practice">Practice</h2>
+            <div class="field">
+              <label for="daily-goal">Daily practice goal</label>
+              <select class="input" id="daily-goal">
+                <option>15 minutes</option>
+                <option selected>30 minutes</option>
+                <option>45 minutes</option>
+                <option>1 hour</option>
+              </select>
+            </div>
+            <label class="switch-row">
+              <span>
+                <span class="switch-title">Practice reminders</span>
+                <span class="switch-hint">A daily nudge if you haven't practiced yet.</span>
+              </span>
+              <input class="switch" type="checkbox" checked>
+            </label>
+            <label class="switch-row">
+              <span>
+                <span class="switch-title">Show progress on piece tiles</span>
+                <span class="switch-hint">The progress badge on your home and library tiles.</span>
+              </span>
+              <input class="switch" type="checkbox" checked>
+            </label>
+          </section>
+
+          <section class="panel" aria-labelledby="settings-danger">
+            <h2 class="section-title" id="settings-danger">Account actions</h2>
+            <div class="field-actions">
+              <button type="button" class="btn btn-ghost press">Log out of all devices</button>
+              <button type="button" class="btn btn-danger press">Delete account</button>
+            </div>
+          </section>
+
+          <div class="settings-save">
+            <button type="submit" class="btn btn-solid press">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="press.js"></script>
+</body>
+</html>

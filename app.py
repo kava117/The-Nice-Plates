@@ -30,6 +30,10 @@ def index():
 def home():
     return render_template("home.html")
 
+@app.route("/practice.html")
+def practice():
+    return render_template("practice.html")
+
 
 if __name__ == "__main__":
     app.run(port=portNum)

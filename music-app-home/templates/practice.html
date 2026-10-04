@@ -1,0 +1,126 @@
+{# Signed-in home page. #}
+{% set title = "Home" %}
+{% set active = "home" %}
+{% set auth = "signed-in" %}
+{% include "header.html" %}
+
+{# --- Song picker UI: re-enable once /api/songs exists ---
+<button id="change-song">Change song</button>
+
+<dialog id="song-picker">
+  <h2>Pick a song</h2>
+  <ul id="song-list"></ul>
+  <button id="picker-cancel">Cancel</button>
+</dialog>
+--- #}
+
+<div id="controls">
+  <button id="cursor-prev">&#9664; Prev</button>
+  <button id="cursor-next">Next &#9654;</button>
+  <button id="cursor-reset">Reset</button>
+  <button id="zoom-in">+</button>
+  <button id="zoom-out">-</button>
+</div>
+
+<div id="score"></div>
+
+<script src="/opensheetmusicdisplay.min.js"></script>
+<script>
+  const SONG_URL = "/AirOnG.musicxml";
+
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score", {
+    autoResize: true,
+    drawTitle: true,
+    followCursor: true,   // scrolls the page to keep the cursor in view
+  });
+
+  async function loadSong(url) {
+    try {
+      await osmd.load(url);
+      osmd.render();
+      osmd.cursor.show();   // cursor only exists after render()
+    } catch (err) {
+      console.error("Couldn't load song:", err);
+    }
+  }
+
+  // ---- Cursor controls ----
+  function cursorNext() {
+    if (!osmd.cursor.Iterator.EndReached) osmd.cursor.next();
+  }
+  function cursorPrev() {
+    osmd.cursor.previous();
+  }
+  function cursorReset() {
+    osmd.cursor.reset();
+  }
+
+  document.getElementById("cursor-next").addEventListener("click", cursorNext);
+  document.getElementById("cursor-prev").addEventListener("click", cursorPrev);
+  document.getElementById("cursor-reset").addEventListener("click", cursorReset);
+
+  document.getElementById("zoom-in").addEventListener("click", () => {
+    osmd.zoom = Math.min(osmd.zoom + 0.1, 3);
+    osmd.render();
+  });
+  document.getElementById("zoom-out").addEventListener("click", () => {
+    osmd.zoom = Math.max(osmd.zoom - 0.1, 0.4);
+    osmd.render();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") cursorNext();
+    if (e.key === "ArrowLeft") cursorPrev();
+  });
+
+
+  /* --- Song picker + session logic: re-enable once the server side exists ---
+  const picker = document.getElementById("song-picker");
+  const songList = document.getElementById("song-list");
+
+  async function showSongPicker() {
+    songList.textContent = "Loading...";
+    picker.showModal();
+    try {
+      const res = await fetch("/api/songs");
+      if (!res.ok) throw new Error(res.status);
+      const songs = await res.json();   // [{id: 1, title: "..."}, ...]
+      songList.textContent = "";
+      for (const song of songs) {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.textContent = song.title;
+        btn.addEventListener("click", () => onSongPicked(song.id));
+        li.appendChild(btn);
+        songList.appendChild(li);
+      }
+    } catch (err) {
+      songList.textContent = "Couldn't load songs. Try again.";
+    }
+  }
+
+  function closeSongPicker() {
+    if (picker.open) picker.close();
+  }
+
+  function onSongPicked(id) {
+    sessionStorage.setItem("currentSongId", id);
+    closeSongPicker();
+    loadSong(`/api/songs/${encodeURIComponent(id)}/musicxml`);
+  }
+
+  document.getElementById("change-song").addEventListener("click", showSongPicker);
+  document.getElementById("picker-cancel").addEventListener("click", closeSongPicker);
+
+  // First visit this session -> picker; otherwise straight to the song
+  const songId = sessionStorage.getItem("currentSongId");
+  if (songId) {
+    loadSong(`/api/songs/${encodeURIComponent(songId)}/musicxml`);
+  } else {
+    showSongPicker();
+  }
+  --- */
+
+  // Temporary: load the static song
+  loadSong(SONG_URL);
+</script>

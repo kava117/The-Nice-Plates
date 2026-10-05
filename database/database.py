@@ -120,7 +120,7 @@ def fetchSessions(user_id):
 def fetchSessionPieces(session_id):
     with get_db() as database:
         rows = database.execute(
-            "SELECT p.id, p.title, sp.referenced_at FROM Session_Pieces sp JOIN Pieces p ON p.id = sp.piece_id WHERE sp.session_id = ? ORDER BY sp.referenced_at,
+            "SELECT p.id, p.title, sp.referenced_at FROM Session_Pieces sp JOIN Pieces p ON p.id = sp.piece_id WHERE sp.session_id = ? ORDER BY sp.referenced_at",
             (session_id,),
         ).fetchall()
         return [dict(row) for row in rows]

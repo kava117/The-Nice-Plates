@@ -1,3 +1,6 @@
+from flask import Flask, g, jsonify
+import sqlite3
+from database import database
 from datetime import date
 
 from flask import Flask, render_template
@@ -13,7 +16,14 @@ app = Flask(
 )
 portNum = 8001
 
+with app.app_context():
+    database.init_db()
+    database.migrate()
 
+def access_db():
+    if 'db' not in g:
+        g.db = database.connect()
+    return g.db
 # Makes {{ year }} available to every template (used by footer.html).
 @app.context_processor
 def inject_year():

@@ -39,6 +39,7 @@ def init_db():
         database.executescript("""
             CREATE TABLE IF NOT EXISTS Users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                google_sub TEXT UNIQUE,
                 name TEXT NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 profile_picture BLOB DEFAULT NULL,
@@ -96,12 +97,49 @@ def init_db():
         """)
 
 
-def fetchUsers():
+def getUsers():
     with get_db() as database:
         rows = database.execute("SELECT id, name, email FROM Users").fetchall()
         return [dict(row) for row in rows]
 
-def fetchPieces(user_id):
+def getUserById(user_id):
+    with get_db() as database:
+        row = database.execute(
+            "SELECT id, name, email FROM Users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+def getOrCreateGoogleUser(sub, name, email, email_verified=False):
+    email = email.strip().lower()
+    with get_db() as database:
+        # check if there is a user with the google id already registered
+        row = database.execute(
+            "SELECT id, name, email FROM Users WHERE google_sub = ?", (sub,)
+        ).fetchone()
+        if row:
+            return dict(row)
+
+        # if a user is registered with the email account returned by OAuth, but no google_sub exists, register the ids together if the email is verified
+        if email_verified:
+            row = database.execute(
+                "SELECT id, name, email FROM Users WHERE email = ? AND google_sub IS NULL",
+                (email,),
+            ).fetchone()
+            if row:
+                database.execute(
+                    "UPDATE Users SET google_sub = ? WHERE id = ?", (sub, row["id"])
+                )
+                return dict(row)
+
+        # if the user does not exist yet, create one
+        cur = database.execute(
+            "INSERT INTO Users (google_sub, name, email) VALUES (?, ?, ?)",
+            (sub, name, email),
+        )
+        return {"id": cur.lastrowid, "name": name, "email": email}
+
+def getPieces(user_id):
     with get_db() as database:
         rows = database.execute(
             "SELECT id, title, composer, bpm FROM Pieces WHERE user_id = ? ",
@@ -109,7 +147,7 @@ def fetchPieces(user_id):
         ).fetchall()
         return [dict(row) for row in rows]
 
-def fetchSessions(user_id):
+def getSessions(user_id):
     with get_db() as database:
         rows = database.execute(
             "SELECT id, time_spent, date, session_notes FROM Sessions WHERE user_id = ? ORDER BY date DESC",
@@ -117,7 +155,7 @@ def fetchSessions(user_id):
         ).fetchall()
         return [dict(row) for row in rows]
 
-def fetchSessionPieces(session_id):
+def getSessionPieces(session_id):
     with get_db() as database:
         rows = database.execute(
             "SELECT p.id, p.title, sp.referenced_at FROM Session_Pieces sp JOIN Pieces p ON p.id = sp.piece_id WHERE sp.session_id = ? ORDER BY sp.referenced_at",
@@ -138,7 +176,7 @@ def addUser(name, email):
 def addPiece(user_id, title, composer=None, bpm=None):
     with get_db() as database:
         cur = database.execute(
-            "INSERT INTO Pieces (user_id, title, composer, bpm, xml) VALUES (?, ?, ?, ?)",
+            "INSERT INTO Pieces (user_id, title, composer, bpm, xml) VALUES (?, ?, ?, ?, ?)",
             (user_id, title, composer, bpm),
         )
         return cur.lastrowid #use this to reference the piece in any next steps

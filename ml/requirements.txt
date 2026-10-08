@@ -1,0 +1,6 @@
+openai
+python-dotenv
+flask
+pymupdf
+homr
+music21

@@ -1,0 +1,4 @@
+-r ../fileConversion/requirements.txt
+flask
+openai
+python-dotenv

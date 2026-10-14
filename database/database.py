@@ -146,6 +146,40 @@ def getPieces(user_id):
             (user_id,),
         ).fetchall()
         return [dict(row) for row in rows]
+    
+def getPieceForUser(user_id, piece_id):
+    with get_db() as database:
+        row = database.execute(
+            "SELECT id, title, composer, bpm FROM Pieces WHERE id = ? AND user_id = ?",
+            (piece_id, user_id),
+        ).fetchone()
+        return dict(row) if row else None
+
+def getXML(piece_id):
+    with get_db() as database:
+        row = database.execute(
+            "SELECT xml FROM Pieces WHERE id = ?",
+            (piece_id)
+        ).fetchone()
+        return dict(row) if row else None
+        
+def getMidi(piece_id):
+    with get_db() as database:
+        row = database.execute(
+            "SELECT midi FROM Pieces WHERE id = ?",
+            (piece_id)
+        ).fetchone()
+        return dict(row) if row else None
+
+def getSectionForUser(user_id, section_id):
+    with get_db() as database:
+        row = database.execute(
+            """SELECT s.id, s.piece_id, s.start_measure, s.end_measure
+               FROM Sections s JOIN Pieces p ON p.id = s.piece_id
+               WHERE s.id = ? AND p.user_id = ?""",
+            (section_id, user_id),
+        ).fetchone()
+        return dict(row) if row else None
 
 def getSessions(user_id):
     with get_db() as database:

@@ -109,6 +109,14 @@ def fetchPieces(user_id):
         ).fetchall()
         return [dict(row) for row in rows]
 
+def fetchPiece(user_id, piece_id):
+    with get_db() as database:
+        row = database.execute(
+            "SELECT * FROM Pieces WHERE id = ? AND user_id = ?",
+            (piece_id, user_id),
+        ).fetchone()
+        return dict(row) if row else None
+
 def fetchSessions(user_id):
     with get_db() as database:
         rows = database.execute(
@@ -135,11 +143,11 @@ def addUser(name, email):
         )
         return cur.lastrowid #use this to reference the user in any next steps
 
-def addPiece(user_id, title, composer=None, bpm=None):
+def addPiece(user_id, title, composer=None, bpm=None, xml=None, midi=None):
     with get_db() as database:
         cur = database.execute(
-            "INSERT INTO Pieces (user_id, title, composer, bpm, xml) VALUES (?, ?, ?, ?)",
-            (user_id, title, composer, bpm),
+            "INSERT INTO Pieces (user_id, title, composer, bpm, xml, midi) VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, title, composer, bpm, xml, midi),
         )
         return cur.lastrowid #use this to reference the piece in any next steps
 
@@ -155,3 +163,9 @@ def addSession(user_id, time_spent, notes=None, piece_ids=()):
             [(session_id, pid) for pid in set(piece_ids)],
         )
         return session_id #use this to reference the session in any next steps
+
+def demoUser():
+    """One shared user until Google login lands; then use the signed-in user's id instead."""
+    with get_db() as database:
+        database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
+        return database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]

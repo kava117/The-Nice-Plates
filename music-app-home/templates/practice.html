@@ -1,18 +1,9 @@
-{# Signed-in home page. #}
-{% set title = "Home" %}
-{% set active = "home" %}
+{# Practice page: renders one piece from the library, or the demo score. #}
+{% set title = "Practice" %}
+{% set active = "practice" %}
 {% set auth = "signed-in" %}
 {% include "header.html" %}
 
-{# --- Song picker UI: re-enable once /api/songs exists ---
-<button id="change-song">Change song</button>
-
-<dialog id="song-picker">
-  <h2>Pick a song</h2>
-  <ul id="song-list"></ul>
-  <button id="picker-cancel">Cancel</button>
-</dialog>
---- #}
 
 <div id="controls">
   <button id="cursor-prev">&#9664; Prev</button>
@@ -73,54 +64,6 @@
     if (e.key === "ArrowRight") cursorNext();
     if (e.key === "ArrowLeft") cursorPrev();
   });
-
-
-  /* --- Song picker + session logic: re-enable once the server side exists ---
-  const picker = document.getElementById("song-picker");
-  const songList = document.getElementById("song-list");
-
-  async function showSongPicker() {
-    songList.textContent = "Loading...";
-    picker.showModal();
-    try {
-      const res = await fetch("/api/songs");
-      if (!res.ok) throw new Error(res.status);
-      const songs = await res.json();   // [{id: 1, title: "..."}, ...]
-      songList.textContent = "";
-      for (const song of songs) {
-        const li = document.createElement("li");
-        const btn = document.createElement("button");
-        btn.textContent = song.title;
-        btn.addEventListener("click", () => onSongPicked(song.id));
-        li.appendChild(btn);
-        songList.appendChild(li);
-      }
-    } catch (err) {
-      songList.textContent = "Couldn't load songs. Try again.";
-    }
-  }
-
-  function closeSongPicker() {
-    if (picker.open) picker.close();
-  }
-
-  function onSongPicked(id) {
-    sessionStorage.setItem("currentSongId", id);
-    closeSongPicker();
-    loadSong(`/api/songs/${encodeURIComponent(id)}/musicxml`);
-  }
-
-  document.getElementById("change-song").addEventListener("click", showSongPicker);
-  document.getElementById("picker-cancel").addEventListener("click", closeSongPicker);
-
-  // First visit this session -> picker; otherwise straight to the song
-  const songId = sessionStorage.getItem("currentSongId");
-  if (songId) {
-    loadSong(`/api/songs/${encodeURIComponent(songId)}/musicxml`);
-  } else {
-    showSongPicker();
-  }
-  --- */
 
   loadSong(SONG_URL);
 </script>

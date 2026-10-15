@@ -1,6 +1,6 @@
-{# Signed-in home page. #}
-{% set title = "Home" %}
-{% set active = "home" %}
+{# Library: the pieces in the database, and the form that adds one. #}
+{% set title = "Library" %}
+{% set active = "library" %}
 {% set auth = "signed-in" %}
 {% include "header.html" %}
 <!DOCTYPE html>
@@ -8,7 +8,7 @@
 <div class="content">
 
   <div class="library-header">
-    <h2 class="section-title">Your most recent:</h2>
+    <h2 class="section-title">Your pieces</h2>
     <div class="view-toggle" role="group" aria-label="Grid density">
       <button type="button" class="view-option" data-density="compact">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -33,7 +33,7 @@
     </div>
   </div>
 
-  <form class="field" action="/api/pieces" method="post" enctype="multipart/form-data">
+  <form class="field" id="upload" style="margin-bottom: 20px" action="/api/pieces" method="post" enctype="multipart/form-data">
     <label for="sheet">Add a piece: a PDF, a photo, or a MusicXML file</label>
     <input class="input" id="sheet" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
     <input class="input" name="title" type="text" placeholder="Title (optional)">

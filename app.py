@@ -33,30 +33,37 @@ def inject_year():
 # LOADING ALL OF OUR HTML PAGES
 # ==================================================================   
 @app.route("/")
-@app.route("/index.html")
+@app.route("/index")
 def index():
     return render_template("index.html")
 
-
-@app.route("/home.html")
+@app.route("/home")
 def home():
     return render_template("home.html")
 
-@app.route("/library.html")
+@app.route("/library")
 def library():
     return render_template("library.html")
 
-@app.route("/progress.html")
+@app.route("/progress")
 def progress():
     return render_template("progress.html")
 
-@app.route("/settings.html")
+@app.route("/settings")
 def settings():
     return render_template("settings.html")
 
-@app.route("/practice.html")
+@app.route("/practice")
 def practice():
     return render_template("practice.html")
+
+@app.route("/login")
+def login():
+    return render_template("login.html")
+
+@app.route("/google")
+def google():
+    return render_template("google.html")
 
 
 if __name__ == "__main__":

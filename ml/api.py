@@ -1,13 +1,16 @@
 """The ml tools as a web API.   Run alone: python ml/api.py   (port 8002)"""
 import sys, tempfile
+from io import BytesIO
 from pathlib import Path
 
-from flask import Blueprint, Flask, jsonify, request, send_file
+from flask import Blueprint, Flask, abort, jsonify, redirect, request, send_file
 
 HERE = Path(__file__).parent
-sys.path[:0] = [str(HERE), str(HERE.parent / "fileConversion")]  # lets app.py import this file too
+sys.path[:0] = [str(HERE), str(HERE.parent), str(HERE.parent / "fileConversion")]  # lets app.py import this file too
 import text, transcribe
-from pdfToMidi import convert  # Robert's pipeline: PDF, image or MusicXML -> MIDI
+from database import database
+from easyParts import musicxml_to_midi
+from pdfToMidi import _to_musicxml, convert  # Robert's pipeline: PDF, image or MusicXML -> MIDI
 
 api = Blueprint("ml", __name__, url_prefix="/api")
 
@@ -30,7 +33,29 @@ def recording():
     return jsonify({**result, "music": text.process(result["text"])})
 
 
+@api.get("/pieces")  # the library
+def pieces():
+    return jsonify(database.fetchPieces(database.demoUser()))
+
+
+@api.post("/pieces")  # the library's upload form: sheet music in, saved to Pieces as MusicXML + MIDI
+def add_piece():
+    src = save_upload()
+    xml = _to_musicxml(src, Path(tempfile.mkdtemp()))
+    mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+    piece_id = database.addPiece(database.demoUser(), request.form.get("title") or src.stem,
+                                 request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
+    return redirect(f"/practice.html?piece={piece_id}")
+
+
+@api.get("/pieces/<int:piece_id>/musicxml")  # what the practice page renders
+def piece_xml(piece_id):
+    piece = database.fetchPiece(database.demoUser(), piece_id) or abort(404)
+    return send_file(BytesIO(piece["xml"]), mimetype="application/xml")
+
+
 if __name__ == "__main__":
+    database.init_db()
     app = Flask(__name__)
     app.register_blueprint(api)
     app.run(port=8002)

@@ -5,6 +5,7 @@ from datetime import date
 import os, time
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
+from ml.api import api
 
 load_dotenv() #loads the .env file and the secrets stored within
 
@@ -17,15 +18,16 @@ app = Flask(
     static_url_path="",
     template_folder="music-app-home/templates",
 )
-app.secret_key = os.environ["SECRET_KEY"]
+app.register_blueprint(api)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only")
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_HTTPONLY=True)
 portNum = 8001
 
 oauth = OAuth(app)
 google = oauth.register(
     name = "google",
-    client_id = os.environ["GOOGLE_CLIENT_ID"],
-    client_secret = os.environ["GOOGLE_CLIENT_SECRET"],
+    client_id = os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs = {"scope": "openid email profile"},
 )
@@ -54,6 +56,9 @@ def unauthorized():
     if request.path.startswith("/api/"):
         return jsonify(error="login required"), 401
     return redirect(url_for("index"))
+
+def user_id():
+    return current_user.id if current_user.is_authenticated else database.demoUser()
 
 # Makes {{ year }} available to every template (used by footer.html).
 @app.context_processor
@@ -142,7 +147,7 @@ def api_select_section():
         return jsonify(error="section not found"), 404
     session["selected_section_id"] = section["id"]
     session["current_piece_id"] = section["piece_id"]   # a section implies its piece
-    remember_piece(piece_id)
+    remember_piece(section["piece_id"])
     return jsonify(practice_state())
 
 #begin tracking a sessions length
@@ -197,7 +202,7 @@ def home():
 
 @app.route("/library")
 def library():
-    return render_template("library.html")
+    return render_template("library.html", pieces=database.getPieces(user_id()))
 
 @app.route("/progress")
 def progress():
@@ -213,6 +218,8 @@ def practice():
 
 @app.route("/login/google")
 def login_google():
+    if not google.client_id:   # no Google keys set: enter as the shared demo user
+        return redirect(url_for("home"))
     redirect_uri = url_for("auth_google", _external=True)
     return google.authorize_redirect(redirect_uri)
 

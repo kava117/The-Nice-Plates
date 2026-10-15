@@ -4,12 +4,17 @@ from io import BytesIO
 from pathlib import Path
 
 from flask import Blueprint, Flask, abort, jsonify, redirect, request, send_file
+from flask_login import current_user
 
 HERE = Path(__file__).parent
 sys.path[:0] = [str(HERE), str(HERE.parent), str(HERE.parent / "fileConversion")]  # lets app.py import this file too
 from database import database
 
 api = Blueprint("ml", __name__, url_prefix="/api")
+
+
+def user_id():
+    return current_user.id if current_user.is_authenticated else database.demoUser()
 # The pipeline (ml/requirements.txt) is imported inside the routes that need it, so the site runs without it.
 
 
@@ -35,7 +40,7 @@ def recording():
 
 @api.get("/pieces")  # the library
 def pieces():
-    return jsonify(database.fetchPieces(database.demoUser()))
+    return jsonify(database.getPieces(user_id()))
 
 
 @api.post("/pieces")  # the library's upload form: sheet music in, saved to Pieces as MusicXML + MIDI
@@ -45,15 +50,15 @@ def add_piece():
     src = save_upload()
     xml = _to_musicxml(src, Path(tempfile.mkdtemp()))
     mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
-    piece_id = database.addPiece(database.demoUser(), request.form.get("title") or src.stem,
+    piece_id = database.addPiece(user_id(), request.form.get("title") or src.stem,
                                  request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
     return redirect(f"/practice?piece={piece_id}")
 
 
 @api.get("/pieces/<int:piece_id>/musicxml")  # what the practice page renders
 def piece_xml(piece_id):
-    piece = database.fetchPiece(database.demoUser(), piece_id) or abort(404)
-    return send_file(BytesIO(piece["xml"]), mimetype="application/xml")
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    return send_file(BytesIO(database.getXML(piece_id)["xml"]), mimetype="application/xml")
 
 
 if __name__ == "__main__":

@@ -159,7 +159,7 @@ def getXML(piece_id):
     with get_db() as database:
         row = database.execute(
             "SELECT xml FROM Pieces WHERE id = ?",
-            (piece_id)
+            (piece_id,)
         ).fetchone()
         return dict(row) if row else None
         
@@ -167,7 +167,7 @@ def getMidi(piece_id):
     with get_db() as database:
         row = database.execute(
             "SELECT midi FROM Pieces WHERE id = ?",
-            (piece_id)
+            (piece_id,)
         ).fetchone()
         return dict(row) if row else None
 

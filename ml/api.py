@@ -7,12 +7,10 @@ from flask import Blueprint, Flask, abort, jsonify, redirect, request, send_file
 
 HERE = Path(__file__).parent
 sys.path[:0] = [str(HERE), str(HERE.parent), str(HERE.parent / "fileConversion")]  # lets app.py import this file too
-import text, transcribe
 from database import database
-from easyParts import musicxml_to_midi
-from pdfToMidi import _to_musicxml, convert  # Robert's pipeline: PDF, image or MusicXML -> MIDI
 
 api = Blueprint("ml", __name__, url_prefix="/api")
+# The pipeline (ml/requirements.txt) is imported inside the routes that need it, so the site runs without it.
 
 
 def save_upload():
@@ -24,11 +22,13 @@ def save_upload():
 
 @api.post("/midi")  # sheet music in, MIDI out
 def midi():
+    from pdfToMidi import convert  # Robert's pipeline: PDF, image or MusicXML -> MIDI
     return send_file(convert(save_upload()))
 
 
 @api.post("/transcribe")  # recording in, text + tempo / key / time signature out
 def recording():
+    import text, transcribe
     result = transcribe.transcribe(save_upload())
     return jsonify({**result, "music": text.process(result["text"])})
 
@@ -40,6 +40,8 @@ def pieces():
 
 @api.post("/pieces")  # the library's upload form: sheet music in, saved to Pieces as MusicXML + MIDI
 def add_piece():
+    from easyParts import musicxml_to_midi
+    from pdfToMidi import _to_musicxml
     src = save_upload()
     xml = _to_musicxml(src, Path(tempfile.mkdtemp()))
     mid = musicxml_to_midi(xml, src.with_suffix(".mid"))

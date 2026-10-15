@@ -36,6 +36,11 @@
       </button>
       <!-- TODO: Log out should end the session (a button or form action, not a plain link). Temporarily goes to index.html. -->
       <a class="btn btn-ghost press" href="index.html">Log out</a>
+        <!-- {% if session.get('logged_in') %}
+          <a href="/index" class="btn btn-ghost press">Sign Out</a>
+        {% else %}
+          <a href="/login" class="btn btn-ghost press">Sign In</a>
+        {% endif %} -->
     </header>
 
     {% include "sidebar.html" %}

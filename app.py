@@ -57,11 +57,11 @@ def settings():
 def practice():
     return render_template("practice.html")
 
-@app.route("/login")
+@app.route("/login/google")
 def login():
     return render_template("login.html")
 
-@app.route("/google")
+@app.route("/auth/google")
 def google():
     return render_template("google.html")
 

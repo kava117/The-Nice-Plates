@@ -33,6 +33,7 @@
       osmd.cursor.show();   // cursor only exists after render()
     } catch (err) {
       console.error("Couldn't load song:", err);
+      if (url !== "/AirOnG.musicxml") loadSong("/AirOnG.musicxml");   // the server is down or the piece is gone: still show a score
     }
   }
 

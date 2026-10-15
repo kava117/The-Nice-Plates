@@ -1,0 +1,51 @@
+OMR TOOL COMPARISON: oemer, homr, Audiveris
+============================================
+
+oemer
+-----
+What it is: End-to-end deep-learning OMR (pure Python, pip install oemer).
+Best input: Messy real-world images - phone photos, skewed or unevenly lit
+  scans. Deskews images automatically. Works one page image at a time.
+Struggles with: Dense polyphony, multiple voices on one staff, orchestral
+  scores. Often misses ornaments, dynamics, and less common symbols. Slow on CPU.
+Instruments: Best on single-staff melodic parts (flute, violin, voice, etc.)
+  and simple piano (grand staff). Accuracy falls off as the number of staves
+  per system grows.
+
+homr
+----
+What it is: OMR built on oemer's segmentation plus a transformer model that
+  reads each staff (Python, installed from the GitHub repo with Poetry).
+Best input: Camera pictures of sheet music. Generally better pitch and rhythm
+  accuracy than oemer.
+Struggles with: Focuses on pitch and rhythm only - ignores dynamics,
+  articulation, and other symbols (usually fine for MIDI). Research-grade:
+  expect rough edges in setup and on unusual layouts.
+Instruments: Same sweet spot as oemer - single-staff parts and piano grand
+  staff. Not a good fit for large ensemble scores.
+
+Audiveris
+---------
+What it is: Mature open-source OMR engine (Java). Also what MuseScore uses
+  for PDF import.
+Best input: Cleanly engraved scores - IMSLP scans, printed editions, PDFs
+  exported from notation software. Handles multi-page PDFs and multi-part
+  scores natively.
+Recognizes: Much more notation than the other two - dynamics, articulations,
+  sometimes lyrics.
+Struggles with: Photos, handwritten music, low-resolution scans, skewed or
+  curved pages. Wants flat scans at ~300 DPI. Heavier setup (Java app).
+Instruments: Any instrument in standard staff notation, including piano,
+  chamber, and full ensemble scores - multi-part layouts are its strength.
+
+Shared limitations
+------------------
+- None handle handwritten music well.
+- None read guitar/bass tablature; standard notation only.
+- Percussion staves and unusual clefs are unreliable across all three.
+
+Quick pick
+----------
+- Clean PDF (any instrumentation)  -> Audiveris
+- Phone photo, solo part or piano  -> homr, fall back to oemer
+- Large ensemble score             -> Audiveris only

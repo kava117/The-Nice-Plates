@@ -10,3 +10,5 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: PHOTO_UPLOADS   # homr needs ~1 GB of RAM; the free plan has 512 MB. Remove this on a bigger plan.
+        value: "off"

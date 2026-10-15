@@ -35,6 +35,8 @@ google = oauth.register(
 with app.app_context():
     database.init_db()
     database.migrate()
+    if not database.getPieces(database.demoUser()):   # free hosting wipes the disk on restart: keep one piece to try
+        database.addPiece(database.demoUser(), "Air", "J. S. Bach", xml=open(app.static_folder + "/AirOnG.musicxml", "rb").read())
 
 #handles logging in/out and passing credentials when required
 login_manager = LoginManager(app)

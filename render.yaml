@@ -1,0 +1,12 @@
+# Render: New > Blueprint > this repo. One free web service, no secrets needed.
+# SQLite lives on the instance disk, so it resets on each deploy.
+services:
+  - type: web
+    name: the-nice-plates
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt -r ml/requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"

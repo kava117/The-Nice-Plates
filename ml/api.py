@@ -47,7 +47,7 @@ def add_piece():
     mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
     piece_id = database.addPiece(database.demoUser(), request.form.get("title") or src.stem,
                                  request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
-    return redirect(f"/practice.html?piece={piece_id}")
+    return redirect(f"/practice?piece={piece_id}")
 
 
 @api.get("/pieces/<int:piece_id>/musicxml")  # what the practice page renders

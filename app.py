@@ -110,9 +110,7 @@ def remember_piece(piece_id):
     if session.get("timer_started_at") is not None or session.get("timer_elapsed"):
         session["session_piece_ids"] = sorted(set(session.get("session_piece_ids", []) + [piece_id]))
 
-# ==================================================================
-# LOADING ALL OF OUR HTML PAGES
-# ================================================================== 
+
 
 #API ROUTES
 
@@ -184,7 +182,9 @@ def api_timer_stop():
     return jsonify(saved_session_id=session_id, time_spent=total, **practice_state())
 
 
-#NORMAL ROUTES
+# ==================================================================
+# LOADING ALL OF OUR HTML PAGES
+# ================================================================== 
 
 @app.route("/")
 @app.route("/index.html")

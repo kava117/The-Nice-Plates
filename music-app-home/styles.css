@@ -1055,3 +1055,68 @@ main {
     transition: none;
   }
 }
+
+/* ==========================================================================
+   Additions for index.html (guest welcome page)
+   ========================================================================== */
+
+/* 20. Welcome panel -------------------------------------------------------- */
+
+/* Same band-colored tile look as the .actions tile, sized for a welcome block. */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 560px;
+  padding: 36px 32px 40px;   /* extra bottom room for the button's press edge */
+  border-radius: var(--radius-tile);
+  background: var(--band);
+}
+
+.welcome-title {
+  font-family: var(--font-display);
+  font-size: 2rem;           /* 32px */
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.welcome-text {
+  color: var(--ink-muted);
+  font-size: 1rem;
+}
+
+/* making sure guest page is centered on the screen */
+body[data-auth="guest"] main {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+body[data-auth="guest"] .welcome {
+  align-items: center;
+  text-align: center;
+}
+
+/* Google sign-in button: a larger ghost button with the multicolor "G". */
+.btn-google {
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px 22px;
+  font-size: 0.9375rem;
+  letter-spacing: normal;
+}
+
+.btn-google svg {
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .welcome {
+    padding: 28px 20px 32px;
+  }
+
+  .welcome-title {
+    font-size: 1.625rem;
+  }
+}

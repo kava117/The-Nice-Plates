@@ -187,32 +187,27 @@ def api_timer_stop():
 # ================================================================== 
 
 @app.route("/")
-@app.route("/index.html")
+@app.route("/index")
 def index():
     return render_template("index.html")
 
-@app.route("/home.html")
-@login_required
+@app.route("/home")
 def home():
     return render_template("home.html")
 
-@app.route("/library.html")
-@login_required
+@app.route("/library")
 def library():
     return render_template("library.html")
 
-@app.route("/progress.html")
-@login_required
+@app.route("/progress")
 def progress():
     return render_template("progress.html")
 
-@app.route("/settings.html")
-@login_required
+@app.route("/settings")
 def settings():
     return render_template("settings.html")
 
-@app.route("/practice.html")
-@login_required
+@app.route("/practice")
 def practice():
     return render_template("practice.html")
 

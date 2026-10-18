@@ -21,11 +21,10 @@
         </ul>
       </nav>
 
-      <!-- TODO: link to the Account page; a later step fills the name and initials from the account. -->
-      <a class="account press" href="/settings" aria-label="Account: Sample User">
-        <span class="avatar" aria-hidden="true"><span data-user-initials>SU</span></span>
+      <a class="account press" href="/settings" aria-label="Account: {{ me.name }}">
+        <span class="avatar" aria-hidden="true"><span data-user-initials>{% for w in me.name.split()[:2] %}{{ w[0] }}{% endfor %}</span></span>
         <span class="account-text">
-          <span class="account-name" data-user-name>Sample User</span>
+          <span class="account-name" data-user-name>{{ me.name }}</span>
           <span class="account-role">Account</span>
         </span>
       </a>

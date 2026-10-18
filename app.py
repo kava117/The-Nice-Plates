@@ -65,7 +65,8 @@ def user_id():
 # Makes {{ year }} available to every template (used by footer.html).
 @app.context_processor
 def inject_year():
-    return {"year": date.today().year}
+    me = current_user if current_user.is_authenticated else database.getUserById(database.demoUser())
+    return {"year": date.today().year, "me": me}
 
 
 # 

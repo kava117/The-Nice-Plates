@@ -1,5 +1,5 @@
 """The ml tools as a web API.   Run alone: python ml/api.py   (port 8002)"""
-import os, sys, tempfile
+import logging, os, sys, tempfile
 from io import BytesIO
 from pathlib import Path
 
@@ -76,6 +76,7 @@ def add_piece():
         xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, Path(tempfile.mkdtemp()))
         mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
     except Exception:
+        logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
         return redirect(f"/library?error=Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")
     piece_id = database.addPiece(user_id(), request.form.get("title") or src.stem,
                                  request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())

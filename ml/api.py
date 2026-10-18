@@ -51,8 +51,8 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
         src = src.with_suffix(".png"); src.write_bytes(fitz.open(src.with_suffix(".pdf"))[0].get_pixmap(dpi=200).tobytes("png"))
     image = {"type": "base64", "media_type": "image/png" if src.suffix.lower() == ".png" else "image/jpeg",
              "data": base64.standard_b64encode(src.read_bytes()).decode()}
-    headers = {"anthropic-workspace-id": os.environ["ANTHROPIC_WORKSPACE_ID"]} if os.environ.get("ANTHROPIC_WORKSPACE_ID") else {}  # keys made outside a workspace need this
-    with anthropic.Anthropic(default_headers=headers).beta.messages.stream(
+    key, workspace = (os.environ.get(k, "").strip() for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"))  # pasted values often end in a newline
+    with anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {}).beta.messages.stream(
         model=os.environ.get("CLAUDE_MODEL", "claude-sonnet-5-5"), max_tokens=64000,
         betas=["server-side-fallback-2026-07-01"], fallbacks="default",
         messages=[{"role": "user", "content": [{"type": "image", "source": image},

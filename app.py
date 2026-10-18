@@ -220,15 +220,17 @@ def practice():
 
 @app.route("/login/google")
 def login_google():
-    if not google.client_id:   # no Google keys set: enter as the shared demo user
+    try:
+        return google.authorize_redirect(url_for("auth_google", _external=True)) if google.client_id else redirect(url_for("home"))
+    except Exception:   # no Google keys, or Google unreachable: enter as the shared demo user
         return redirect(url_for("home"))
-    redirect_uri = url_for("auth_google", _external=True)
-    return google.authorize_redirect(redirect_uri)
 
 @app.route("/auth/google")
 def auth_google():
-    token = google.authorize_access_token()
-    info = token["userinfo"]
+    try:
+        info = google.authorize_access_token()["userinfo"]
+    except Exception:   # cancelled, expired or misconfigured sign-in: enter as the shared demo user
+        return redirect(url_for("home"))
     row = database.getOrCreateGoogleUser(
         sub=info["sub"],
         name=info.get("name") or info["email"].split("@")[0],  # Users.name is NOT NULL

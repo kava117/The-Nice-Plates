@@ -10,18 +10,20 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 |---|---|
 | Google sign-in / sign-out | Works if you've set the Google keys, otherwise you're in demo mode |
 | Library | Works, shows your pieces |
-| Uploading (PDF, PNG/JPG, MusicXML) | Works once the ML stuff is installed, saves MusicXML + MIDI |
+| Uploading (PDF, PNG/JPG, MusicXML) | Works, saves MusicXML + MIDI. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece |
 | Practice timer + session logging | Back end's done, but nothing on the front end uses it yet. Also needs a real login |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
 | Home tiles + stats | Mock-up |
 | Progress charts | Mock-up |
-| Settings | Mock-up, none of the controls do anything yet |
+| Settings | Shows your account and signs you out; the rest is mock-up |
 | Library density toggle | Buttons show up but don't do anything |
 | Sections, Recordings | Tables exist in the database, that's it |
 
 ## How it all fits together
+
+![](docs/system.svg)
 
 It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. There's no background worker, so if a conversion takes a while, the page just sits there loading until it's done.
 
@@ -38,6 +40,7 @@ Whatever you upload gets picked up at the right step for its file type and comes
 |---|---|
 | `.pdf` | each page gets turned into an image at 300 DPI → homr reads each page → pages get merged → MIDI |
 | `.png`, `.jpg`, `.jpeg` | homr reads the image → MIDI |
+| any of those, with `PHOTO_UPLOADS=off` | Claude reads the image instead of homr (first page of a PDF) → MIDI |
 | `.musicxml`, `.xml`, `.mxl` | already good to go → MIDI |
 
 Couple things to know:
@@ -46,6 +49,20 @@ Couple things to know:
 - You can run the converter on its own too:
   `python fileConversion/pdfToMidi.py INPUT [-o OUT] [--keep-intermediates]`
 - `fileConversion/notes.txt` has our notes comparing oemer, homr, and Audiveris.
+
+## Running it on Render (free tier)
+
+The free box has 512 MB, which is not enough for homr, so photos go to Claude instead. Set these in the Render dashboard (it does not read them from `render.yaml`) and press Manual Deploy after each push.
+
+| Variable | Why |
+|---|---|
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SECRET_KEY` | Google sign-in; without them everyone is `Sample User` |
+| `FORWARDED_ALLOW_IPS=*` | so the sign-in redirect is built as https behind Render's proxy |
+| `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
+| `ANTHROPIC_API_KEY` | needed for that; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
+| `CLAUDE_MODEL` | optional, default `claude-sonnet-5-5` (about 3 cents a page) |
+
+The SQLite file lives on the instance disk, which Render wipes on every deploy, so accounts and uploads do not survive a restart.
 
 ## Where stuff lives
 

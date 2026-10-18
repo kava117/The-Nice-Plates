@@ -43,15 +43,37 @@ def pieces():
     return jsonify(database.getPieces(user_id()))
 
 
+def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KEY a vision model writes the MusicXML instead
+    import base64, anthropic
+    from music21 import converter
+    if src.suffix.lower() == ".pdf":
+        import fitz
+        src = src.with_suffix(".png"); src.write_bytes(fitz.open(src.with_suffix(".pdf"))[0].get_pixmap(dpi=200).tobytes("png"))
+    image = {"type": "base64", "media_type": "image/png" if src.suffix.lower() == ".png" else "image/jpeg",
+             "data": base64.standard_b64encode(src.read_bytes()).decode()}
+    headers = {"anthropic-workspace-id": os.environ["ANTHROPIC_WORKSPACE_ID"]} if os.environ.get("ANTHROPIC_WORKSPACE_ID") else {}  # keys made outside a workspace need this
+    with anthropic.Anthropic(default_headers=headers).beta.messages.stream(
+        model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,
+        betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+        messages=[{"role": "user", "content": [{"type": "image", "source": image},
+                  {"type": "text", "text": "Transcribe this sheet music as complete MusicXML (score-partwise, every note and rest, correct key and time signature). Reply with only the XML."}]}],
+    ) as stream:
+        text = stream.get_final_message().content[-1].text
+    xml = src.with_suffix(".musicxml")
+    xml.write_text(text[text.index("<"):text.rindex(">") + 1])
+    converter.parse(xml)  # unreadable output raises, and the upload form says so
+    return xml
+
 @api.post("/pieces")  # the library's upload form: sheet music in, saved to Pieces as MusicXML + MIDI
 def add_piece():
     from easyParts import musicxml_to_midi
     from pdfToMidi import _to_musicxml
     src = save_upload()
-    if src.suffix.lower() in (".pdf", ".png", ".jpg", ".jpeg") and os.environ.get("PHOTO_UPLOADS") == "off":
+    photo = src.suffix.lower() in (".pdf", ".png", ".jpg", ".jpeg")
+    if photo and os.environ.get("PHOTO_UPLOADS") == "off" and not os.environ.get("ANTHROPIC_API_KEY"):
         return redirect("/library?error=Reading photos and PDFs needs about 1 GB of memory, more than this free server has. Upload a MusicXML file here, or run the site on a laptop.")
     try:
-        xml = _to_musicxml(src, Path(tempfile.mkdtemp()))
+        xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, Path(tempfile.mkdtemp()))
         mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
     except Exception:
         return redirect(f"/library?error=Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")

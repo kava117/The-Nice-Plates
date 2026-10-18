@@ -53,7 +53,7 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
              "data": base64.standard_b64encode(src.read_bytes()).decode()}
     headers = {"anthropic-workspace-id": os.environ["ANTHROPIC_WORKSPACE_ID"]} if os.environ.get("ANTHROPIC_WORKSPACE_ID") else {}  # keys made outside a workspace need this
     with anthropic.Anthropic(default_headers=headers).beta.messages.stream(
-        model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,
+        model=os.environ.get("CLAUDE_MODEL", "claude-sonnet-5-5"), max_tokens=64000,
         betas=["server-side-fallback-2026-07-01"], fallbacks="default",
         messages=[{"role": "user", "content": [{"type": "image", "source": image},
                   {"type": "text", "text": "Transcribe this sheet music as complete MusicXML (score-partwise, every note and rest, correct key and time signature). Reply with only the XML."}]}],

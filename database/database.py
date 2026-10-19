@@ -22,7 +22,22 @@ def get_db():
 
 #New changes to the database go here (adding columns, new tables, etc.)
 MIGRATIONS = [
-
+    "CREATE TABLE Classes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, date_created DATETIME DEFAULT CURRENT_TIMESTAMP)",
+    """CREATE TABLE Teaches (
+        class_id INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+        teacher_id INTEGER NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+        PRIMARY KEY (class_id, teacher_id))""",
+    """CREATE TABLE Learns (
+        class_id INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+        student_id INTEGER NOT NULL REFERENCES Users(id) ON DELETE CASCADE,
+        PRIMARY KEY (class_id, student_id))""",
+    """CREATE TABLE ClassPieces (
+        class_id INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+        piece_id INTEGER NOT NULL REFERENCES Pieces(id) ON DELETE CASCADE,
+        PRIMARY KEY (class_id, piece_id))""",
+    "CREATE INDEX Index_Teaches_Teacher_Id ON Teaches(teacher_id)",
+    "CREATE INDEX Index_Learns_Student_Id ON Learns(student_id)",
+    "CREATE INDEX Index_ClassPieces_Piece_Id ON ClassPieces(piece_id)",
 ]
 
 def migrate():

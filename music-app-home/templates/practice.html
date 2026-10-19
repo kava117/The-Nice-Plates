@@ -11,6 +11,8 @@
   <button id="cursor-reset">Reset</button>
   <button id="zoom-in">+</button>
   <button id="zoom-out">-</button>
+  <button id="timer">Start practice</button> <span id="clock"></span>
+  <button id="record">Record</button> <span id="take"></span>
 </div>
 
 <div id="score"></div>
@@ -67,6 +69,43 @@
   });
 
   loadSong(SONG_URL);
+
+  // ---- Practice timer: saves a row in Sessions on stop ----
+  const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }).then(r => r.json());
+  if (piece) post("/api/practice/piece", { piece_id: +piece });   // the saved session remembers which piece it was
+  const timer = document.getElementById("timer"), clock = document.getElementById("clock");
+  let running = false, tick;
+  timer.addEventListener("click", async () => {
+    const state = await post(running ? "/api/timer/stop" : "/api/timer/start");
+    running = state.running;
+    clearInterval(tick);
+    timer.textContent = running ? "Stop and save" : "Start practice";
+    if (running) tick = setInterval(() => { state.elapsed++; clock.textContent = `${Math.floor(state.elapsed / 60)}:${String(state.elapsed % 60).padStart(2, "0")}`; }, 1000);
+    else clock.textContent = state.saved_session_id ? `Saved ${state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min"}` : "";
+  });
+
+  // ---- Record a take: saves the audio in Recordings ----
+  const record = document.getElementById("record"), take = document.getElementById("take");
+  let recorder;
+  record.addEventListener("click", async () => {
+    if (!piece) { take.textContent = "Open a piece from the library to record it"; return; }
+    if (recorder) { recorder.stop(); return; }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      recorder = null;
+      record.textContent = "Record";
+      const form = new FormData();
+      form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
+      const saved = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form }).then(r => r.json());
+      take.innerHTML = `Take ${saved.id} saved <audio controls src="/api/recordings/${saved.id}"></audio>`;
+    };
+    recorder.start();
+    record.textContent = "Stop recording";
+  });
 </script>
 
 {% include "footer.html" %}

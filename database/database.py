@@ -142,7 +142,7 @@ def getOrCreateGoogleUser(sub, name, email, email_verified=False):
 def getPieces(user_id):
     with get_db() as database:
         rows = database.execute(
-            "SELECT id, title, composer, bpm FROM Pieces WHERE user_id = ? ",
+            "SELECT id, title, composer, bpm FROM Pieces WHERE user_id = ? ORDER BY COALESCE(last_viewed, date_created) DESC, id DESC",
             (user_id,),
         ).fetchall()
         return [dict(row) for row in rows]
@@ -227,6 +227,30 @@ def addSession(user_id, time_spent, notes=None, piece_ids=()):
             [(session_id, pid) for pid in set(piece_ids)],
         )
         return session_id #use this to reference the session in any next steps
+
+def touchPiece(piece_id):
+    with get_db() as database:
+        database.execute("UPDATE Pieces SET last_viewed = CURRENT_TIMESTAMP WHERE id = ?", (piece_id,))
+
+def getPieceSeconds(user_id):
+    """seconds practiced per piece, from the sessions that referenced it"""
+    with get_db() as database:
+        rows = database.execute(
+            "SELECT sp.piece_id, SUM(s.time_spent) AS seconds FROM Session_Pieces sp JOIN Sessions s ON s.id = sp.session_id WHERE s.user_id = ? GROUP BY sp.piece_id",
+            (user_id,),
+        ).fetchall()
+        return {row["piece_id"]: row["seconds"] for row in rows}
+
+def addRecording(piece_id, audio):
+    with get_db() as database:
+        return database.execute("INSERT INTO Recordings (piece_id, audio) VALUES (?, ?)", (piece_id, audio)).lastrowid
+
+def getRecording(user_id, recording_id):
+    with get_db() as database:
+        return database.execute(
+            "SELECT r.audio FROM Recordings r JOIN Pieces p ON p.id = r.piece_id WHERE r.id = ? AND p.user_id = ?",
+            (recording_id, user_id),
+        ).fetchone()
 
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""

@@ -15,6 +15,8 @@ python app.py                         # the site on :8001, API included
 | `POST /api/pieces` | the library's upload form: sheet, `title`, `composer` | saved to Pieces, then the practice page |
 | `GET /api/pieces` | | the library as JSON |
 | `GET /api/pieces/ID/musicxml` | | the stored MusicXML, which the practice page renders |
+| `POST /api/pieces/ID/recordings` | an audio take | saved to Recordings |
+| `GET /api/recordings/ID` | | that take, for playback |
 | `POST /api/midi` | sheet | MIDI, nothing saved |
 | `POST /api/transcribe` | recording | transcript + tempo / key / time, nothing saved |
 

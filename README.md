@@ -12,14 +12,15 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Library | Works, shows your pieces |
 | Uploading (PDF, PNG/JPG, MusicXML) | Works, saves MusicXML + MIDI. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece |
-| Practice timer + session logging | Back end's done, but nothing on the front end uses it yet. Also needs a real login |
+| Practice timer + session logging | Start practice / Stop and save on the practice page writes a `Sessions` row |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
-| Home tiles + stats | Mock-up |
-| Progress charts | Mock-up |
+| Home tiles + stats | Your three most recently opened pieces, minutes on each, total time, day streak |
+| Progress charts | This week's minutes per day, cumulative time, pieces practiced vs in the library |
 | Settings | Shows your account and signs you out; the rest is mock-up |
 | Library density toggle | Buttons show up but don't do anything |
-| Sections, Recordings | Tables exist in the database, that's it |
+| Recordings | Record on the practice page saves a take to `Recordings` and plays it back |
+| Sections | Table exists in the database, that's it |
 
 ## How it all fits together
 

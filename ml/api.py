@@ -86,7 +86,20 @@ def add_piece():
 @api.get("/pieces/<int:piece_id>/musicxml")  # what the practice page renders
 def piece_xml(piece_id):
     database.getPieceForUser(user_id(), piece_id) or abort(404)
+    database.touchPiece(piece_id)  # the home page shows the three most recently opened
     return send_file(BytesIO(database.getXML(piece_id)["xml"]), mimetype="application/xml")
+
+
+@api.post("/pieces/<int:piece_id>/recordings")  # the practice page's Record button
+def add_recording(piece_id):
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    return jsonify(id=database.addRecording(piece_id, request.files["file"].read()))
+
+
+@api.get("/recordings/<int:recording_id>")
+def play_recording(recording_id):
+    row = database.getRecording(user_id(), recording_id) or abort(404)
+    return send_file(BytesIO(row["audio"]), mimetype="audio/webm")
 
 
 if __name__ == "__main__":

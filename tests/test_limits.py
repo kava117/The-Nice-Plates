@@ -336,3 +336,10 @@ def test_text_process(said, expect):
     from ml import text
     got = text.process(said)
     assert {k: got[k] for k in expect} == expect
+
+
+# ---------------------------------------------------------------- playback (player.js)
+@pytest.mark.parametrize("path", ["/player.js", "/Tone.js", "/samples/piano/C4.mp3", "/samples/piano/Fs7.mp3", "/samples/piano/A0.mp3"])
+def test_player_files_are_served(guest, path):
+    r = guest.get(path)
+    assert r.status_code == 200 and len(r.data) > 1000

@@ -12,6 +12,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Library | Works, shows your pieces |
 | Uploading (PDF, PNG/JPG, MusicXML) | Works, up to 20 MB, saves MusicXML + MIDI. Other file types are turned away. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece |
+| Playback | ▶ Play on the practice page plays the score on a piano sound, cursor following, from wherever the cursor is; tempo slider. Plays from the MusicXML (repeats included), not the stored MIDI |
 | Practice timer + session logging | Start / Pause / Stop and save on the practice page writes a `Sessions` row. Leaving the page pauses it; each timer saves once, and runs over 4 h aren't saved |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
@@ -75,7 +76,7 @@ The SQLite file lives on the instance disk, which Render wipes on every deploy, 
 | `ml/api.py` | The `/api` routes for pieces, MIDI conversion, and transcription |
 | `ml/text.py` | Pulls tempo, key, and time signature out of transcribed speech |
 | `fileConversion/pdfToMidi.py` | The sheet music → MusicXML/MIDI converter (also works as a CLI) |
-| `music-app-home/` | Static files (`styles.css`, scripts, images) |
+| `music-app-home/` | Static files (`styles.css`, scripts, images). `player.js` plays the score; `Tone.js` (MIT) and `samples/piano/` (Salamander Grand, CC BY 3.0) are vendored for it |
 | `render.yaml` | Render deploy config |
 
 ## Running it locally

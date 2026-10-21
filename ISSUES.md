@@ -15,6 +15,8 @@ Results of a full test pass on `main` at `a98b67f` (2026-10-21). It covered:
 ## Fix first
 
 ### 1. Anyone can sign in as any user
+**Fixed** on `bug-fixes` (335564e). Still to do: check `SECRET_KEY` is set in the Render dashboard.
+
 `app.py:23` falls back to `SECRET_KEY = "dev-only"`, and `render.yaml` sets no `SECRET_KEY`. Its comment even says "no secrets needed". With the public key, anyone can sign their own session cookie. The test made a cookie for another user's id and read their library.
 
 **Fix**
@@ -22,6 +24,8 @@ Results of a full test pass on `main` at `a98b67f` (2026-10-21). It covered:
 - In `app.py`, refuse to start without a real key when deployed. For example, raise if `SECRET_KEY` is unset and `RENDER` is set.
 
 ### 2. One photo upload freezes the whole site
+**Short-term half fixed** on `bug-fixes` (40b0515): 4 threads, and one conversion at a time. The background queue is still to do.
+
 Render runs a single sync gunicorn worker. Reading one page with homr took 35 s, and during that time another visitor's `/home` took 34.6 s. The Claude path blocks the same way. Any request over 300 s is killed and the user gets an error page.
 
 **Fix**
@@ -29,6 +33,8 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 - Longer term: run the conversion in the background. Save the piece as "processing", return straight away, and have the practice page poll until it's ready.
 
 ### 3. Render's `PHOTO_UPLOADS=off` guard can be bypassed, which crashes the server
+**Fixed** on `bug-fixes` (3fbe9ad).
+
 `ml/api.py:72` only checks for `.pdf/.png/.jpg/.jpeg`. Anything else falls through to `_to_musicxml`, and its `else` branch sends unknown file types to homr. That includes `.gif`, `.webp`, iPhone `.HEIC`, `.txt` and files with no extension. homr peaked at **963 MB** on one page, and the free plan has 512 MB. This was confirmed on a real server: a `.gif` ran homr with the guard on. `/api/midi` (`ml/api.py:29`) ignores the guard entirely.
 
 **Fix**
@@ -37,6 +43,8 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 - Apply the same `PHOTO_UPLOADS` check to `/api/midi`, or remove that route if nothing uses it.
 
 ### 4. Practice time can't be trusted
+**Fixed** on `bug-fixes` (3816acb). Over-4 h sessions are dropped (`OVER_CAP` in `app.py`) until the team decides.
+
 - Leaving the practice page doesn't pause the timer. It keeps counting in the cookie.
 - After a page reload the button says "Start practice" while the server is still counting. `practice.html:77` starts with `running = false` and never asks the server.
 - A timer left running overnight saves as a 30-hour session.
@@ -49,6 +57,8 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 - Prevent double saves: store a random `timer_id` in the session at start, and save it with the row under a unique constraint, or keep the timer in the database instead of the cookie.
 
 ### 5. "Log out" in the top bar doesn't log out
+**Fixed** on `bug-fixes` (289d0b5). Logout is still a link, not a POST.
+
 `header.html:38` links to `/index`, so the user stays signed in. Guests also see "Log out".
 
 **Fix**
@@ -76,8 +86,8 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 
 | Request | Cause | Fix |
 |---|---|---|
-| Upload with an empty filename | `save_upload` (`ml/api.py:21`) tries to save to a directory | Reject `not upload.filename` with a 400 or a library error message. |
-| `/api/midi` with an unsupported type | `convert` raises `ValueError` | Catch it and return a 400 with the message. |
+| ~~Upload with an empty filename~~ **Fixed** | `save_upload` (`ml/api.py:21`) tries to save to a directory | Reject `not upload.filename` with a 400 or a library error message. |
+| ~~`/api/midi` with an unsupported type~~ **Fixed** | `convert` raises `ValueError` | Catch it and return a 400 with the message. |
 | `/api/transcribe` with no `OPENAI_API_KEY` | `OpenAIError` | Check the key first and return 503 "transcription not configured". |
 | `piece_id` = 10³⁰ | SQLite `OverflowError` | In `read_id`, reject ids outside 1…2⁶³−1. |
 | Timer notes sent as an object | SQLite can't store a dict | Accept a string only and cap its length (e.g. 2,000 characters). |
@@ -89,10 +99,10 @@ Also add an app-wide `@app.errorhandler(500)` that shows a friendly page instead
 
 ## Will cause trouble later
 
-- **No upload size limit.** One big file can fill memory or disk on a 512 MB box. Set `app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024` and handle `413`.
-- **Temp files are never deleted.** Each upload leaves 2 folders from `tempfile.mkdtemp()`. Use `tempfile.TemporaryDirectory()` as a context manager in `save_upload` and `add_piece`.
+- **Fixed:** ~~**No upload size limit.**~~ One big file can fill memory or disk on a 512 MB box. Set `app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024` and handle `413`.
+- **Fixed:** ~~**Temp files are never deleted.**~~ Each upload leaves 2 folders from `tempfile.mkdtemp()`. Use `tempfile.TemporaryDirectory()` as a context manager in `save_upload` and `add_piece`.
 - **Empty recordings are saved.** Reject zero-byte files with a 400.
-- **A `#` in a filename cuts the error message short.** For example `etude #3.xml` becomes "Could not read etude". Build the redirect with `url_for("library", error=msg)` so the message is URL-encoded.
+- **Fixed:** ~~**A `#` in a filename cuts the error message short.**~~ For example `etude #3.xml` becomes "Could not read etude". Build the redirect with `url_for("library", error=msg)` so the message is URL-encoded.
 - **The demo account is shared.** Logged-out visitors can read and change the demo user's pieces, sessions and recordings, and recording ids are sequential. Once Google sign-in is live, consider making the demo read-only.
 - **`ml/text.py` misses phrases:**
   - "two two time" and "cut time" aren't recognised; add `two` to the denominator group.

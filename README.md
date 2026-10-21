@@ -10,9 +10,9 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 |---|---|
 | Google sign-in / sign-out | Works if you've set the Google keys, otherwise you're in demo mode |
 | Library | Works, shows your pieces |
-| Uploading (PDF, PNG/JPG, MusicXML) | Works, saves MusicXML + MIDI. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
+| Uploading (PDF, PNG/JPG, MusicXML) | Works, up to 20 MB, saves MusicXML + MIDI. Other file types are turned away. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece |
-| Practice timer + session logging | Start practice / Stop and save on the practice page writes a `Sessions` row |
+| Practice timer + session logging | Start / Pause / Stop and save on the practice page writes a `Sessions` row. Leaving the page pauses it; each timer saves once, and runs over 4 h aren't saved |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
 | Home tiles + stats | Your three most recently opened pieces, minutes on each, total time, day streak |
@@ -173,18 +173,16 @@ If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's
 ## Known issues
 
 **Priority**
-- `/api/transcribe` and `/api/midi` don't need a login and don't have an upload size limit, so anyone could burn through our OpenAI credits or bog down the server.
+- `/api/transcribe` and `/api/midi` don't need a login, so anyone could burn through our OpenAI credits.
 
 **Also Problems**
 - Nothing on the front end calls the timer/practice API yet. Plus those routes need a real login while the live site is in demo mode, so practice time never actually gets saved.
-- The "Log out" button goes to `/index` instead of `/logout`, so you don't actually get logged out.
 - The sidebar always says "Sample User" no matter who's signed in.
 - Every page is public, and all guests share the demo account, so if one guest uploads something, every guest sees it.
 - If an upload fails, you just get a plain 500 page with no explanation.
-- OMR runs during the request on a free Render instance, so it might hit the 300 s timeout or run out of memory (haven't tested this yet).
+- OMR runs during the request, one upload at a time, so a queue of uploads can hit the 300 s timeout (haven't tested this on Render yet).
 - The ML and conversion requirements aren't pinned.
 - The database on Render gets wiped every deploy.
-- Temp upload folders never get cleaned up.
 - Going to `/auth/google` without Google keys, or hitting "deny" on the Google screen, crashes instead of redirecting.
 - `niceplates.db` is opened relative to wherever you run the app from, so starting it from a different folder quietly gives you a brand new empty database.
 - `ml/README.md` is out of date (it still says Google login isn't done).

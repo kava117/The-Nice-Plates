@@ -130,3 +130,19 @@ def test_two_uploads_at_once_convert_one_at_a_time(monkeypatch):
     for u in uploads: u.start()
     for u in uploads: u.join()
     assert most[0] == 1
+
+
+# ---------------------------------------------------------------- 4. Log out link
+def test_log_out_in_the_top_bar_signs_you_out(user):
+    client, uid = user
+    db.addPiece(uid, "Only mine", xml=AIR)
+    assert 'href="/logout">Log out' in client.get("/library").get_data(as_text=True)
+    client.get("/logout")
+    page = client.get("/library").get_data(as_text=True)
+    assert "Only mine" not in page and "Sign in with Google" in page and ">Log out<" not in page
+
+
+def test_guest_never_sees_log_out(guest):
+    for path in ("/home", "/library", "/settings", "/practice"):
+        page = guest.get(path).get_data(as_text=True)
+        assert ">Log out<" not in page and 'href="/logout"' not in page and 'href="/login/google"' in page

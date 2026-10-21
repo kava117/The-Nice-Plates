@@ -40,7 +40,6 @@ def test_demo_piece_seeded_once_across_restarts():
     airs = [p for p in db.getPieces(db.demoUser()) if p["title"] == "Air"]
     assert len(airs) == 1
 
-@known("Fix first #5: top-bar Log out links to /index")
 def test_top_bar_log_out_link_signs_you_out(user):
     client, _ = user
     html = client.get("/home").get_data(as_text=True)

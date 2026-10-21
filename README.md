@@ -2,7 +2,7 @@
 
 Flask web app for practicing music. You upload your sheet music, it gets turned into a score you can practice in the browser, and eventually it'll keep track of how much time you put in.
 
-Right now three things work(ish): signing in with Google, uploading a piece to your library, and opening it on the practice page. Home, Progress, and Settings are still mock-ups with fake data for now. There's a full rundown below.
+Right now three things work(ish): signing in with Google, uploading a piece to your library, and opening it on the practice page. Dashboard, Progress, and Settings are still mock-ups with fake data for now. There's a full rundown below.
 
 ## What works and what doesn't 
 
@@ -15,7 +15,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Practice timer + session logging | Back end's done, but nothing on the front end uses it yet. Also needs a real login |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
-| Home tiles + stats | Mock-up |
+| Dashboard tiles + stats | Mock-up |
 | Progress charts | Mock-up |
 | Settings | Mock-up, none of the controls do anything yet |
 | Library density toggle | Buttons show up but don't do anything |
@@ -86,7 +86,7 @@ You don't need any secrets to get it running. Each one just turns on a feature. 
 | Variable | What it's for | If you leave it out |
 |---|---|---|
 | `SECRET_KEY` | Signs the session cookie | Uses `"dev-only"`, which is fine locally but not anywhere else |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Demo mode, sign-in just drops you on `/home` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Demo mode, sign-in just drops you on `/dashboard` |
 | `OPENAI_API_KEY` | `/api/transcribe` | That route won't work |
 | `PORT` | Port on Render | Runs on 8001 locally |
 
@@ -148,7 +148,7 @@ If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's
 
 **Also Problems**
 - Nothing on the front end calls the timer/practice API yet. Plus those routes need a real login while the live site is in demo mode, so practice time never actually gets saved.
-- The "Log out" button goes to `/index` instead of `/logout`, so you don't actually get logged out.
+- The "Log out" button goes to `/landing` instead of `/logout`, so you don't actually get logged out.
 - The sidebar always says "Sample User" no matter who's signed in.
 - Every page is public, and all guests share the demo account, so if one guest uploads something, every guest sees it.
 - If an upload fails, you just get a plain 500 page with no explanation.

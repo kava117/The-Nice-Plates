@@ -872,7 +872,7 @@ main {
   --art-h: 14rem;
 }
 
-/* 17. Library grid (4 columns, more compact tiles than the home .tiles) --- */
+/* 17. Library grid (4 columns, more compact tiles than the dashboard .tiles) --- */
 
 .library-grid {
   display: grid;
@@ -893,7 +893,7 @@ main {
 }
 
 /* Smaller progress badge for the compact grid tiles (the default .progress
-   is sized for the wider piece tiles on home.html). */
+   is sized for the wider piece tiles on dashboard.html). */
 .progress--sm {
   width: 56px;
   height: 24px;
@@ -1066,7 +1066,7 @@ main {
 }
 
 /* ==========================================================================
-   Additions for index.html (guest welcome page)
+   Additions for landing.html (guest welcome page)
    ========================================================================== */
 
 /* 20. Welcome panel -------------------------------------------------------- */

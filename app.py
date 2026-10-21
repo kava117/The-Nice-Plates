@@ -55,7 +55,7 @@ def load_user(user_id):
 def unauthorized():
     if request.path.startswith("/api/"):
         return jsonify(error="login required"), 401
-    return redirect(url_for("index"))
+    return redirect(url_for("landing"))
 
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
@@ -192,13 +192,13 @@ def api_timer_stop():
 # ================================================================== 
 
 @app.route("/")
-@app.route("/index")
-def index():
-    return render_template("index.html")
+@app.route("/landing")
+def landing():
+    return render_template("landing.html")
 
-@app.route("/home")
-def home():
-    return render_template("home.html")
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 @app.route("/library")
 def library():
@@ -219,7 +219,7 @@ def practice():
 @app.route("/login/google")
 def login_google():
     if not google.client_id:   # no Google keys set: enter as the shared demo user
-        return redirect(url_for("home"))
+        return redirect(url_for("dashboard"))
     redirect_uri = url_for("auth_google", _external=True)
     return google.authorize_redirect(redirect_uri)
 
@@ -235,13 +235,13 @@ def auth_google():
     )
     clear_practice_state()
     login_user(User(row))
-    return redirect(url_for("home"))
+    return redirect(url_for("dashboard"))
 
 @app.route("/logout")
 def logout():
     logout_user()
     clear_practice_state()
-    return redirect(url_for("index"))
+    return redirect(url_for("landing"))
 
 
 if __name__ == "__main__":

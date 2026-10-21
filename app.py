@@ -196,9 +196,9 @@ def api_timer_stop():
 def index():
     return render_template("index.html")
 
-@app.route("/home")
-def home():
-    return render_template("home.html")
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 @app.route("/library")
 def library():
@@ -219,7 +219,7 @@ def practice():
 @app.route("/login/google")
 def login_google():
     if not google.client_id:   # no Google keys set: enter as the shared demo user
-        return redirect(url_for("home"))
+        return redirect(url_for("dashboard"))
     redirect_uri = url_for("auth_google", _external=True)
     return google.authorize_redirect(redirect_uri)
 
@@ -235,7 +235,7 @@ def auth_google():
     )
     clear_practice_state()
     login_user(User(row))
-    return redirect(url_for("home"))
+    return redirect(url_for("dashboard"))
 
 @app.route("/logout")
 def logout():

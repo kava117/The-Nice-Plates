@@ -148,7 +148,7 @@ If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's
 
 **Also Problems**
 - Nothing on the front end calls the timer/practice API yet. Plus those routes need a real login while the live site is in demo mode, so practice time never actually gets saved.
-- The "Log out" button goes to `/index` instead of `/logout`, so you don't actually get logged out.
+- The "Log out" button goes to `/landing` instead of `/logout`, so you don't actually get logged out.
 - The sidebar always says "Sample User" no matter who's signed in.
 - Every page is public, and all guests share the demo account, so if one guest uploads something, every guest sees it.
 - If an upload fails, you just get a plain 500 page with no explanation.

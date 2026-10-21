@@ -55,7 +55,7 @@ def load_user(user_id):
 def unauthorized():
     if request.path.startswith("/api/"):
         return jsonify(error="login required"), 401
-    return redirect(url_for("index"))
+    return redirect(url_for("landing"))
 
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
@@ -192,9 +192,9 @@ def api_timer_stop():
 # ================================================================== 
 
 @app.route("/")
-@app.route("/index")
-def index():
-    return render_template("index.html")
+@app.route("/landing")
+def landing():
+    return render_template("landing.html")
 
 @app.route("/dashboard")
 def dashboard():
@@ -241,7 +241,7 @@ def auth_google():
 def logout():
     logout_user()
     clear_practice_state()
-    return redirect(url_for("index"))
+    return redirect(url_for("landing"))
 
 
 if __name__ == "__main__":

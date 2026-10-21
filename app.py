@@ -20,7 +20,10 @@ app = Flask(
     template_folder="music-app-home/templates",
 )
 app.register_blueprint(api)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-only")
+secret = os.environ.get("SECRET_KEY")
+if not secret and os.environ.get("RENDER"):   # Render sets RENDER; "dev-only" is public, so anyone could sign in as anyone
+    raise RuntimeError("SECRET_KEY is not set. Add it in the Render dashboard under Environment.")
+app.secret_key = secret or "dev-only"   # fine on a laptop only
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_HTTPONLY=True)
 portNum = 8001
 

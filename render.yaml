@@ -1,4 +1,5 @@
-# Render: New > Blueprint > this repo. One free web service, no secrets needed.
+# Render: New > Blueprint > this repo. One free web service. Blueprint generates SECRET_KEY;
+# a service made by hand needs SECRET_KEY set in the dashboard, or the app refuses to start.
 # SQLite lives on the instance disk, so it resets on each deploy.
 services:
   - type: web
@@ -10,5 +11,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: SECRET_KEY   # signs login cookies; made once and kept across deploys
+        generateValue: true
       - key: PHOTO_UPLOADS   # homr needs ~1 GB of RAM; the free plan has 512 MB. Remove this on a bigger plan.
         value: "off"

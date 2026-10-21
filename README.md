@@ -57,7 +57,8 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 
 | Variable | Why |
 |---|---|
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SECRET_KEY` | Google sign-in; without them everyone is `Sample User` |
+| `SECRET_KEY` | **Required.** Signs login cookies; the app refuses to start on Render without it. A Blueprint generates it; otherwise make one with `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in; without them everyone is `Sample User` |
 | `FORWARDED_ALLOW_IPS=*` | so the sign-in redirect is built as https behind Render's proxy |
 | `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
 | `ANTHROPIC_API_KEY` | needed for that; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
@@ -97,13 +98,22 @@ The app still starts up if you skip the ML install. The pages will load, but upl
 
 You can also run `ml/api.py` by itself on port 8002 with `python ml/api.py`.
 
+### Tests
+
+```bash
+pip install -r requirements.txt -r ml/requirements.txt -r requirements-dev.txt
+python -m pytest tests/
+```
+
+The tests use a throwaway database in a temp folder and ignore your `.env`. `tests/test_limits.py` marks known bugs as expected failures (`xfail`, with the `ISSUES.md` entry). When you fix one, its test starts failing with `XPASS(strict)`. That's the cue to delete the `@known(...)` marker.
+
 ## Config
 
-You don't need any secrets to get it running. Each one just turns on a feature. Put them in a `.env` file in the project root (it's git-ignored, so please don't commit it).
+You don't need any secrets to run it locally. Each one just turns on a feature. Copy `.env.example` to `.env` in the project root and fill in what you need (`.env` is git-ignored, so please don't commit it).
 
 | Variable | What it's for | If you leave it out |
 |---|---|---|
-| `SECRET_KEY` | Signs the session cookie | Uses `"dev-only"`, which is fine locally but not anywhere else |
+| `SECRET_KEY` | Signs the session cookie | Uses `"dev-only"` locally. On Render (where `RENDER` is set) the app refuses to start without it |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Demo mode, sign-in just drops you on `/home` |
 | `OPENAI_API_KEY` | `/api/transcribe` | That route won't work |
 | `PORT` | Port on Render | Runs on 8001 locally |
@@ -125,7 +135,7 @@ There are three requirements files:
 gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300
 ```
 
-Right now Render doesn't have any env vars set besides `PYTHON_VERSION`, so the live site is in demo mode and using the `dev-only` secret. Also, the database lives on Render's disk, which gets **wiped every time we deploy**.
+Without Google keys the live site is in demo mode. It needs a `SECRET_KEY` (see above) or it won't start. Also, the database lives on Render's disk, which gets **wiped every time we deploy**.
 
 ## API
 
@@ -161,7 +171,6 @@ If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's
 ## Known issues
 
 **Priority**
-- `SECRET_KEY` falls back to `"dev-only"` and Render doesn't set a real one, so once Google login is on, someone could fake a session cookie.
 - `/api/transcribe` and `/api/midi` don't need a login and don't have an upload size limit, so anyone could burn through our OpenAI credits or bog down the server.
 
 **Also Problems**
@@ -176,4 +185,4 @@ If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's
 - Temp upload folders never get cleaned up.
 - Going to `/auth/google` without Google keys, or hitting "deny" on the Google screen, crashes instead of redirecting.
 - `niceplates.db` is opened relative to wherever you run the app from, so starting it from a different folder quietly gives you a brand new empty database.
-- No tests yet, and `ml/README.md` is out of date (it still says Google login isn't done).
+- `ml/README.md` is out of date (it still says Google login isn't done).

@@ -153,12 +153,10 @@ def test_upload_broken_xml_shows_error(user):
     r = upload(user[0], "bad.musicxml", b"<score-partwise><oops")
     assert r.status_code == 302 and "error=" in r.location
 
-@known("Will cause trouble: '#' cuts the error message")
 def test_upload_error_message_survives_hash_in_filename(user):
     r = upload(user[0], "etude #3.musicxml", b"<nope")
     assert "#" not in r.location.split("?", 1)[1] or "%23" in r.location, f"message cut at '#': {r.location}"
 
-@known("Crashes: empty filename")
 def test_upload_with_empty_filename_is_handled(user):
     r = upload(user[0], "", AIR)
     assert r.status_code in (302, 400), f"got {r.status_code}"
@@ -166,7 +164,6 @@ def test_upload_with_empty_filename_is_handled(user):
 def test_upload_without_file_is_400(user):
     assert user[0].post("/api/pieces", data={}, content_type="multipart/form-data").status_code == 400
 
-@known("Fix first #3: unknown types go to homr")
 @pytest.mark.parametrize("name", ["notes.txt", "score.gif", "score.webp", "IMG_0001.HEIC", "noextension"])
 def test_unsupported_types_never_reach_homr(user, name, monkeypatch):
     """On Render (PHOTO_UPLOADS=off) homr would need ~1 GB on a 512 MB box."""
@@ -211,11 +208,9 @@ def test_photo_declined_without_key_on_free_box(user, monkeypatch):
     r = upload(user[0], "photo.png", b"\x89PNG")
     assert "error=" in r.location and "1%20GB" in r.location
 
-@known("Will cause trouble: no upload size limit")
 def test_upload_size_is_limited():
     assert flask_app.config.get("MAX_CONTENT_LENGTH"), "no upload size limit: one big upload fills RAM/disk on a 512 MB box"
 
-@known("Will cause trouble: temp folders left behind")
 def test_uploads_clean_up_temp_files(user):
     before = len(glob.glob(tempfile.gettempdir() + "/tmp*"))
     for _ in range(5):
@@ -229,11 +224,9 @@ def test_api_midi_from_musicxml(guest):
     r = upload(guest, "air.musicxml", AIR, url="/api/midi")
     assert r.status_code == 200 and r.data[:4] == b"MThd"
 
-@known("Crashes: /api/midi bad type")
 def test_api_midi_bad_type_is_400(guest):
     assert upload(guest, "notes.txt", b"hi", url="/api/midi").status_code == 400
 
-@known("Fix first #3: /api/midi ignores PHOTO_UPLOADS")
 def test_api_midi_respects_photo_uploads_off(guest, monkeypatch):
     monkeypatch.setenv("PHOTO_UPLOADS", "off")
     import pdfToMidi

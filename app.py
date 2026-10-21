@@ -4,6 +4,7 @@ from database import database
 from datetime import date, datetime, timedelta, timezone
 from itertools import accumulate
 import os, time
+from urllib.parse import quote
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
 from ml.api import api
@@ -24,7 +25,8 @@ secret = os.environ.get("SECRET_KEY")
 if not secret and os.environ.get("RENDER"):   # Render sets RENDER; "dev-only" is public, so anyone could sign in as anyone
     raise RuntimeError("SECRET_KEY is not set. Add it in the Render dashboard under Environment.")
 app.secret_key = secret or "dev-only"   # fine on a laptop only
-app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_HTTPONLY=True)
+app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_HTTPONLY=True,
+                  MAX_CONTENT_LENGTH=20 * 1024 * 1024)   # uploads and recordings; 20 MB is 20+ minutes of Opus audio
 portNum = 8001
 
 oauth = OAuth(app)
@@ -65,6 +67,13 @@ def unauthorized():
 
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
+
+@app.errorhandler(413)
+def too_large(e):
+    message = "File too large (max 20 MB)."
+    if request.path == "/api/pieces":   # the library's upload form
+        return redirect("/library?error=" + quote(message))
+    return jsonify(error=message), 413
 
 # Makes {{ year }} available to every template (used by footer.html).
 @app.context_processor

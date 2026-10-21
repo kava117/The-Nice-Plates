@@ -1,7 +1,9 @@
 """The ml tools as a web API.   Run alone: python ml/api.py   (port 8002)"""
 import logging, os, sys, tempfile
+from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
+from urllib.parse import quote
 
 from flask import Blueprint, Flask, abort, jsonify, redirect, request, send_file
 from flask_login import current_user
@@ -18,23 +20,51 @@ def user_id():
 # The pipeline (ml/requirements.txt) is imported inside the routes that need it, so the site runs without it.
 
 
-def save_upload():
+SCORES = {".musicxml", ".xml", ".mxl"}
+PHOTOS = {".pdf", ".png", ".jpg", ".jpeg"}
+
+
+def upload_problem(filename, claude_ok):
+    """None if this upload can be read here, else a message for the user."""
+    if not filename:
+        return "Choose a file to upload."
+    suffix = Path(filename).suffix.lower()
+    if suffix not in SCORES | PHOTOS:
+        return "Upload a PDF, PNG, JPG or MusicXML file."
+    if suffix in PHOTOS and os.environ.get("PHOTO_UPLOADS") == "off" and not claude_ok:  # homr would need ~1 GB on a 512 MB box
+        return "Reading photos and PDFs needs about 1 GB of memory, more than this free server has. Upload a MusicXML file here, or run the site on a laptop."
+    return None
+
+
+def library_error(message):  # quote() so a '#' or '&' in a filename can't cut the message short
+    return redirect("/library?error=" + quote(message))
+
+
+@contextmanager
+def saved_upload():  # the folder and everything converted into it is deleted when the block ends, even on an error
     upload = request.files["file"]
-    path = Path(tempfile.mkdtemp()) / Path(upload.filename).name
-    upload.save(path)
-    return path
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / Path(upload.filename).name
+        upload.save(path)
+        yield path
 
 
 @api.post("/midi")  # sheet music in, MIDI out
 def midi():
     from pdfToMidi import convert  # Robert's pipeline: PDF, image or MusicXML -> MIDI
-    return send_file(convert(save_upload()))
+    problem = upload_problem(request.files["file"].filename, claude_ok=False)  # no Claude path here
+    if problem:
+        return jsonify(error=problem), 400
+    with saved_upload() as src:
+        mid = convert(src)
+        return send_file(BytesIO(mid.read_bytes()), download_name=mid.name, mimetype="audio/midi")  # read now: the folder is gone before send_file streams
 
 
 @api.post("/transcribe")  # recording in, text + tempo / key / time signature out
 def recording():
     import text, transcribe
-    result = transcribe.transcribe(save_upload())
+    with saved_upload() as src:
+        result = transcribe.transcribe(src)
     return jsonify({**result, "music": text.process(result["text"])})
 
 
@@ -68,18 +98,20 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
 def add_piece():
     from easyParts import musicxml_to_midi
     from pdfToMidi import _to_musicxml
-    src = save_upload()
-    photo = src.suffix.lower() in (".pdf", ".png", ".jpg", ".jpeg")
-    if photo and os.environ.get("PHOTO_UPLOADS") == "off" and not os.environ.get("ANTHROPIC_API_KEY"):
-        return redirect("/library?error=Reading photos and PDFs needs about 1 GB of memory, more than this free server has. Upload a MusicXML file here, or run the site on a laptop.")
-    try:
-        xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, Path(tempfile.mkdtemp()))
-        mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
-    except Exception:
-        logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
-        return redirect(f"/library?error=Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")
-    piece_id = database.addPiece(user_id(), request.form.get("title") or src.stem,
-                                 request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
+    problem = upload_problem(request.files["file"].filename, claude_ok=bool(os.environ.get("ANTHROPIC_API_KEY")))
+    if problem:
+        return library_error(problem)
+    with saved_upload() as src:
+        photo = src.suffix.lower() in PHOTOS
+        try:
+            work = src.parent / "work"; work.mkdir()
+            xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, work)
+            mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+        except Exception:
+            logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
+            return library_error(f"Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")
+        piece_id = database.addPiece(user_id(), request.form.get("title") or src.stem,
+                                     request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
     return redirect(f"/practice?piece={piece_id}")
 
 

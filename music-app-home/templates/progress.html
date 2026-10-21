@@ -11,13 +11,10 @@
     <div class="practice-chart">
       <h2 class="section-title">Practice Time</h2>
       <div class="bars">
-        <div class="bar-group"><div class="bar bar-m"></div><span>M</span></div>
-        <div class="bar-group"><div class="bar bar-t"></div><span>T</span></div>
-        <div class="bar-group"><div class="bar bar-w"></div><span>W</span></div>
-        <div class="bar-group"><div class="bar bar-th"></div><span>TH</span></div>
-        <div class="bar-group"><div class="bar bar-f"></div><span>F</span></div>
-        <div class="bar-group"><div class="bar bar-s"></div><span>S</span></div>
-        <div class="bar-group"><div class="bar bar-su"></div><span>SU</span></div>
+        {% set top = per_day|max or 1 %}
+        {% for label in ["M", "T", "W", "TH", "F", "S", "SU"] %}
+        <div class="bar-group"><div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
+        {% endfor %}
       </div>
     </div>
     <div class="chart-legend">
@@ -31,27 +28,27 @@
     <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend">
       <polyline
         class="line"
-        points="0,150 55,58 115,95 165,95 225,28 265,22 325,30 375,58 425,140 465,118 515,128 600,150" />
+        points="{% if totals|length < 2 %}0,150 600,150{% else %}{% for t in totals %}{{ (loop.index0 * 600 / (totals|length - 1))|round(1) }},{{ (150 - t * 140 / totals[-1])|round(1) }} {% endfor %}{% endif %}" />
       <line class="baseline" x1="0" y1="150" x2="600" y2="150" />
     </svg>
   </section>
 
   <div class="tiles donut-row">
     <div class="donut-card">
-      <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="5 pieces in progress">
+      <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ practiced }} pieces practiced">
         <circle class="donut-track" cx="60" cy="60" r="50" />
-        <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="188 314" transform="rotate(-90 60 60)" />
-        <text class="donut-value" x="60" y="68" text-anchor="middle">5</text>
+        <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="{{ (314 * practiced / (pieces or 1))|round|int }} 314" transform="rotate(-90 60 60)" />
+        <text class="donut-value" x="60" y="68" text-anchor="middle">{{ practiced }}</text>
       </svg>
-      <div class="donut-label">Pieces in Progress</div>
+      <div class="donut-label">Pieces Practiced</div>
     </div>
     <div class="donut-card">
-      <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="12 pieces mastered">
+      <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ pieces }} pieces in the library">
         <circle class="donut-track" cx="60" cy="60" r="50" />
-        <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="110 314" transform="rotate(-90 60 60)" />
-        <text class="donut-value" x="60" y="68" text-anchor="middle">12</text>
+        <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="314 314" transform="rotate(-90 60 60)" />
+        <text class="donut-value" x="60" y="68" text-anchor="middle">{{ pieces }}</text>
       </svg>
-      <div class="donut-label">Pieces Mastered</div>
+      <div class="donut-label">In Your Library</div>
     </div>
   </div>
 

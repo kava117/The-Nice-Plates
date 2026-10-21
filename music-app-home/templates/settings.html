@@ -17,14 +17,14 @@
             <h2 class="section-title" id="settings-account">Account</h2>
             <div class="field">
               <label for="display-name">Display name</label>
-              <input class="input" id="display-name" type="text" value="Sample User" autocomplete="name">
+              <input class="input" id="display-name" type="text" value="{{ me.name }}" autocomplete="name">
             </div>
             <div class="field">
               <label for="email">Email</label>
-              <input class="input" id="email" type="email" value="sample.user@example.com" autocomplete="email">
+              <input class="input" id="email" type="email" value="{{ me.email }}" autocomplete="email">
             </div>
             <div class="field-actions">
-              <button type="button" class="btn btn-ghost press">Change password</button>
+              {% if current_user.is_authenticated %}<a class="btn btn-ghost press" href="/logout">Sign out</a>{% else %}<a class="btn btn-ghost press" href="/login/google">Sign in with Google</a>{% endif %}
             </div>
           </section>
 

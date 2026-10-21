@@ -1,13 +1,8 @@
 # ml
 
-```mermaid
-flowchart LR
-    up[Library page: upload] --> pdf[sheet music PDF] -->|PyMuPDF| png[page images] -->|homr| xml[MusicXML] -->|music21| mid[MIDI]
-    xml & mid --> db[(Pieces table)] --> pr[Practice page renders it]
-    rec[recording] -->|Whisper| txt[text] -->|text.py| info[tempo, key, time]
-```
+![](../docs/system.svg)
 
-The top row is Robert's `fileConversion/` pipeline. It can also start from a photo or a MusicXML file.
+Sheet music goes through Robert's `fileConversion/` pipeline. With `PHOTO_UPLOADS=off` and an `ANTHROPIC_API_KEY`, `claude_reads` in `api.py` writes the MusicXML from the image instead of homr. Recordings go through Whisper (`transcribe.py`) and `text.py` for tempo, key and time.
 
 ```bash
 pip install -r ml/requirements.txt    # Python 3.11+
@@ -20,9 +15,11 @@ python app.py                         # the site on :8001, API included
 | `POST /api/pieces` | the library's upload form: sheet, `title`, `composer` | saved to Pieces, then the practice page |
 | `GET /api/pieces` | | the library as JSON |
 | `GET /api/pieces/ID/musicxml` | | the stored MusicXML, which the practice page renders |
+| `POST /api/pieces/ID/recordings` | an audio take | saved to Recordings |
+| `GET /api/recordings/ID` | | that take, for playback |
 | `POST /api/midi` | sheet | MIDI, nothing saved |
 | `POST /api/transcribe` | recording | transcript + tempo / key / time, nothing saved |
 
-Everything belongs to one demo user (`database.demoUser()`) until the Google login branch lands.
+Pieces belong to the signed-in Google user, or to `Sample User` when nobody is signed in.
 
 Why homr, with test results: the `ml-evals` branch.

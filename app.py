@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, redirect, url_for, render_template, request, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from database import database
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
+from itertools import accumulate
 import os, time
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
@@ -35,6 +36,8 @@ google = oauth.register(
 with app.app_context():
     database.init_db()
     database.migrate()
+    if not database.getPieces(database.demoUser()):   # free hosting wipes the disk on restart: keep one piece to try
+        database.addPiece(database.demoUser(), "Air", "J. S. Bach", xml=open(app.static_folder + "/AirOnG.musicxml", "rb").read())
 
 #handles logging in/out and passing credentials when required
 login_manager = LoginManager(app)
@@ -63,7 +66,8 @@ def user_id():
 # Makes {{ year }} available to every template (used by footer.html).
 @app.context_processor
 def inject_year():
-    return {"year": date.today().year}
+    me = current_user if current_user.is_authenticated else database.getUserById(database.demoUser())
+    return {"year": date.today().year, "me": me}
 
 
 # 
@@ -121,16 +125,14 @@ def remember_piece(piece_id):
 
 #gets the practice state of the user
 @app.route("/api/practice/state")
-@login_required
 def api_state():
     return jsonify(practice_state())
 
 #pick a practice piece
 @app.route("/api/practice/piece", methods=["POST"])
-@login_required
 def api_select_piece():
     piece_id = read_id(request.get_json(silent=True) or {}, "piece_id")
-    if piece_id is None or not database.getPieceForUser(current_user.id, piece_id):
+    if piece_id is None or not database.getPieceForUser(user_id(), piece_id):
         return jsonify(error="piece not found"), 404
     session["current_piece_id"] = piece_id
     session.pop("selected_section_id", None)   # this section no longer relevant
@@ -139,10 +141,9 @@ def api_select_piece():
 
 #pick a practice section
 @app.route("/api/practice/section", methods=["POST"])
-@login_required
 def api_select_section():
     section_id = read_id(request.get_json(silent=True) or {}, "section_id")
-    section = database.getSectionForUser(current_user.id, section_id) if section_id else None
+    section = database.getSectionForUser(user_id(), section_id) if section_id else None
     if not section:
         return jsonify(error="section not found"), 404
     session["selected_section_id"] = section["id"]
@@ -152,7 +153,6 @@ def api_select_section():
 
 #begin tracking a sessions length
 @app.route("/api/timer/start", methods=["POST"])
-@login_required
 def api_timer_start():
     if session.get("timer_started_at") is None:         # dont reset timer if already started
         session["timer_started_at"] = time.time()
@@ -163,7 +163,6 @@ def api_timer_start():
 
 #pause a session (settings change, page navigation, etc.)
 @app.route("/api/timer/pause", methods=["POST"])
-@login_required
 def api_timer_pause():
     if session.get("timer_started_at") is not None:
         session["timer_elapsed"] = timer_seconds()      # keep track of currently elapsed time to return to or store later
@@ -172,14 +171,13 @@ def api_timer_pause():
 
 #stop the timer, and save the session to the database
 @app.route("/api/timer/stop", methods=["POST"])
-@login_required
 def api_timer_stop():
     total = timer_seconds()
     notes = (request.get_json(silent=True) or {}).get("notes")
     session_id = None
     if total > 0:
         session_id = database.addSession(
-            current_user.id, total, notes,
+            user_id(), total, notes,
             piece_ids=session.get("session_piece_ids", []),
         )
     for key in ("timer_started_at", "timer_elapsed", "session_piece_ids"):
@@ -196,9 +194,20 @@ def api_timer_stop():
 def index():
     return render_template("index.html")
 
+def utc_today():  # SQLite stamps sessions in UTC
+    return datetime.now(timezone.utc).date()
+
+def streak(sessions):  # days in a row with a saved session, counting back from today
+    days, day, n = {s["date"][:10] for s in sessions}, utc_today(), 0
+    while day.isoformat() in days:
+        n, day = n + 1, day - timedelta(days=1)
+    return n
+
 @app.route("/home")
 def home():
-    return render_template("home.html")
+    sessions = database.getSessions(user_id())
+    return render_template("home.html", pieces=database.getPieces(user_id())[:3], seconds=database.getPieceSeconds(user_id()),
+                           total=sum(s["time_spent"] for s in sessions), streak=streak(sessions))
 
 @app.route("/library")
 def library():
@@ -206,7 +215,11 @@ def library():
 
 @app.route("/progress")
 def progress():
-    return render_template("progress.html")
+    sessions = database.getSessions(user_id())
+    monday = utc_today() - timedelta(days=utc_today().weekday())
+    per_day = [sum(s["time_spent"] for s in sessions if s["date"][:10] == (monday + timedelta(days=i)).isoformat()) for i in range(7)]
+    return render_template("progress.html", per_day=per_day, totals=list(accumulate(s["time_spent"] for s in reversed(sessions))),
+                           pieces=len(database.getPieces(user_id())), practiced=len(database.getPieceSeconds(user_id())))
 
 @app.route("/settings")
 def settings():
@@ -218,15 +231,17 @@ def practice():
 
 @app.route("/login/google")
 def login_google():
-    if not google.client_id:   # no Google keys set: enter as the shared demo user
+    try:
+        return google.authorize_redirect(url_for("auth_google", _external=True)) if google.client_id else redirect(url_for("home"))
+    except Exception:   # no Google keys, or Google unreachable: enter as the shared demo user
         return redirect(url_for("home"))
-    redirect_uri = url_for("auth_google", _external=True)
-    return google.authorize_redirect(redirect_uri)
 
 @app.route("/auth/google")
 def auth_google():
-    token = google.authorize_access_token()
-    info = token["userinfo"]
+    try:
+        info = google.authorize_access_token()["userinfo"]
+    except Exception:   # cancelled, expired or misconfigured sign-in: enter as the shared demo user
+        return redirect(url_for("home"))
     row = database.getOrCreateGoogleUser(
         sub=info["sub"],
         name=info.get("name") or info["email"].split("@")[0],  # Users.name is NOT NULL

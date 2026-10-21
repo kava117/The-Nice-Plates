@@ -33,6 +33,7 @@
     </div>
   </div>
 
+  {% if request.args.error %}<p style="color: #c0392b">{{ request.args.error }}</p>{% endif %}
   <form class="field" id="upload" style="margin-bottom: 20px" action="/api/pieces" method="post" enctype="multipart/form-data">
     <label for="sheet">Add a piece: a PDF, a photo, or a MusicXML file</label>
     <input class="input" id="sheet" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
@@ -52,6 +53,13 @@
     </a></li>
     {% endfor %}
   </ul>
+  <script>
+    // Compact / Normal / Cozy = 6 / 4 / 3 tiles per row.
+    document.querySelectorAll(".view-option").forEach(b => b.onclick = () => {
+      document.querySelectorAll(".view-option").forEach(o => o.classList.toggle("is-active", o === b));
+      document.querySelector(".library-grid").style.gridTemplateColumns = `repeat(${ {compact: 6, normal: 4, cozy: 3}[b.dataset.density] }, minmax(0, 1fr))`;
+    });
+  </script>
 
 </div>
 

@@ -55,6 +55,21 @@ with sync_playwright() as p:
     page.locator("#cursor-next").click()
     assert "Play" in play.inner_text()
 
+    # deep into the piece the score has scrolled, but Play/Stop must still be on screen and clickable
+    for width, height in ((1280, 720), (375, 700)):
+        page.set_viewport_size({"width": width, "height": height})
+        page.locator("#cursor-reset").click()
+        page.evaluate("for (let i = 0; i < 250; i++) osmd.cursor.next()")   # followCursor scrolls each step
+        page.wait_for_timeout(1500)                                          # let the smooth scroll finish
+        on_top = page.evaluate("""() => {
+            const b = document.getElementById('play').getBoundingClientRect();
+            return document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2) === document.getElementById('play');
+        }""")
+        scrolled = page.evaluate("Math.max(document.querySelector('main').scrollTop, window.scrollY)")
+        assert scrolled > 300 and on_top, f"{width} px: scrolled {scrolled}, Play reachable: {on_top}"
+        play.click(); page.wait_for_function("document.getElementById('play').textContent.includes('Stop')")
+        play.click(); assert "Play" in play.inner_text()
+
     assert not errors, errors
     browser.close()
 print(f"player OK in {engine}")

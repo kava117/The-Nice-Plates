@@ -1057,6 +1057,28 @@ main {
 }
 /* 15. Sheet music display ------------------------------------------------ */
 
+/* The practice controls stay pinned while the score scrolls under them:
+   following the cursor during playback would otherwise scroll Stop out of reach. */
+#controls {
+  position: sticky;
+  top: -28px;               /* main's top padding: pin to main's edge, not below its padding */
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 12px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  #controls {
+    top: 0;                 /* here the window scrolls, not main */
+  }
+}
+
 /* Background for the music renderer */
 #score {
   background: #fffdf5;

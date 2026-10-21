@@ -7,7 +7,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt -r ml/requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300
+    startCommand: gunicorn app:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT   # one worker: a second would double homr's memory
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"

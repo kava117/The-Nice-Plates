@@ -111,3 +111,22 @@ def test_five_uploads_leave_no_temp_folders(guest, no_homr):
         upload(guest, name, data)
     upload(guest, "air.musicxml", AIR, "/api/midi")
     assert set(glob.glob(tempfile.gettempdir() + "/*")) - before == set()
+
+
+# ---------------------------------------------------------------- 3. Gunicorn threads
+def test_two_uploads_at_once_convert_one_at_a_time(monkeypatch):
+    """With 4 threads in one process, a second homr run would go over 512 MB. tests/load/ checks page speed."""
+    import threading, time
+    import pdfToMidi
+    running, most = [0], [0]
+    real = pdfToMidi._to_musicxml
+    def slow(src, work):
+        running[0] += 1; most[0] = max(most[0], running[0])
+        time.sleep(0.3)
+        running[0] -= 1
+        return real(src, work)
+    monkeypatch.setattr(pdfToMidi, "_to_musicxml", slow)
+    uploads = [threading.Thread(target=upload, args=(flask_app.test_client(), "air.musicxml", AIR)) for _ in range(3)]
+    for u in uploads: u.start()
+    for u in uploads: u.join()
+    assert most[0] == 1

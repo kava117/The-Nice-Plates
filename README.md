@@ -26,7 +26,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 
 ![](docs/system.svg)
 
-It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. There's no background worker, so if a conversion takes a while, the page just sits there loading until it's done.
+It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. There's no background worker, so if a conversion takes a while, the upload page just sits there loading until it's done. Gunicorn runs 4 threads, so other visitors' pages keep loading meanwhile, and only one conversion runs at a time (a second upload waits its turn) so two homr runs can't share the 512 MB box.
 
 - **Front end:** plain Jinja templates, no framework, no build step. Scores are drawn with [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) (it's checked in as `opensheetmusicdisplay.min.js`). There's light/dark mode, keyboard support, and reduced-motion handling.
 - **Accounts:** Google sign-in through Authlib, with Flask-Login keeping you logged in. No Google keys means everyone just shares one demo account (`Sample User`).
@@ -132,8 +132,10 @@ There are three requirements files:
 `render.yaml` sets up one free Render web service on Python 3.11.9. It installs the app + ML requirements and starts with:
 
 ```bash
-gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300
+gunicorn app:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
 ```
+
+Keep it at one worker: a second worker is a second process, which would double homr's memory.
 
 Without Google keys the live site is in demo mode. It needs a `SECRET_KEY` (see above) or it won't start. Also, the database lives on Render's disk, which gets **wiped every time we deploy**.
 

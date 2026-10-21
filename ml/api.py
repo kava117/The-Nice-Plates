@@ -1,5 +1,5 @@
 """The ml tools as a web API.   Run alone: python ml/api.py   (port 8002)"""
-import logging, os, sys, tempfile
+import logging, os, sys, tempfile, threading
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
@@ -20,6 +20,7 @@ def user_id():
 # The pipeline (ml/requirements.txt) is imported inside the routes that need it, so the site runs without it.
 
 
+CONVERT = threading.Semaphore(1)  # gunicorn runs 4 threads in one 512 MB process: a second upload waits rather than start a second homr
 SCORES = {".musicxml", ".xml", ".mxl"}
 PHOTOS = {".pdf", ".png", ".jpg", ".jpeg"}
 
@@ -55,7 +56,7 @@ def midi():
     problem = upload_problem(request.files["file"].filename, claude_ok=False)  # no Claude path here
     if problem:
         return jsonify(error=problem), 400
-    with saved_upload() as src:
+    with saved_upload() as src, CONVERT:
         mid = convert(src)
         return send_file(BytesIO(mid.read_bytes()), download_name=mid.name, mimetype="audio/midi")  # read now: the folder is gone before send_file streams
 
@@ -104,9 +105,10 @@ def add_piece():
     with saved_upload() as src:
         photo = src.suffix.lower() in PHOTOS
         try:
-            work = src.parent / "work"; work.mkdir()
-            xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, work)
-            mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+            with CONVERT:
+                work = src.parent / "work"; work.mkdir()
+                xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, work)
+                mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
         except Exception:
             logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
             return library_error(f"Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")

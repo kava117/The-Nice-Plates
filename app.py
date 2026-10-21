@@ -3,7 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from database import database
 from datetime import date, datetime, timedelta, timezone
 from itertools import accumulate
-import os, time
+import os, secrets, time
 from urllib.parse import quote
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
@@ -95,7 +95,11 @@ def inject_year():
 
 
 # Flask session cookie info
-PRACTICE_KEYS = ("current_piece_id", "selected_section_id", "timer_started_at", "timer_elapsed", "session_piece_ids")
+PRACTICE_KEYS = ("current_piece_id", "selected_section_id", "timer_started_at", "timer_elapsed", "session_piece_ids", "timer_id")
+TIMER_KEYS = ("timer_started_at", "timer_elapsed", "session_piece_ids", "timer_id")
+
+MAX_SESSION = 4 * 3600   # a timer running longer than this was forgotten, not practiced
+OVER_CAP = "drop"        # or "cap": save MAX_SESSION instead. The team still has to pick one.
 
 # removes keys
 def clear_practice_state():
@@ -167,6 +171,8 @@ def api_select_section():
 @app.route("/api/timer/start", methods=["POST"])
 def api_timer_start():
     if session.get("timer_started_at") is None:         # dont reset timer if already started
+        if not session.get("timer_elapsed"):            # a new timer, not a resume: its id lets it be saved only once
+            session["timer_id"] = secrets.token_hex(8)
         session["timer_started_at"] = time.time()
         piece_id = session.get("current_piece_id")
         if piece_id: #initializes session piece list
@@ -185,16 +191,22 @@ def api_timer_pause():
 @app.route("/api/timer/stop", methods=["POST"])
 def api_timer_stop():
     total = timer_seconds()
+    too_long = total > MAX_SESSION and OVER_CAP == "drop"
+    if OVER_CAP == "cap":
+        total = min(total, MAX_SESSION)
+    if too_long:
+        total = 0
     notes = (request.get_json(silent=True) or {}).get("notes")
     session_id = None
     if total > 0:
         session_id = database.addSession(
             user_id(), total, notes,
             piece_ids=session.get("session_piece_ids", []),
+            timer_id=session.get("timer_id"),
         )
-    for key in ("timer_started_at", "timer_elapsed", "session_piece_ids"):
+    for key in TIMER_KEYS:
         session.pop(key, None)
-    return jsonify(saved_session_id=session_id, time_spent=total, **practice_state())
+    return jsonify(saved_session_id=session_id, time_spent=total, too_long=too_long, **practice_state())
 
 
 # ==================================================================

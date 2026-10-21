@@ -11,7 +11,7 @@
   <button id="cursor-reset">Reset</button>
   <button id="zoom-in">+</button>
   <button id="zoom-out">-</button>
-  <button id="timer">Start practice</button> <span id="clock"></span>
+  <button id="timer">Start practice</button> <button id="stop" hidden>Stop and save</button> <span id="clock"></span>
   <button id="record">Record</button> <span id="take"></span>
 </div>
 
@@ -73,16 +73,44 @@
   // ---- Practice timer: saves a row in Sessions on stop ----
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }).then(r => r.json());
   if (piece) post("/api/practice/piece", { piece_id: +piece });   // the saved session remembers which piece it was
-  const timer = document.getElementById("timer"), clock = document.getElementById("clock");
-  let running = false, tick;
-  timer.addEventListener("click", async () => {
-    const state = await post(running ? "/api/timer/stop" : "/api/timer/start");
-    running = state.running;
+  // The server's {running, elapsed} is the truth; every timer call goes through render().
+  const timer = document.getElementById("timer"), stop = document.getElementById("stop"), clock = document.getElementById("clock");
+  const minutes = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  let current = { running: false, elapsed: 0 }, shown = 0, tick;
+  function render(state) {
+    current = state;
     clearInterval(tick);
-    timer.textContent = running ? "Stop and save" : "Start practice";
-    if (running) tick = setInterval(() => { state.elapsed++; clock.textContent = `${Math.floor(state.elapsed / 60)}:${String(state.elapsed % 60).padStart(2, "0")}`; }, 1000);
-    else clock.textContent = state.saved_session_id ? `Saved ${state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min"}` : "";
+    const started = state.running || state.elapsed > 0;
+    timer.textContent = state.running ? "Pause" : started ? "Resume" : "Start practice";
+    stop.hidden = !started;
+    shown = state.elapsed;
+    clock.textContent = started ? minutes(shown) : "";
+    if (state.running) tick = setInterval(() => { clock.textContent = minutes(++shown); }, 1000);
+    return state;
+  }
+  const refresh = () => fetch("/api/practice/state").then(r => r.json()).then(render);
+  refresh().then(state => {   // a reload pauses too (pagehide): pick straight back up if this tab paused it moments ago
+    let left = 0;
+    try { left = +sessionStorage.getItem("timer-left-at"); sessionStorage.removeItem("timer-left-at"); } catch {}
+    if (!state.running && state.elapsed > 0 && Date.now() - left < 5000) post("/api/timer/start").then(render);
   });
+  timer.addEventListener("click", async () => render(await post(current.running ? "/api/timer/pause" : "/api/timer/start")));
+  stop.addEventListener("click", async () => {
+    const state = render(await post("/api/timer/stop"));
+    clock.textContent = state.too_long ? "That session ran too long to count"
+      : state.saved_session_id ? `Saved ${state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min"}` : "";
+  });
+  // Leaving the page pauses the timer, so time away isn't counted; coming back offers Resume.
+  // Mobile browsers often skip pagehide, hence visibilitychange too.
+  function away() {
+    if (!current.running) return;
+    navigator.sendBeacon("/api/timer/pause");
+    try { sessionStorage.setItem("timer-left-at", Date.now()); } catch {}
+    render({ ...current, running: false, elapsed: shown });
+  }
+  addEventListener("pagehide", away);
+  addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
+  document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
 
   // ---- Record a take: saves the audio in Recordings ----
   const record = document.getElementById("record"), take = document.getElementById("take");

@@ -105,7 +105,6 @@ def test_non_string_notes_are_rejected_cleanly(user):
         r = client.post("/api/timer/stop", json={"notes": {"a": 1}})
     assert r.status_code in (200, 400), f"got {r.status_code}"
 
-@known("Fix first #4: no session cap")
 def test_abandoned_timer_does_not_log_a_30_hour_session(user):
     """Close the tab mid-practice, come back tomorrow, press Stop."""
     client, _ = user
@@ -114,7 +113,6 @@ def test_abandoned_timer_does_not_log_a_30_hour_session(user):
         r = client.post("/api/timer/stop").get_json()
     assert r["time_spent"] <= 4 * 3600, f"saved a {r['time_spent'] / 3600:.0f} h session"
 
-@known("Fix first #4: cookie replay saves twice")
 def test_replaying_an_old_cookie_does_not_save_the_session_twice(user):
     client, uid = user
     client.post("/api/timer/start")

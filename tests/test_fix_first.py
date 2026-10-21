@@ -146,3 +146,105 @@ def test_guest_never_sees_log_out(guest):
     for path in ("/home", "/library", "/settings", "/practice"):
         page = guest.get(path).get_data(as_text=True)
         assert ">Log out<" not in page and 'href="/logout"' not in page and 'href="/login/google"' in page
+
+
+# ---------------------------------------------------------------- 5. Trustworthy practice timer
+
+from support import appmod, clock
+
+
+def test_reload_shows_the_running_timer(user):
+    client, _ = user
+    client.post("/api/timer/start")
+    with clock(90)[1]:
+        state = client.get("/api/practice/state").get_json()   # what practice.html fetches on load
+    assert state["running"] and state["elapsed"] >= 90
+
+
+def test_time_away_is_not_counted(user):
+    client, uid = user
+    c, patch = clock()
+    with patch:
+        client.post("/api/timer/start"); c.offset += 30
+        client.post("/api/timer/pause"); c.offset += 60   # pagehide beacon, then a minute in the library
+        state = client.get("/api/practice/state").get_json()
+        assert not state["running"] and state["elapsed"] == 30   # the page shows Resume
+        client.post("/api/timer/start"); c.offset += 10
+        assert client.post("/api/timer/stop").get_json()["time_spent"] == 40
+    assert [s["time_spent"] for s in db.getSessions(uid)] == [40]
+
+
+def test_beacon_pause_needs_no_json(user):
+    client, _ = user
+    client.post("/api/timer/start")
+    r = client.post("/api/timer/pause", data=b"", content_type="text/plain;charset=UTF-8")   # what sendBeacon sends
+    assert r.status_code == 200 and not r.get_json()["running"]
+
+
+@pytest.mark.parametrize("policy", ["drop", "cap"])
+def test_five_hour_timer_follows_over_cap(user, monkeypatch, policy):
+    monkeypatch.setattr(appmod, "OVER_CAP", policy)
+    client, uid = user
+    client.post("/api/timer/start")
+    with clock(5 * 3600)[1]:
+        r = client.post("/api/timer/stop").get_json()
+    saved = [s["time_spent"] for s in db.getSessions(uid)]
+    if policy == "drop":
+        assert r["saved_session_id"] is None and r["too_long"] and saved == []
+    else:
+        assert r["time_spent"] == appmod.MAX_SESSION and saved == [appmod.MAX_SESSION]
+    assert not client.get("/api/practice/state").get_json()["running"]
+
+
+def test_stopping_the_same_timer_twice_saves_one_row(user):
+    client, uid = user
+    client.post("/api/timer/start")
+    cookie = client.get_cookie("session").value   # a second tab
+    with clock(600)[1]:
+        first = client.post("/api/timer/stop").get_json()
+        client.set_cookie("session", cookie)
+        second = client.post("/api/timer/stop").get_json()
+    assert len(db.getSessions(uid)) == 1
+    assert first["saved_session_id"] == second["saved_session_id"] is not None
+
+
+def test_a_new_timer_after_stopping_is_a_new_session(user):
+    client, uid = user
+    for _ in range(2):
+        client.post("/api/timer/start")
+        with clock(60)[1]:
+            client.post("/api/timer/stop")
+    assert len(db.getSessions(uid)) == 2
+
+
+def test_home_and_progress_totals_match_sessions(user):
+    client, uid = user
+    for seconds in (120, 300):
+        client.post("/api/timer/start")
+        with clock(seconds)[1]:
+            client.post("/api/timer/stop")
+    with db.get_db() as con:
+        total = con.execute("SELECT SUM(time_spent) FROM Sessions WHERE user_id = ?", (uid,)).fetchone()[0]
+    assert total == 420
+    totals = []
+    real = appmod.render_template
+    def spy(name, **kw):
+        totals.append(kw.get("total", (kw.get("totals") or [None])[-1]))
+        return real(name, **kw)
+    with mock.patch.object(appmod, "render_template", spy):
+        client.get("/home"); client.get("/progress")
+    assert totals == [420, 420]
+
+
+def test_migration_keeps_rows_in_a_db_from_main(tmp_path, monkeypatch):
+    monkeypatch.setattr(db, "DB_NAME", str(tmp_path / "old.db"))
+    db.init_db()   # the schema main shipped: no migrations, user_version 0
+    uid = db.getOrCreateGoogleUser(sub="old", name="Old", email="old@test.dev", email_verified=True)["id"]
+    with db.get_db() as con:
+        con.execute("INSERT INTO Sessions (user_id, time_spent) VALUES (?, 50), (?, 70)", (uid, uid))
+    db.migrate(); db.migrate()   # runs once, then is a no-op
+    with db.get_db() as con:
+        rows = con.execute("SELECT time_spent, timer_id FROM Sessions ORDER BY id").fetchall()
+        assert con.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS)
+    assert [tuple(r) for r in rows] == [(50, None), (70, None)]
+    assert db.addSession(uid, 10, timer_id="t") == db.addSession(uid, 10, timer_id="t")

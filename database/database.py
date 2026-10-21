@@ -22,7 +22,8 @@ def get_db():
 
 #New changes to the database go here (adding columns, new tables, etc.)
 MIGRATIONS = [
-
+    "ALTER TABLE Sessions ADD COLUMN timer_id TEXT",   # one practice timer saves at most one row; old rows keep NULL
+    "CREATE UNIQUE INDEX IF NOT EXISTS Index_Sessions_Timer_Id ON Sessions(timer_id)",
 ]
 
 def migrate():
@@ -215,18 +216,25 @@ def addPiece(user_id, title, composer=None, bpm=None, xml=None, midi=None):
         )
         return cur.lastrowid #use this to reference the piece in any next steps
 
-def addSession(user_id, time_spent, notes=None, piece_ids=()):
-    with get_db() as database:
-        cur = database.execute(
-            "INSERT INTO Sessions (user_id, time_spent, session_notes) VALUES (?, ?, ?)",
-            (user_id, time_spent, notes),
-        )
-        session_id = cur.lastrowid
-        database.executemany(
-            "INSERT INTO Session_Pieces (session_id, piece_id) VALUES (?, ?)",
-            [(session_id, pid) for pid in set(piece_ids)],
-        )
-        return session_id #use this to reference the session in any next steps
+def addSession(user_id, time_spent, notes=None, piece_ids=(), timer_id=None):
+    try:
+        with get_db() as database:
+            cur = database.execute(
+                "INSERT INTO Sessions (user_id, time_spent, session_notes, timer_id) VALUES (?, ?, ?, ?)",
+                (user_id, time_spent, notes, timer_id),
+            )
+            session_id = cur.lastrowid
+            database.executemany(
+                "INSERT INTO Session_Pieces (session_id, piece_id) VALUES (?, ?)",
+                [(session_id, pid) for pid in set(piece_ids)],
+            )
+            return session_id #use this to reference the session in any next steps
+    except sqlite3.IntegrityError:   # this timer was already saved (two tabs, the back button): hand back that row
+        with get_db() as database:
+            row = database.execute("SELECT id FROM Sessions WHERE timer_id = ? AND user_id = ?", (timer_id, user_id)).fetchone()
+        if row is None:
+            raise
+        return row["id"]
 
 def touchPiece(piece_id):
     with get_db() as database:

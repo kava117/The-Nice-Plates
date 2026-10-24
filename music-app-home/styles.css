@@ -1629,6 +1629,43 @@ kbd {
   box-shadow: inset 0 0 0 2px rgba(47, 93, 62, 0.35);
 }
 
+/* The passage's two handles: grab either end of the frame and drag it to another bar. */
+.passage-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.passage-handle.is-start {
+  left: -9px;
+}
+
+.passage-handle.is-end {
+  right: -9px;
+}
+
+.passage-handle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 48px;
+  border: 2px solid #FFFDF5;
+  border-radius: 4px;
+  background: #2F5D3E;
+  transform: translate(-50%, -50%);
+}
+
+.passage-handle:hover::before {
+  width: 10px;
+  height: 58px;
+}
+
 .passage-tab {
   position: absolute;
   bottom: calc(100% - 2px);

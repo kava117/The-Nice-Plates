@@ -197,13 +197,23 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       if (!line) lines.set(box.system, { ...box });
       else line.width = box.left + box.width - line.left;
     }
-    [...lines.values()].forEach((box, n) => {
-      const frame = Object.assign(document.createElement("div"), { className: "passage-frame" + (preview ? " is-preview" : "") });
+    const frames = [...lines.values()], handles = active && marking === null && (!preview || resizing);
+    frames.forEach((box, n) => {
+      const frame = Object.assign(document.createElement("div"), { className: "passage-frame" + (preview && !resizing ? " is-preview" : "") });
       place(frame, box);
       const text = marking !== null ? `${label(shown)}: ] on the last bar` : label(shown);   // between [ and ], say how to finish
       if (n === 0) frame.append(Object.assign(document.createElement("span"), { className: "passage-tab", textContent: text }));
+      // Two handles, like a range slider's thumbs, but on the score: drag either one to move that end of the passage.
+      if (handles && n === 0) frame.append(handle("start"));
+      if (handles && n === frames.length - 1) frame.append(handle("end"));
       layer.append(frame);
     });
+  }
+
+  function handle(end) {
+    const el = Object.assign(document.createElement("div"), { className: `passage-handle is-${end}`, title: `Drag to move the passage's ${end === "start" ? "first" : "last"} bar` });
+    el.dataset.end = end;
+    return el;
   }
 
   function barAt(x, y) {   // the bar under a point, or the nearest one: same line first, then sideways
@@ -218,14 +228,26 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     return best;
   }
 
-  let press = null;   // a pointer held down on a bar
+  let press = null;      // a pointer held down on a bar
+  let resizing = null;   // a pointer dragging one of the passage's handles: {id, end}
   layer.addEventListener("pointerdown", e => {
+    const grip = e.target.closest(".passage-handle");
+    if (grip && e.button === 0) {
+      resizing = { id: e.pointerId, end: grip.dataset.end };
+      layer.setPointerCapture(e.pointerId);   // on the layer: repainting replaces the handle under the pointer
+      return;
+    }
     const el = e.target.closest(".score-bar");
     if (!el || e.button !== 0) return;
     press = { id: e.pointerId, x: e.clientX, y: e.clientY, from: +el.dataset.index, to: +el.dataset.index, dragging: false };
     el.setPointerCapture(e.pointerId);
   });
   layer.addEventListener("pointermove", e => {
+    if (resizing && e.pointerId === resizing.id) {
+      const at = barAt(e.clientX, e.clientY) ?? (resizing.end === "start" ? active.first : active.last);
+      preview = resizing.end === "start" ? range(Math.min(at, active.last), active.last) : range(active.first, Math.max(at, active.first));
+      return paint();
+    }
     if (!press || e.pointerId !== press.id) return;
     if (!press.dragging && Math.hypot(e.clientX - press.x, e.clientY - press.y) < 6) return;   // still a click
     press.dragging = true;
@@ -234,6 +256,11 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     paint();
   });
   layer.addEventListener("pointerup", e => {
+    if (resizing && e.pointerId === resizing.id) {
+      const moved = preview && (preview.first !== active.first || preview.last !== active.last) && preview;
+      resizing = preview = null;
+      return moved ? pick(moved) : paint();
+    }
     if (!press || e.pointerId !== press.id) return;
     const done = press;
     press = preview = null;
@@ -241,7 +268,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     else if (e.shiftKey && active) pick(done.from < active.first ? range(done.from, active.last) : range(active.first, done.from));
     else { onPick(); goTo(done.from); }   // a click moves the cursor, and stops the player first
   });
-  layer.addEventListener("pointercancel", () => { press = preview = null; paint(); });
+  layer.addEventListener("pointercancel", () => { press = resizing = preview = null; paint(); });
   layer.addEventListener("dblclick", e => {
     const el = e.target.closest(".score-bar");
     if (el) pick(range(+el.dataset.index, +el.dataset.index));

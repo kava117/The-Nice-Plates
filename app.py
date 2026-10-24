@@ -38,6 +38,11 @@ google = oauth.register(
     client_kwargs = {"scope": "openid email profile"},
 )
 
+if database.POSTGRES:
+    app.logger.warning("Database: Postgres (DATABASE_URL)")
+elif os.environ.get("RENDER"):   # Render's disk is wiped on deploy and spin-down
+    app.logger.warning("Database: SQLite on Render's disk. Accounts and sessions vanish on restart; set DATABASE_URL.")
+
 with app.app_context():
     database.init_db()
     database.migrate()

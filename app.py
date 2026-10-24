@@ -316,6 +316,12 @@ def practice():
     latest = None if request.args.get("piece") else next(iter(database.getPieces(user_id())), None)
     return render_template("practice.html", latest_piece=latest and latest["id"])
 
+def give_starter_piece(uid):
+    """Bach's Air, so a new account has a piece to practice before its first upload (the demo user gets it at startup)"""
+    if not database.getPieces(uid):
+        with open(os.path.join(app.static_folder, "AirOnG.musicxml"), "rb") as f:
+            database.addPiece(uid, "Air", "J. S. Bach", xml=f.read())
+
 @app.route("/login/google")
 def login_google():
     try:
@@ -335,6 +341,7 @@ def auth_google():
         email=info["email"],
         email_verified=info.get("email_verified", False),
     )
+    give_starter_piece(row["id"])
     clear_practice_state()
     login_user(User(row))
     return redirect(url_for("home"))

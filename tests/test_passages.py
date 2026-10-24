@@ -146,3 +146,16 @@ def test_practice_without_a_piece_opens_the_latest_one(user):
     page = client.get("/practice")
     assert page.status_code == 200 and f'|| {newer};' in page.get_data(as_text=True)
     assert f'|| null;' in client.get(f"/practice?piece={older}").get_data(as_text=True)   # an explicit piece wins
+
+
+def test_a_new_google_account_starts_with_a_piece(guest):
+    from unittest import mock
+    import time
+    from support import appmod
+    info = {"userinfo": {"sub": f"new-{time.time()}", "email": f"new{time.time()}@test.dev", "email_verified": True, "name": "New"}}
+    with mock.patch.object(appmod.google, "authorize_access_token", return_value=info):
+        guest.get("/auth/google")
+        guest.get("/logout")
+        guest.get("/auth/google")   # signing in again doesn't add a second copy
+    uid = db.getOrCreateGoogleUser(sub=info["userinfo"]["sub"], name="New", email=info["userinfo"]["email"])["id"]
+    assert [p["title"] for p in db.getPieces(uid)] == ["Air"]

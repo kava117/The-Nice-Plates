@@ -526,6 +526,29 @@ main {
   letter-spacing: normal;
 }
 
+/* Continue practicing: the action, with the piece's title under it. */
+.btn-stack {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.btn-sub {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* Upload: a label that opens the hidden file input, so one click reaches the file picker. */
+.upload-now {
+  display: flex;
+  flex: 1;
+}
+
+.upload-now input:focus-visible + .btn {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
 /* 11. Stat tiles (signed in only) ---------------------------------------- */
 
 /* Not clickable, so flat: no edge, press or hover effect. */

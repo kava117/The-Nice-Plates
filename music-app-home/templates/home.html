@@ -26,12 +26,32 @@
           </li>
           {% endfor %}
           <li>
+            <!-- Two different jobs: carry on with the last piece, or add a new one. The sidebar already goes to the library. -->
             <div class="actions">
-              <!-- TODO: link to the Library page. -->
-              <a class="btn btn-solid press" href="/library">View your library</a>
-              <!-- STATE-SPECIFIC: signed in goes to the upload flow. TODO: link to the upload flow. -->
-              <a class="btn btn-ghost press" href="/library#upload">Upload new sheets</a>
+              {% if pieces %}
+              <a class="btn btn-solid press btn-stack" href="/practice?piece={{ pieces[0].id }}">
+                Continue practicing
+                <span class="btn-sub">{{ pieces[0].title }}</span>
+              </a>
+              {% endif %}
+              <!-- Upload opens the file picker straight away and sends the file to the same route as the library's form. -->
+              <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data">
+                <input class="visually-hidden" id="home-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
+                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="home-upload">Upload new sheets</label>
+              </form>
+              {% if not pieces %}
+              <a class="btn btn-ghost press" href="/practice">Try the demo piece</a>
+              {% endif %}
             </div>
+            <script>
+              document.getElementById("home-upload").addEventListener("change", e => {
+                const file = e.target.files[0], label = e.target.nextElementSibling;
+                if (!file) return;
+                if (file.size > 20 * 1024 * 1024) { label.textContent = "That file is over 20 MB"; return; }   // the server's limit
+                label.textContent = "Reading your sheet…";   // a photo can take half a minute
+                e.target.form.submit();
+              });
+            </script>
           </li>
         </ul>
 

@@ -674,6 +674,15 @@ main {
   background: var(--surface);
 }
 
+.panel.unsaved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
 .panel + .panel {
   margin-top: 20px;
 }

@@ -309,7 +309,8 @@ def progress():
     monday = utc_today() - timedelta(days=utc_today().weekday())
     per_day = [sum(s["time_spent"] for s in sessions if s["date"][:10] == (monday + timedelta(days=i)).isoformat()) for i in range(7)]
     return render_template("progress.html", per_day=per_day, totals=list(accumulate(s["time_spent"] for s in reversed(sessions))),
-                           pieces=len(database.getPieces(user_id())), practiced=len(database.getPieceSeconds(user_id())))
+                           pieces=len(database.getPieces(user_id())), practiced=len(database.getPieceSeconds(user_id())),
+                           unsaved=timer_seconds(), saved=len(sessions))
 
 @app.route("/settings")
 def settings():

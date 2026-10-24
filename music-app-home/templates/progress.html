@@ -7,6 +7,18 @@
 
 <div class="content">
 
+  {% if unsaved >= 60 %}
+  <section class="panel unsaved" aria-live="polite">
+    <p><strong>{{ unsaved // 60 }} min</strong> on the practice timer, not saved yet.</p>
+    <button class="btn btn-solid" id="save-timer">Save it</button>
+  </section>
+  {% elif not saved %}
+  <section class="panel unsaved">
+    <p>No practice saved yet. On Practice, press <strong>Start practice</strong>, then <strong>Stop and save</strong>.</p>
+    <a class="btn btn-solid" href="/practice">Practice</a>
+  </section>
+  {% endif %}
+
   <section class="panel practice-panel" aria-label="Practice time this week">
     <div class="practice-chart">
       <h2 class="section-title">Practice Time</h2>
@@ -54,5 +66,13 @@
 
 </div>
 
+
+<script>
+  document.getElementById("save-timer")?.addEventListener("click", async e => {
+    e.target.disabled = true;
+    await fetch("/api/timer/stop", {method: "POST"});
+    location.reload();
+  });
+</script>
 
 {% include "footer.html" %}

@@ -287,6 +287,18 @@ def test_home_and_progress_show_saved_practice(user):
 def test_progress_with_no_sessions(user):
     prog = user[0].get("/progress").get_data(as_text=True)
     assert "0,150 600,150" in prog
+    assert "No practice saved yet" in prog
+
+def test_progress_offers_to_save_time_left_on_the_timer(user):
+    client, uid = user
+    with client.session_transaction() as s:
+        s["timer_elapsed"] = 25 * 60   # paused by leaving the practice page
+    prog = client.get("/progress").get_data(as_text=True)
+    assert "25 min</strong> on the practice timer" in prog and 'id="save-timer"' in prog
+    client.post("/api/timer/stop")
+    prog = client.get("/progress").get_data(as_text=True)
+    assert 'id="save-timer"' not in prog and "No practice saved yet" not in prog
+    assert [s["time_spent"] for s in db.getSessions(uid)] == [25 * 60]
 
 
 # ---------------------------------------------------------------- sign-in

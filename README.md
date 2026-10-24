@@ -11,7 +11,8 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Google sign-in / sign-out | Works if you've set the Google keys, otherwise you're in demo mode |
 | Library | Works, shows your pieces |
 | Uploading (PDF, PNG/JPG, MusicXML) | Works, up to 20 MB, saves MusicXML + MIDI. Other file types are turned away. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
-| Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece |
+| Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece, and says so if a picked piece is gone. Keys for everything common; **Keys** on the page lists them |
+| Passages | Drag across bars on the score (or type `12-16`, or `[` then `]` at the cursor) to pick a passage. Bars outside it fade, Play loops it, and Next/Reset stay inside it. After each time through, **Yes** / **Not yet** (`Y` / `N`) counts a rep: 3 clean in a row offers a faster tempo, 2 misses a slower one. Passages save on their first rep and sit above the score with their last reps; "next up" marks the one with the fewest clean reps lately. See `PRACTICE_PLAN.md` |
 | Playback | ▶ Play on the practice page plays the score on a piano sound, cursor following, from wherever the cursor is; tempo slider. Plays from the MusicXML (repeats included), not the stored MIDI |
 | Practice timer + session logging | Start / Pause / Stop and save on the practice page writes a `Sessions` row. Leaving the page pauses it; each timer saves once, and runs over 4 h aren't saved |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
@@ -20,8 +21,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Progress charts | This week's minutes per day, cumulative time, pieces practiced vs in the library |
 | Settings | Shows your account and signs you out; the rest is mock-up |
 | Library density toggle | Buttons show up but don't do anything |
-| Recordings | Record on the practice page saves a take to `Recordings` and plays it back |
-| Sections | Table exists in the database, that's it |
+| Recordings | Record a take on the practice page saves it to `Recordings` and plays it back; an empty take is turned away |
 
 ## How it all fits together
 
@@ -156,7 +156,12 @@ The piece and ML routes (`ml/api.py`) use the demo account if nobody's signed in
 | `POST /api/practice/section` | yes | Sets the current section (`{section_id}`) |
 | `POST /api/timer/start` | yes | Starts the timer (does nothing if it's already going) |
 | `POST /api/timer/pause` | yes | Pauses and saves the time so far |
-| `POST /api/timer/stop` | yes | Saves the practice session (optional `{notes}`) |
+| `POST /api/timer/stop` | yes | Saves the practice session (optional `{notes}`, text, up to 2,000 characters) |
+| `GET /api/pieces/<id>/sections` | demo is fine, has to be your piece | The piece's passages in bar order, each with its last 20 reps (`recent`, oldest first), `reps`, `clean`, `best_tempo`, `last_practiced` |
+| `POST /api/pieces/<id>/sections` | demo is fine, has to be your piece | Makes a passage (`{start, end}`, bar numbers from 1). The same bars again give back the same passage (200 instead of 201) |
+| `DELETE /api/sections/<id>` | demo is fine, has to be yours | Removes a passage and its reps |
+| `POST /api/sections/<id>/reps` | demo is fine, has to be yours | Counts one time through (`{clean: true/false, tempo: percent}`) and gives back the passage |
+| `DELETE /api/sections/<id>/reps/last` | demo is fine, has to be yours | Takes back the newest rep (Undo) |
 
 ## Database
 
@@ -166,8 +171,9 @@ The piece and ML routes (`ml/api.py`) use the demo account if nobody's signed in
 | `Pieces` | Title, composer, bpm, and the MusicXML + MIDI files | Yes (uploads) |
 | `Sessions` | Practice time (seconds), date, notes | Yes (when the timer stops) |
 | `Session_Pieces` | Which pieces you practiced in each session | Yes (when the timer stops) |
-| `Sections` | Measure ranges in a piece | Not yet |
-| `Recordings` | Audio recordings of a piece | Not yet |
+| `Sections` | Passages: bar ranges in a piece (`start_measure`, `end_measure`, counted from 1 in score order) | Yes (passages on the practice page) |
+| `Section_Reps` | Each time through a passage: clean or not, tempo (percent of the score's), date | Yes (Yes / Not yet on the practice page) |
+| `Recordings` | Audio recordings of a piece | Yes (Record a take) |
 
 If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's empty right now). They run in order and get tracked with `PRAGMA user_version`.
 

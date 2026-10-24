@@ -84,8 +84,7 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
              "data": base64.standard_b64encode(src.read_bytes()).decode()}
     key, workspace = (os.environ.get(k, "").strip() for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"))  # pasted values often end in a newline
     with anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {}).beta.messages.stream(
-        model=os.environ.get("CLAUDE_MODEL", "claude-sonnet-5-5"), max_tokens=64000,
-        betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+        model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
         messages=[{"role": "user", "content": [{"type": "image", "source": image},
                   {"type": "text", "text": "Transcribe this sheet music as complete MusicXML (score-partwise, every note and rest, correct key and time signature). Reply with only the XML."}]}],
     ) as stream:

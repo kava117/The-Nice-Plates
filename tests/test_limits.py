@@ -194,6 +194,13 @@ def test_photo_uploads_via_claude(user, name, monkeypatch, tmp_path):
         r = upload(user[0], name, data)
     assert "/practice?piece=" in r.location, f"{name}: {r.location}"
 
+def test_photos_use_the_cheap_model_and_never_fall_back(user, monkeypatch):
+    monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude(AIR.decode()) as made:
+        upload(user[0], "photo.png", b"\x89PNG")
+    sent = made.return_value.beta.messages.stream.call_args.kwargs
+    assert sent["model"] == "claude-haiku-5-5" and "fallbacks" not in sent
+
 def test_claude_truncated_reply_shows_error(user, monkeypatch):
     monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     with fake_claude(AIR.decode()[:3000]):

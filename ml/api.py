@@ -88,7 +88,11 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
         messages=[{"role": "user", "content": [{"type": "image", "source": image},
                   {"type": "text", "text": "Transcribe this sheet music as complete MusicXML (score-partwise, every note and rest, correct key and time signature). Reply with only the XML."}]}],
     ) as stream:
-        text = stream.get_final_message().content[-1].text
+        reply = stream.get_final_message()
+    text = reply.content[-1].text
+    used = getattr(reply, "usage", None)
+    logging.warning("Claude read %s with %s: %s tokens in, %s out", src.name, getattr(reply, "model", "?"),
+                    getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # the Render log shows what each upload cost
     xml = src.with_suffix(".musicxml")
     xml.write_text(text[text.index("<"):text.rindex(">") + 1])
     converter.parse(xml)  # unreadable output raises, and the upload form says so

@@ -1,4 +1,6 @@
-{# Practice page: renders one piece from the library, or the demo score. #}
+{# Practice page: renders one piece from the library, or the demo score.
+   Three rows stay pinned over the score: moving and listening, the passages, and the rep
+   count for the picked passage. passages.js explains how picking a passage works. #}
 {% set title = "Practice" %}
 {% set active = "practice" %}
 {% set auth = "signed-in" %}
@@ -6,21 +8,67 @@
 
 
 <div id="controls">
-  <button id="cursor-prev">&#9664; Prev</button>
-  <button id="cursor-next">Next &#9654;</button>
-  <button id="cursor-reset">Reset</button>
-  <button id="zoom-in">+</button>
-  <button id="zoom-out">-</button>
-  <button id="play" disabled>&#9654; Play</button>
-  <label>Tempo <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
-  <button id="timer">Start practice</button> <button id="stop" hidden>Stop and save</button> <span id="clock"></span>
-  <button id="record">Record</button> <span id="take"></span>
+  <div class="controls-row">
+    <div class="tool-group" role="group" aria-label="Cursor">
+      <button id="cursor-prev" class="tool press" title="Previous note (Left arrow). Previous bar: Shift + Left" aria-label="Previous note">&#9664;</button>
+      <button id="cursor-next" class="tool press" title="Next note (Right arrow). Next bar: Shift + Right" aria-label="Next note">&#9654;</button>
+      <button id="cursor-reset" class="tool press" title="Back to the start (Home)">Reset</button>
+    </div>
+    <div class="tool-group" role="group" aria-label="Listen">
+      <button id="play" class="tool tool-play press" disabled title="Play or stop (Space)">&#9654; Play</button>
+      <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
+    </div>
+    <div class="tool-group" role="group" aria-label="Practice timer">
+      <button id="timer" class="tool press">Start practice</button> <button id="stop" class="tool press" hidden>Stop and save</button> <span id="clock" class="clock"></span>
+    </div>
+    <div class="tool-group" role="group" aria-label="Record">
+      <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
+    </div>
+    <div class="tool-group tool-group-end" role="group" aria-label="Zoom">
+      <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
+      <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
+    </div>
+  </div>
+
+  <div class="controls-row passage-row">
+    <span class="row-label" id="passages-label">Passages</span>
+    <div class="chips" id="passage-chips" role="group" aria-labelledby="passages-label"></div>
+    <form class="bars-form" id="bars-form">
+      <label for="bars-input">Bars</label>
+      <input class="bars-input" id="bars-input" placeholder="12-16" autocomplete="off" enterkeyhint="go" size="6">
+    </form>
+    <details class="keys" id="keys">
+      <summary class="tool press" title="Keyboard shortcuts (?)">Keys</summary>
+      <dl class="keys-panel">
+        <dt><kbd>Space</kbd></dt><dd>Play or stop</dd>
+        <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
+        <dt><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next bar</dd>
+        <dt><kbd>Home</kbd></dt><dd>Start of the passage, or the piece</dd>
+        <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Mark a passage: [ on its first bar, ] on its last</dd>
+        <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That went clean, or not yet</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Back to the whole piece</dd>
+        <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
+      </dl>
+    </details>
+  </div>
+
+  <div class="controls-row rep-row" id="rep" hidden>
+    <strong class="rep-title" id="rep-title"></strong>
+    <span class="rep-ask">Was that clean?</span>
+    <button type="button" class="btn btn-solid press rep-button" id="rep-yes">Yes <kbd>Y</kbd></button>
+    <button type="button" class="btn btn-ghost press rep-button" id="rep-no">Not yet <kbd>N</kbd></button>
+    <span class="dots dots-large" id="rep-dots" aria-hidden="true"></span>
+    <span class="rep-note" id="rep-note" role="status"></span>
+    <span class="rep-actions" id="rep-actions"></span>
+  </div>
 </div>
 
+<p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to your library</a></p>
 <div id="score"></div>
 
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
+<script src="/passages.js"></script>
 <script>
   const piece = new URLSearchParams(location.search).get("piece");  // from the library; no piece = the demo score
   const SONG_URL = piece ? `/api/pieces/${piece}/musicxml` : "/AirOnG.musicxml";
@@ -31,9 +79,21 @@
     followCursor: true,   // scrolls the page to keep the cursor in view
   });
 
-  // ---- Play the score (player.js) ----
+  // ---- Play the score (player.js); with a passage picked it loops the passage ----
   const play = document.getElementById("play"), tempo = document.getElementById("tempo"), tempoLabel = document.getElementById("tempo-label");
-  const player = addPlayer(osmd, play, tempo);
+  const player = addPlayer(osmd, play, tempo, { passage: () => passages.bars, toStart: () => passages.toStart() });
+
+  // ---- Passages (passages.js): pick bars, loop them, count clean reps ----
+  const $ = id => document.getElementById(id);
+  const passages = addPassages(osmd, {
+    score: $("score"), chips: $("passage-chips"), form: $("bars-form"), input: $("bars-input"),
+    rep: $("rep"), title: $("rep-title"), yes: $("rep-yes"), no: $("rep-no"), dots: $("rep-dots"), note: $("rep-note"), actions: $("rep-actions"),
+  }, {
+    pieceId: piece && +piece, tempo,
+    playing: () => player.playing,
+    onPick: () => player.stop(),
+    onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
+  });
   const showTempo = () => {
     const bpm = osmd.Sheet && osmd.Sheet.DefaultStartTempoInBpm;
     tempoLabel.textContent = bpm ? `${Math.round(bpm * tempo.value / 100)} bpm` : `${tempo.value} %`;
@@ -48,48 +108,73 @@
       osmd.cursor.show();   // cursor only exists after render()
       play.disabled = false;
       showTempo();
+      passages.ready((await firstState).section_id);   // back on the passage the last visit left on
     } catch (err) {
       console.error("Couldn't load song:", err);
-      if (url !== "/AirOnG.musicxml") loadSong("/AirOnG.musicxml");   // the server is down or the piece is gone: still show a score
+      if (url === "/AirOnG.musicxml") return;
+      if (piece) document.getElementById("score-missing").hidden = false;   // a removed piece says so, instead of quietly showing Bach
+      else loadSong("/AirOnG.musicxml");
     }
   }
 
   // ---- Cursor controls ----
-  // moving the cursor by hand stops playback, so the sound and the cursor can't drift apart
+  // moving the cursor by hand stops playback, so the sound and the cursor can't drift apart.
+  // Inside a passage, Next at its last note goes back to its first, and Reset goes to its start.
   function cursorNext() {
     player.stop();
-    if (!osmd.cursor.Iterator.EndReached) osmd.cursor.next();
+    if (!passages.next() && !osmd.cursor.Iterator.EndReached) osmd.cursor.next();
+    passages.moved();
   }
   function cursorPrev() {
     player.stop();
-    osmd.cursor.previous();
+    if (!passages.previous()) osmd.cursor.previous();
+    passages.moved();
   }
   function cursorReset() {
     player.stop();
-    osmd.cursor.reset();
+    passages.toStart();
   }
 
   document.getElementById("cursor-next").addEventListener("click", cursorNext);
   document.getElementById("cursor-prev").addEventListener("click", cursorPrev);
   document.getElementById("cursor-reset").addEventListener("click", cursorReset);
 
-  document.getElementById("zoom-in").addEventListener("click", () => {
+  function zoom(by) {
     player.stop();
-    osmd.zoom = Math.min(osmd.zoom + 0.1, 3);
+    osmd.zoom = Math.min(Math.max(osmd.zoom + by, 0.4), 3);
     osmd.render();
-  });
-  document.getElementById("zoom-out").addEventListener("click", () => {
-    player.stop();
-    osmd.zoom = Math.max(osmd.zoom - 0.1, 0.4);
-    osmd.render();
-  });
+  }
+  document.getElementById("zoom-in").addEventListener("click", () => zoom(0.1));
+  document.getElementById("zoom-out").addEventListener("click", () => zoom(-0.1));
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight") cursorNext();
-    if (e.key === "ArrowLeft") cursorPrev();
+  // ---- Keys: a musician's hands are on the instrument, so one key does each common job ----
+  const keys = document.getElementById("keys");
+  const KEYS = {
+    "ArrowRight": e => e.shiftKey ? (player.stop(), passages.nextBar()) : cursorNext(),
+    "ArrowLeft": e => e.shiftKey ? (player.stop(), passages.previousBar()) : cursorPrev(),
+    "Home": cursorReset,
+    " ": () => play.disabled || play.click(),
+    "[": () => passages.markStart(),
+    "]": () => passages.markEnd(),
+    "y": () => passages.rep(true),
+    "n": () => passages.rep(false),
+    "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
+    "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
+    "?": () => { keys.open = !keys.open; },
+  };
+  document.addEventListener("keydown", e => {
+    const act = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (!act || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;   // leave Cmd+R, Ctrl+arrows and the like alone
+    if (e.target.closest("textarea, select, [contenteditable], input:not([type=range])")) return;   // typing in the Bars box
+    if (e.target.matches("input[type=range]") && /^(Arrow|Home|End|Page)/.test(e.key)) return;     // the tempo slider's own keys
+    if (e.key === " " && e.target.closest("button, a, summary")) return;           // Space presses the focused button
+    e.preventDefault();
+    act(e);
   });
-
-  loadSong(SONG_URL);
+  // A mouse click shouldn't leave focus on a toolbar button, or the next Space would press it again instead of Play.
+  document.getElementById("controls").addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.target.closest("button, summary")) e.preventDefault();
+  });
 
   // ---- Practice timer: saves a row in Sessions on stop ----
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }).then(r => r.json());
@@ -110,7 +195,8 @@
     return state;
   }
   const refresh = () => fetch("/api/practice/state").then(r => r.json()).then(render);
-  refresh().then(state => {   // a reload pauses too (pagehide): pick straight back up if this tab paused it moments ago
+  const firstState = refresh().catch(() => ({}));
+  firstState.then(state => {   // a reload pauses too (pagehide): pick straight back up if this tab paused it moments ago
     let left = 0;
     try { left = +sessionStorage.getItem("timer-left-at"); sessionStorage.removeItem("timer-left-at"); } catch {}
     if (!state.running && state.elapsed > 0 && Date.now() - left < 5000) post("/api/timer/start").then(render);
@@ -133,28 +219,37 @@
   addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
   document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
 
-  // ---- Record a take: saves the audio in Recordings ----
+  // ---- Record a take: saves the audio in Recordings, to listen back now (and, later, to check against the score) ----
   const record = document.getElementById("record"), take = document.getElementById("take");
   let recorder;
   record.addEventListener("click", async () => {
     if (!piece) { take.textContent = "Open a piece from the library to record it"; return; }
     if (recorder) { recorder.stop(); return; }
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch { take.textContent = "Allow the microphone to record a take"; return; }
     const chunks = [];
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
       recorder = null;
-      record.textContent = "Record";
+      record.textContent = "Record a take";
+      record.classList.remove("is-recording");
       const form = new FormData();
       form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
-      const saved = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form }).then(r => r.json());
+      const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
+      if (!r.ok) { take.textContent = "That take was empty. Try again."; return; }
+      const saved = await r.json();
       take.innerHTML = `Take ${saved.id} saved <audio controls src="/api/recordings/${saved.id}"></audio>`;
     };
     recorder.start();
+    take.textContent = "";
     record.textContent = "Stop recording";
+    record.classList.add("is-recording");
   });
+
+  loadSong(SONG_URL);
 </script>
 
 {% include "footer.html" %}

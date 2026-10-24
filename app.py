@@ -126,9 +126,10 @@ def practice_state():
 # returns the data of a single key
 def read_id(data, key):
     try:
-        return int(data.get(key))
-    except (TypeError, ValueError):
+        n = int(data.get(key))
+    except (TypeError, ValueError, AttributeError):
         return None
+    return n if 0 < n < 2**63 else None   # SQLite integers are 64-bit: a bigger id crashed the query
 
 # only track pieces once a timer exists (running or paused with banked time)
 def remember_piece(piece_id):
@@ -252,7 +253,11 @@ def api_timer_stop():
         total = min(total, MAX_SESSION)
     if too_long:
         total = 0
-    notes = (request.get_json(silent=True) or {}).get("notes")
+    data = request.get_json(silent=True)
+    notes = data.get("notes") if isinstance(data, dict) else None
+    if notes is not None and not isinstance(notes, str):
+        return jsonify(error="notes must be text"), 400
+    notes = notes[:2000] if notes else None
     session_id = None
     if total > 0:
         session_id = database.addSession(

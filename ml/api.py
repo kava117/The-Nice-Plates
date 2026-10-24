@@ -127,7 +127,10 @@ def piece_xml(piece_id):
 @api.post("/pieces/<int:piece_id>/recordings")  # the practice page's Record button
 def add_recording(piece_id):
     database.getPieceForUser(user_id(), piece_id) or abort(404)
-    return jsonify(id=database.addRecording(piece_id, request.files["file"].read()))
+    audio = request.files["file"].read()
+    if not audio:   # the microphone gave nothing (denied mid-take, or stopped at once)
+        return jsonify(error="the recording is empty"), 400
+    return jsonify(id=database.addRecording(piece_id, audio))
 
 
 @api.get("/recordings/<int:recording_id>")

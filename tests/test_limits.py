@@ -58,7 +58,7 @@ def test_logout_route_signs_out(user):
 
 # ---------------------------------------------------------------- practice API
 @pytest.mark.parametrize("body", [{}, {"piece_id": "abc"}, {"piece_id": None}, {"piece_id": [1]},
-                                  pytest.param({"piece_id": 10**30}, marks=known("Crashes: huge piece_id overflows SQLite")), {"piece_id": -1}, "not json"])
+                                  {"piece_id": 10**30}, {"piece_id": -1}, "not json"])
 def test_select_piece_bad_input_is_404_not_500(guest, body):
     r = guest.post("/api/practice/piece", data=body if isinstance(body, str) else json.dumps(body),
                    content_type="application/json")
@@ -96,13 +96,14 @@ def test_timer_double_start_does_not_reset(user):
         client.post("/api/timer/start"); c.offset += 20
         assert client.post("/api/timer/stop").get_json()["time_spent"] == 120
 
-@known("Crashes: dict notes reach SQLite")
 def test_non_string_notes_are_rejected_cleanly(user):
     client, _ = user
     client.post("/api/timer/start")
     with clock(5)[1]:
         r = client.post("/api/timer/stop", json={"notes": {"a": 1}})
     assert r.status_code in (200, 400), f"got {r.status_code}"
+    with clock(5)[1]:
+        assert client.post("/api/timer/stop", json=["a list"]).status_code == 200   # no notes, still saves
 
 def test_abandoned_timer_does_not_log_a_30_hour_session(user):
     """Close the tab mid-practice, come back tomorrow, press Stop."""
@@ -266,7 +267,6 @@ def test_safari_recording_plays_back_with_its_own_type(user):
                       content_type="multipart/form-data").get_json()["id"]
     assert client.get(f"/api/recordings/{rid}").mimetype == "audio/mp4"
 
-@known("Will cause trouble: empty recordings saved")
 def test_empty_recording_is_rejected(user):
     client, uid = user
     pid = db.addPiece(uid, "Rec", xml=AIR)

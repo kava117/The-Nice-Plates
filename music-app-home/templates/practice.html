@@ -63,6 +63,7 @@
   </div>
 </div>
 
+<p class="score-loading" id="score-loading" role="status">Loading the score…</p>
 <p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to your library</a></p>
 <div id="score"></div>
 
@@ -105,16 +106,24 @@
   async function loadSong(url) {
     try {
       player.stop();
-      await osmd.load(url);
+      const response = await fetch(url);   // fetched here, not by OSMD: its own request gives up after a few seconds
+      if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status}`), { status: response.status });
+      await osmd.load(await response.text());
       osmd.render();
       osmd.cursor.show();   // cursor only exists after render()
+      document.getElementById("score-loading").hidden = true;
       play.disabled = false;
       showTempo();
       passages.ready((await firstState).section_id);   // back on the passage the last visit left on
     } catch (err) {
       console.error("Couldn't load song:", err);
-      if (url === "/AirOnG.musicxml") return;
-      if (piece) document.getElementById("score-missing").hidden = false;   // a removed piece says so, instead of quietly showing Bach
+      const loading = document.getElementById("score-loading");
+      if (url === "/AirOnG.musicxml") { loading.textContent = "The score didn't load. Reload the page to try again."; return; }
+      if (piece && err.status === 404) {   // a removed piece says so, instead of quietly showing Bach
+        loading.hidden = true;
+        document.getElementById("score-missing").hidden = false;
+      }
+      else if (piece) loading.textContent = "The score didn't load. Reload the page to try again.";
       else loadSong("/AirOnG.musicxml");
     }
   }
@@ -251,6 +260,11 @@
     record.classList.add("is-recording");
   });
 
+  // A sleeping free server takes up to a minute to answer: say so instead of sitting silent.
+  setTimeout(() => {
+    const loading = document.getElementById("score-loading");
+    if (!loading.hidden) loading.textContent = "Still loading. The free server can take up to a minute to wake up.";
+  }, 8000);
   loadSong(SONG_URL);
 </script>
 

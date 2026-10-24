@@ -1564,6 +1564,16 @@ kbd {
   color: var(--ink);
 }
 
+.score-loading {
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.score-loading[hidden] {
+  display: none;
+}
+
 .score-missing {
   margin-bottom: 16px;
   padding: 16px 18px;

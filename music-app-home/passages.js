@@ -277,7 +277,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     if (!active || active.id) return record();
     const made = keep(await api(`/api/pieces/${pieceId}/sections`, "POST", { start: active.first + 1, end: active.last + 1 }));
     active.id = made.id;
-    remember();
+    await remember();   // finish before the timer starts: two requests at once would each write the session cookie, and one would lose
     return made;
   }
 

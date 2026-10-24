@@ -49,6 +49,7 @@ with sync_playwright() as p:
     saved = api(f"/api/pieces/{piece}/sections")
     assert [(s["start"], s["end"], s["reps"], s["clean"]) for s in saved] == [(3, 6, 1, 1)], saved
     assert page.locator("#timer").inner_text() == "Pause", "a rep should start the timer"
+    assert api("/api/practice/state")["section_id"] == saved[0]["id"], "the timer start overwrote the remembered passage"
     assert note.inner_text() == "Clean: 1 of 3 in a row."
 
     # Next stays inside the passage and goes round; Shift+Right a bar at a time

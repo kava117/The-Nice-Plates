@@ -17,7 +17,9 @@ with sync_playwright() as p:
     page = browser.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
-    page.goto(BASE + "/practice")
+    page.goto(BASE + "/library")   # /practice alone opens the latest piece, so open Air by its id
+    air = next(x["id"] for x in page.evaluate("fetch('/api/pieces').then(r => r.json())") if x["title"] == "Air")
+    page.goto(f"{BASE}/practice?piece={air}")
     play = page.locator("#play")
     play.wait_for(state="visible")
     page.wait_for_function("!document.getElementById('play').disabled")

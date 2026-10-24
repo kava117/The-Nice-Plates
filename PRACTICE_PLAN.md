@@ -11,7 +11,7 @@ A musician at the piano, laptop or tablet on the stand. Their hands are on the k
 | Question | Choice | Why |
 |---|---|---|
 | How to pick bars | Drag across them on the score. Or type `12-16` in the Bars box, or press `[` on the first bar and `]` on the last | The score is where the eyes already are. Typing matches a teacher's assignment. The keys keep hands near the instrument |
-| A slider, or two thumbs for start and end | No | A slider sits away from the notes, and on a 40-bar piece one bar is a few pixels of thumb |
+| A slider, or two thumbs for start and end | The two thumbs, but on the score: a handle at each end of the passage frame | People know two-thumb sliders. A slider under the score sits away from the notes, and on a 40-bar piece one bar is a few pixels of thumb; a handle on the bar itself snaps to whole bars |
 | Showing the passage | A green frame; the other bars fade to about 30 % | Blur would hide the bar before the passage, and you need to read it to come in |
 | A click on a bar | Moves the cursor there. A double click picks that one bar | Moving the cursor is the common case; picking needs a drag |
 | Play with a passage | Plays it, rests one beat, and goes round until Stop | Hearing it a few times is how you learn how it goes |

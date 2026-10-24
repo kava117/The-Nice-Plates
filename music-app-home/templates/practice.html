@@ -70,7 +70,9 @@
 <script src="/player.js"></script>
 <script src="/passages.js"></script>
 <script>
-  const piece = new URLSearchParams(location.search).get("piece");  // from the library; no piece = the demo score
+  // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
+  const piece = new URLSearchParams(location.search).get("piece") || {{ latest_piece | tojson }};
+  if (piece && !new URLSearchParams(location.search).has("piece")) history.replaceState(null, "", `/practice?piece=${piece}`);   // reload and share keep it
   const SONG_URL = piece ? `/api/pieces/${piece}/musicxml` : "/AirOnG.musicxml";
 
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score", {

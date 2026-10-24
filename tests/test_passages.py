@@ -135,3 +135,14 @@ def test_reopening_the_piece_keeps_its_passage_and_another_piece_drops_it(user):
     client.post("/api/practice/section", json={"section_id": sid})
     assert client.post("/api/practice/piece", json={"piece_id": pid}).get_json()["section_id"] == sid
     assert client.post("/api/practice/piece", json={"piece_id": other}).get_json()["section_id"] is None
+
+
+def test_practice_without_a_piece_opens_the_latest_one(user):
+    """The sidebar's Practice link has no ?piece=; passages need a saved piece, so the page gets the latest one."""
+    client, uid = user
+    assert "|| null;" in client.get("/practice").get_data(as_text=True)   # no pieces yet: the demo score
+    older, newer = piece_for(uid), piece_for(uid)
+    db.touchPiece(newer)
+    page = client.get("/practice")
+    assert page.status_code == 200 and f'|| {newer};' in page.get_data(as_text=True)
+    assert f'|| null;' in client.get(f"/practice?piece={older}").get_data(as_text=True)   # an explicit piece wins

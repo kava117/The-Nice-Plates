@@ -312,7 +312,9 @@ def settings():
 
 @app.route("/practice")
 def practice():
-    return render_template("practice.html")
+    # The sidebar's Practice link has no ?piece=: open the piece looked at last, so passages and reps can be saved.
+    latest = None if request.args.get("piece") else next(iter(database.getPieces(user_id())), None)
+    return render_template("practice.html", latest_piece=latest and latest["id"])
 
 @app.route("/login/google")
 def login_google():

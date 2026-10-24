@@ -88,7 +88,18 @@ def init_db():
                 audio BLOB NOT NULL,
                 date_created DATETIME DEFAULT CURRENT_TIMESTAMP
             );
-            
+
+            -- one row per time through a passage (a row in Sections): did it go clean, and how fast
+            -- (a new table, so IF NOT EXISTS covers old databases too; no MIGRATIONS entry needed)
+            CREATE TABLE IF NOT EXISTS Section_Reps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                section_id INTEGER NOT NULL REFERENCES Sections(id) ON DELETE CASCADE,
+                clean INTEGER NOT NULL,             -- 1 = clean, 0 = not yet
+                tempo INTEGER,                      -- percent of the score's tempo
+                date DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS Index_Section_Reps_Section_Id ON Section_Reps(section_id);
             CREATE INDEX IF NOT EXISTS Index_Session_Pieces_Piece_Id ON Session_Pieces(piece_id);
             CREATE INDEX IF NOT EXISTS Index_Sessions_User_Id ON Sessions(user_id);
             CREATE INDEX IF NOT EXISTS Index_Pieces_User_Id ON Pieces(user_id);
@@ -259,6 +270,73 @@ def getRecording(user_id, recording_id):
             "SELECT r.audio FROM Recordings r JOIN Pieces p ON p.id = r.piece_id WHERE r.id = ? AND p.user_id = ?",
             (recording_id, user_id),
         ).fetchone()
+
+# Passages: the bars a musician picks out of a piece to practice (rows in Sections).
+# start_measure and end_measure count bars from 1 in score order, so they match the
+# printed bar numbers unless the score opens with a pickup bar.
+
+RECENT_REPS = 20   # how many reps the practice page gets back for each passage
+
+def sectionRecord(database, row):
+    """a passage with its practice record: recent reps (oldest first) and totals"""
+    reps = database.execute(
+        "SELECT clean, tempo FROM Section_Reps WHERE section_id = ? ORDER BY id DESC LIMIT ?",
+        (row["id"], RECENT_REPS),
+    ).fetchall()
+    totals = database.execute(
+        """SELECT COUNT(*) AS reps, COALESCE(SUM(clean), 0) AS clean, MAX(date) AS last_practiced,
+                  MAX(CASE WHEN clean = 1 THEN tempo END) AS best_tempo
+           FROM Section_Reps WHERE section_id = ?""",
+        (row["id"],),
+    ).fetchone()
+    return {"id": row["id"], "piece_id": row["piece_id"], "start": row["start_measure"], "end": row["end_measure"],
+            "recent": [{"clean": bool(r["clean"]), "tempo": r["tempo"]} for r in reversed(reps)], **dict(totals)}
+
+def getSections(user_id, piece_id):
+    """one piece's passages in bar order"""
+    with get_db() as database:
+        rows = database.execute(
+            """SELECT s.id, s.piece_id, s.start_measure, s.end_measure FROM Sections s JOIN Pieces p ON p.id = s.piece_id
+               WHERE s.piece_id = ? AND p.user_id = ? ORDER BY s.start_measure, s.end_measure""",
+            (piece_id, user_id),
+        ).fetchall()
+        return [sectionRecord(database, row) for row in rows]
+
+def getSectionRecord(section_id):
+    with get_db() as database:
+        row = database.execute("SELECT id, piece_id, start_measure, end_measure FROM Sections WHERE id = ?", (section_id,)).fetchone()
+        return sectionRecord(database, row) if row else None
+
+def addSection(piece_id, start, end):
+    """the passage for these bars, made if it doesn't exist yet; returns (id, created)"""
+    with get_db() as database:
+        database.execute("BEGIN IMMEDIATE")   # two quick clicks must not make the same passage twice
+        row = database.execute(
+            "SELECT id FROM Sections WHERE piece_id = ? AND start_measure = ? AND end_measure = ?", (piece_id, start, end)
+        ).fetchone()
+        if row:
+            return row["id"], False
+        cur = database.execute("INSERT INTO Sections (piece_id, start_measure, end_measure) VALUES (?, ?, ?)", (piece_id, start, end))
+        return cur.lastrowid, True
+
+def deleteSection(section_id):
+    with get_db() as database:
+        database.execute("DELETE FROM Sections WHERE id = ?", (section_id,))   # its reps go too (ON DELETE CASCADE)
+
+def addRep(section_id, clean, tempo=None):
+    with get_db() as database:
+        database.execute("INSERT INTO Section_Reps (section_id, clean, tempo) VALUES (?, ?, ?)", (section_id, int(clean), tempo))
+        database.execute("UPDATE Sections SET times_practiced = times_practiced + 1 WHERE id = ?", (section_id,))
+
+def deleteLastRep(section_id):
+    """undo: removes the passage's newest rep; returns whether there was one"""
+    with get_db() as database:
+        gone = database.execute(
+            "DELETE FROM Section_Reps WHERE id = (SELECT MAX(id) FROM Section_Reps WHERE section_id = ?)", (section_id,)
+        ).rowcount
+        if gone:
+            database.execute("UPDATE Sections SET times_practiced = MAX(times_practiced - 1, 0) WHERE id = ?", (section_id,))
+        return bool(gone)
 
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""

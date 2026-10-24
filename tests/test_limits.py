@@ -69,9 +69,8 @@ def test_cannot_select_another_users_piece(user):
     other_piece = db.addPiece(make_user(), "Secret", xml=AIR)
     assert client.post("/api/practice/piece", json={"piece_id": other_piece}).status_code == 404
 
-@known("Broken features: nothing creates Sections")
 def test_sections_can_be_selected():
-    """Sections table exists but nothing creates rows, so this endpoint can never succeed."""
+    """The practice page makes Sections rows (passages), so this endpoint can succeed."""
     assert any("Sections" in l and "INSERT" in l for l in Path(db.__file__).read_text().splitlines()), \
         "no code path creates a Section; /api/practice/section always 404s"
 

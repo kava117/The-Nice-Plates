@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, redirect, url_for, render_template, request, session
+from flask import Flask, abort, jsonify, redirect, url_for, render_template, request, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from database import database
 from datetime import date, datetime, timedelta, timezone
@@ -150,8 +150,9 @@ def api_select_piece():
     piece_id = read_id(request.get_json(silent=True) or {}, "piece_id")
     if piece_id is None or not database.getPieceForUser(user_id(), piece_id):
         return jsonify(error="piece not found"), 404
+    if session.get("current_piece_id") != piece_id:
+        session.pop("selected_section_id", None)   # a passage of another piece no longer applies
     session["current_piece_id"] = piece_id
-    session.pop("selected_section_id", None)   # this section no longer relevant
     remember_piece(piece_id)
     return jsonify(practice_state())
 
@@ -166,6 +167,61 @@ def api_select_section():
     session["current_piece_id"] = section["piece_id"]   # a section implies its piece
     remember_piece(section["piece_id"])
     return jsonify(practice_state())
+
+
+# ---- Passages: bars picked out of a piece to practice (Sections), and each time through them (Section_Reps) ----
+MAX_BAR = 10000
+
+def read_bars(data):
+    """(start, end) bar numbers from {"start": 12, "end": 16}, or None if they don't make a passage"""
+    try:
+        start, end = int(data.get("start")), int(data.get("end"))
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return (start, end) if 1 <= start <= end <= MAX_BAR else None
+
+def my_section(section_id):
+    return database.getSectionForUser(user_id(), section_id) or abort(404)
+
+@app.route("/api/pieces/<int:piece_id>/sections")
+def api_sections(piece_id):
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    return jsonify(database.getSections(user_id(), piece_id))
+
+@app.route("/api/pieces/<int:piece_id>/sections", methods=["POST"])
+def api_add_section(piece_id):
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    bars = read_bars(request.get_json(silent=True) or {})
+    if not bars:
+        return jsonify(error=f"start and end must be bar numbers from 1 to {MAX_BAR}, start first"), 400
+    section_id, created = database.addSection(piece_id, *bars)
+    return jsonify(database.getSectionRecord(section_id)), 201 if created else 200
+
+@app.route("/api/sections/<int:section_id>", methods=["DELETE"])
+def api_delete_section(section_id):
+    my_section(section_id)
+    database.deleteSection(section_id)
+    if session.get("selected_section_id") == section_id:
+        session.pop("selected_section_id")
+    return "", 204
+
+@app.route("/api/sections/<int:section_id>/reps", methods=["POST"])
+def api_add_rep(section_id):
+    my_section(section_id)
+    data = request.get_json(silent=True)
+    clean, tempo = (data.get("clean"), data.get("tempo")) if isinstance(data, dict) else (None, None)
+    if not isinstance(clean, bool):
+        return jsonify(error="clean must be true or false"), 400
+    if tempo is not None and not (isinstance(tempo, int) and 10 <= tempo <= 400):
+        return jsonify(error="tempo must be a whole percent from 10 to 400"), 400
+    database.addRep(section_id, clean, tempo)
+    return jsonify(database.getSectionRecord(section_id))
+
+@app.route("/api/sections/<int:section_id>/reps/last", methods=["DELETE"])
+def api_undo_rep(section_id):
+    my_section(section_id)
+    database.deleteLastRep(section_id)
+    return jsonify(database.getSectionRecord(section_id))
 
 #begin tracking a sessions length
 @app.route("/api/timer/start", methods=["POST"])

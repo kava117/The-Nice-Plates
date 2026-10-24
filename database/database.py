@@ -1,10 +1,88 @@
-import sqlite3
+import os, re, sqlite3
 from contextlib import contextmanager
+from datetime import datetime
 
 DB_NAME = "niceplates.db"
 
+# With DATABASE_URL set (a Postgres URL, e.g. from Neon), everything is kept there and survives
+# restarts. Without it, a local SQLite file, which free hosting wipes on every restart.
+# The SQL below is written once, for SQLite; Postgres gets it through translate().
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+POSTGRES = DATABASE_URL.startswith(("postgres://", "postgresql://"))
+
+if POSTGRES:
+    import psycopg
+    from psycopg.rows import dict_row
+    IntegrityError = (sqlite3.IntegrityError, psycopg.IntegrityError)
+else:
+    IntegrityError = sqlite3.IntegrityError
+
+PG_REWRITES = [
+    (re.compile(r"INTEGER PRIMARY KEY AUTOINCREMENT", re.I), "SERIAL PRIMARY KEY"),
+    (re.compile(r"\bBLOB\b", re.I), "BYTEA"),
+    (re.compile(r"\bDATETIME\b", re.I), "TIMESTAMP"),
+    (re.compile(r"\?"), "%s"),
+]
+
+def translate(sql):
+    """SQLite SQL as Postgres SQL"""
+    for pattern, replacement in PG_REWRITES:
+        sql = pattern.sub(replacement, sql)
+    if re.match(r"\s*INSERT OR IGNORE", sql, re.I):
+        sql = re.sub(r"INSERT OR IGNORE", "INSERT", sql, count=1, flags=re.I) + " ON CONFLICT DO NOTHING"
+    return sql
+
+def plain(value):
+    """Postgres hands back datetimes and memoryviews; the app expects SQLite's strings and bytes"""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(value, memoryview):
+        return bytes(value)
+    return value
+
+class Row(dict):
+    """a dict that also reads by position, like sqlite3.Row"""
+    def __getitem__(self, key):
+        return list(self.values())[key] if isinstance(key, int) else super().__getitem__(key)
+
+class Result:
+    def __init__(self, cursor, lastrowid=None):
+        self.cursor, self.lastrowid, self.rowcount = cursor, lastrowid, cursor.rowcount
+    def fetchone(self):
+        row = self.cursor.fetchone() if self.cursor.description else None
+        return Row({k: plain(v) for k, v in row.items()}) if row else None
+    def fetchall(self):
+        return [Row({k: plain(v) for k, v in row.items()}) for row in self.cursor.fetchall()] if self.cursor.description else []
+
+class PostgresDB:
+    """the slice of sqlite3.Connection this file uses, on a Postgres connection"""
+    def __init__(self):
+        self.conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    def execute(self, sql, params=()):
+        if sql.strip().upper() == "BEGIN IMMEDIATE":
+            return Result(self.conn.cursor())   # Postgres opens the transaction by itself
+        sql = translate(sql)
+        returning = re.match(r"\s*INSERT INTO (\w+)", sql, re.I)
+        if returning and returning.group(1).lower() != "session_pieces" and "RETURNING" not in sql.upper() and "ON CONFLICT" not in sql.upper():
+            cursor = self.conn.execute(sql + " RETURNING id", params)   # sqlite's lastrowid
+            return Result(cursor, cursor.fetchone()["id"])
+        return Result(self.conn.execute(sql, params))
+    def executemany(self, sql, rows):
+        with self.conn.cursor() as cursor:
+            cursor.executemany(translate(sql), list(rows))
+    def executescript(self, script):
+        script = re.sub(r"--[^\n]*", "", script)   # comments may hold a ";"
+        for statement in script.split(";"):
+            if statement.strip():
+                self.conn.execute(translate(statement))
+    def commit(self): self.conn.commit()
+    def rollback(self): self.conn.rollback()
+    def close(self): self.conn.close()
+
 #helper to get the database and enable references (foreign keys) properly
 def connect():
+    if POSTGRES:
+        return PostgresDB()
     db = sqlite3.connect(DB_NAME)
     db.execute("PRAGMA foreign_keys = ON")
     db.row_factory = sqlite3.Row
@@ -14,8 +92,11 @@ def connect():
 def get_db():
     db = connect()
     try:
-        with db:
-            yield db
+        yield db
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
     finally:
         db.close()
 
@@ -29,10 +110,20 @@ MIGRATIONS = [
 def migrate():
     with get_db() as database:
         database.execute("BEGIN IMMEDIATE")
-        version = database.execute("PRAGMA user_version").fetchone()[0]
+        if POSTGRES:   # no PRAGMA user_version there: a one-row table keeps the count
+            database.execute("CREATE TABLE IF NOT EXISTS Schema_Version (version INTEGER NOT NULL)")
+            row = database.execute("SELECT version FROM Schema_Version").fetchone()
+            if row is None:
+                database.execute("INSERT INTO Schema_Version (version) VALUES (0) ON CONFLICT DO NOTHING")
+            version = row["version"] if row else 0
+        else:
+            version = database.execute("PRAGMA user_version").fetchone()[0]
         for i, statement in enumerate(MIGRATIONS[version:], start=version):
             database.execute(statement)
-            database.execute(f"PRAGMA user_version = {i + 1}")
+            if POSTGRES:
+                database.execute("UPDATE Schema_Version SET version = ?", (i + 1,))
+            else:
+                database.execute(f"PRAGMA user_version = {i + 1}")
 
 #create database when initializing
 def init_db():
@@ -240,7 +331,7 @@ def addSession(user_id, time_spent, notes=None, piece_ids=(), timer_id=None):
                 [(session_id, pid) for pid in set(piece_ids)],
             )
             return session_id #use this to reference the session in any next steps
-    except sqlite3.IntegrityError:   # this timer was already saved (two tabs, the back button): hand back that row
+    except IntegrityError:   # this timer was already saved (two tabs, the back button): hand back that row
         with get_db() as database:
             row = database.execute("SELECT id FROM Sessions WHERE timer_id = ? AND user_id = ?", (timer_id, user_id)).fetchone()
         if row is None:
@@ -335,7 +426,7 @@ def deleteLastRep(section_id):
             "DELETE FROM Section_Reps WHERE id = (SELECT MAX(id) FROM Section_Reps WHERE section_id = ?)", (section_id,)
         ).rowcount
         if gone:
-            database.execute("UPDATE Sections SET times_practiced = MAX(times_practiced - 1, 0) WHERE id = ?", (section_id,))
+            database.execute("UPDATE Sections SET times_practiced = CASE WHEN times_practiced > 0 THEN times_practiced - 1 ELSE 0 END WHERE id = ?", (section_id,))
         return bool(gone)
 
 def demoUser():

@@ -63,6 +63,10 @@
         const error = document.getElementById("upload-error");
         error.textContent = "File too large (max 20 MB).";
         error.hidden = false;
+      } else if (file) {
+        const button = e.target.querySelector("button[type=submit]");   // a photo can take half a minute to read
+        button.textContent = "Reading your sheet…";
+        button.disabled = true;
       }
     };
     // Compact / Normal / Cozy = 6 / 4 / 3 tiles per row.

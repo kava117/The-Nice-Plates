@@ -32,7 +32,7 @@ It's all one Flask app. The browser only talks to Flask, and Flask handles every
 - **Front end:** plain Jinja templates, no framework, no build step. Scores are drawn with [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) (it's checked in as `opensheetmusicdisplay.min.js`). There's light/dark mode, keyboard support, and reduced-motion handling.
 - **Accounts:** Google sign-in through Authlib, with Flask-Login keeping you logged in. No Google keys means everyone just shares one demo account (`Sample User`).
 - **Practice state:** your current piece, section, and timer are kept in the session cookie until you stop the timer. That's when it gets saved to the `Sessions` table.
-- **Database:** one SQLite file, `niceplates.db`, that gets created in whatever folder you run the app from.
+- **Database:** one SQLite file, `niceplates.db`, made in whatever folder you run the app from. Set `DATABASE_URL` to a Postgres connection string and it uses Postgres instead, with the same tables.
 
 ### The sheet music pipeline
 
@@ -64,8 +64,7 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 | `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
 | `ANTHROPIC_API_KEY` | needed for that; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
 | `CLAUDE_MODEL` | optional, default `claude-sonnet-5-5` (about 3 cents a page) |
-
-The SQLite file lives on the instance disk, which Render wipes on every deploy, so accounts and uploads do not survive a restart.
+| `DATABASE_URL` | **Needed for saved data.** A Postgres connection string, e.g. from a free Neon project. Without it the app uses SQLite on the instance disk, which Render wipes on every deploy and every spin-down, so accounts, pieces and sessions vanish |
 
 ## Where stuff lives
 

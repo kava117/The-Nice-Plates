@@ -416,7 +416,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       list.push(c);
     }
     if (!saved.length && !active && marking === null)
-      list.push(Object.assign(document.createElement("span"), { className: "chip-hint", textContent: "Drag across bars on the score to pick a passage." }));
+      list.push(Object.assign(document.createElement("span"), { className: "chip-hint", textContent: "Drag across bars on the score to pick a passage, then drag its green handles to adjust it." }));
     chips.replaceChildren(...list);
   }
 

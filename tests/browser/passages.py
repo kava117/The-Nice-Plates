@@ -111,6 +111,17 @@ with sync_playwright() as p:
     assert title.inner_text() == "Bars 10-12" and not page.evaluate("document.getElementById('bars-input').validity.valid")
     page.locator("#bars-input").fill("")
 
+    # the two handles move either end of the passage, like a range slider's thumbs
+    def pull(end, to):
+        grip, bar = page.locator(f".passage-handle.is-{end}").bounding_box(), page.locator(f'.score-bar[data-index="{to}"]').bounding_box()
+        page.mouse.move(grip["x"] + grip["width"] / 2, grip["y"] + grip["height"] / 2); page.mouse.down()
+        page.mouse.move(bar["x"] + bar["width"] / 2, bar["y"] + bar["height"] / 2, steps=10); page.mouse.up()
+        page.wait_for_timeout(300)
+        return title.inner_text()
+    assert page.locator(".passage-handle").count() == 2
+    assert pull("end", 13) == "Bars 10-14" and pull("start", 11) == "Bars 12-14"
+    assert pull("start", 13) == "Bar 14", "the start handle can't pass the end"
+
     # coming back opens the passage practiced last
     page.locator(".chip", has_text="3-6").click(); page.wait_for_timeout(300)
     page.reload()

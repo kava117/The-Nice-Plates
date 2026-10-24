@@ -1,6 +1,7 @@
 # Render: New > Blueprint > this repo. One free web service. Blueprint generates SECRET_KEY;
 # a service made by hand needs SECRET_KEY set in the dashboard, or the app refuses to start.
-# SQLite lives on the instance disk, so it resets on each deploy.
+# Set DATABASE_URL (Postgres, e.g. Neon free) in the dashboard. Without it SQLite lives on the
+# instance disk, which resets on each deploy and spin-down.
 services:
   - type: web
     name: the-nice-plates
@@ -15,3 +16,5 @@ services:
         generateValue: true
       - key: PHOTO_UPLOADS   # homr needs ~1 GB of RAM; the free plan has 512 MB. Remove this on a bigger plan.
         value: "off"
+      - key: DATABASE_URL   # paste the Postgres connection string in the dashboard
+        sync: false

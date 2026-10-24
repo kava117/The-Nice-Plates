@@ -1,6 +1,4 @@
 """Passages: the bars a musician picks out of a piece to practice (Sections), and each time through them (Section_Reps)."""
-import sqlite3
-
 from support import AIR, db, flask_app, login, make_user
 
 
@@ -61,7 +59,7 @@ def test_reps_build_a_record_and_undo_takes_one_back(user):
     assert (undone["reps"], undone["clean"]) == (3, 2)
     assert [r["tempo"] for r in undone["recent"]] == [60, 60, 70]
 
-    with sqlite3.connect(db.DB_NAME) as con:   # the old counter column keeps up
+    with db.get_db() as con:   # the old counter column keeps up
         assert con.execute("SELECT times_practiced FROM Sections WHERE id = ?", (sid,)).fetchone()[0] == 3
 
 
@@ -94,7 +92,7 @@ def test_deleting_a_passage_deletes_its_reps(user):
     sid = client.post(f"/api/pieces/{piece_for(uid)}/sections", json={"start": 1, "end": 2}).get_json()["id"]
     client.post(f"/api/sections/{sid}/reps", json={"clean": True})
     client.delete(f"/api/sections/{sid}")
-    with sqlite3.connect(db.DB_NAME) as con:
+    with db.get_db() as con:
         assert con.execute("SELECT COUNT(*) FROM Section_Reps WHERE section_id = ?", (sid,)).fetchone()[0] == 0
 
 

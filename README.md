@@ -63,7 +63,7 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 | `FORWARDED_ALLOW_IPS=*` | so the sign-in redirect is built as https behind Render's proxy |
 | `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
 | `ANTHROPIC_API_KEY` | needed for that; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
-| `CLAUDE_MODEL` | optional, default `claude-sonnet-5-5` (about 3 cents a page) |
+| `CLAUDE_MODEL` | optional, default `claude-haiku-5-5` (under a cent a page; `claude-sonnet-5-5` reads dotted rhythms better at 20 times the price) |
 | `DATABASE_URL` | **Needed for saved data.** A Postgres connection string, e.g. from a free Neon project. Without it the app uses SQLite on the instance disk, which Render wipes on every deploy and every spin-down, so accounts, pieces and sessions vanish |
 
 ## Where stuff lives

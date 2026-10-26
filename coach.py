@@ -8,6 +8,7 @@ import json, logging, os, re
 from datetime import datetime, timedelta, timezone
 
 MODEL = "claude-haiku-5-5"   # cheap and quick; COACH_MODEL swaps it
+MAX_TURNS = 12               # earlier questions and answers sent back with a new one
 
 SYSTEM = """You are the practice coach in The Nice Plates, a practice log for beginner and intermediate musicians. You are talking with one musician who is at their instrument, between goes.
 
@@ -29,6 +30,24 @@ class Unavailable(Exception):
     def __init__(self, message, status=503):
         super().__init__(message)
         self.status = status
+
+
+def read_history(value):
+    """the conversation so far as Claude messages, or None if it isn't one"""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        return None
+    turns = value[-MAX_TURNS:]
+    if turns and isinstance(turns[0], dict) and turns[0].get("role") == "assistant":
+        turns = turns[1:]   # the cut landed on an answer: start at a question
+    for i, turn in enumerate(turns):
+        if not (isinstance(turn, dict) and turn.get("role") == ("user", "assistant")[i % 2]
+                and isinstance(turn.get("content"), str) and 0 < len(turn["content"]) <= 4000):
+            return None
+    if turns and turns[-1]["role"] != "assistant":
+        return None
+    return [{"role": t["role"], "content": t["content"]} for t in turns]
 
 
 def minutes(seconds):

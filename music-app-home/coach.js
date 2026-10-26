@@ -69,7 +69,11 @@ function addCoach(els, { pieceId, passage = () => null }) {
       thread.append(el);
     }
     send.disabled = busy || !input.value.trim();
-    thread.scrollTop = empty.hidden ? thread.scrollHeight : 0;   // newest answer in view; before one, the lead line
+    // waiting or failed: the bottom. An answer: its question at the top, so it reads from the start.
+    const asked = !busy && !failed && [...thread.querySelectorAll(".coach-q")].pop();
+    thread.scrollTop = !empty.hidden ? 0 : asked
+      ? thread.scrollTop + asked.getBoundingClientRect().top - thread.getBoundingClientRect().top - 12
+      : thread.scrollHeight;
   }
 
   // ---- asking ----

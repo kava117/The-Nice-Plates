@@ -114,3 +114,12 @@ def test_markdown_comes_out_plain(user, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     with fake_claude("## Next\nPlay **bars 1-4** slowly."):
         assert user[0].post("/api/coach", json={"message": "?"}).get_json()["reply"] == "Next\nPlay bars 1-4 slowly."
+
+
+def test_an_hour_has_a_limit(user, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(coach, "PER_HOUR", 2)
+    with fake_claude():
+        codes = [user[0].post("/api/coach", json={"message": "?"}).status_code for _ in range(3)]
+    assert codes == [200, 200, 429]
+    assert coach.allowed(user[1], now=coach._asked[user[1]][0] + 3601)   # an hour on, it opens again

@@ -61,3 +61,23 @@ def test_someone_elses_piece_is_not_read(user, monkeypatch):
         client.post("/api/coach", json={"message": "Help", "piece_id": theirs, "passage": {"start": 12, "end": 16}})
     practice = sent(made)["system"]
     assert "left hand slow" not in practice and '"piece": null' in practice and '"passage": null' in practice
+
+
+def test_the_conversation_goes_back_with_the_question(user, monkeypatch):
+    client, _ = user
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    history = [{"role": "user", "content": "What next?"}, {"role": "assistant", "content": "Bars 12-16."}]
+    with fake_claude() as made:
+        client.post("/api/coach", json={"message": "How fast?", "history": history})
+    assert sent(made)["messages"] == history + [{"role": "user", "content": "How fast?"}]
+
+
+def test_a_long_conversation_is_cut_at_a_question(user, monkeypatch):
+    client, _ = user
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    history = [{"role": ("user", "assistant")[i % 2], "content": f"turn {i}"} for i in range(coach.MAX_TURNS + 1)]
+    history.append({"role": "assistant", "content": "last answer"})
+    with fake_claude() as made:
+        client.post("/api/coach", json={"message": "And now?", "history": history[1:]})
+    messages = sent(made)["messages"]
+    assert messages[0]["role"] == "user" and len(messages) <= coach.MAX_TURNS + 1

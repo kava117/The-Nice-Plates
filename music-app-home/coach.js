@@ -63,7 +63,7 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
     const box = document.createDocumentFragment();
     let at = 0;
     for (const found of text.matchAll(BARS)) {
-      const words = found[0], link = Object.assign(document.createElement("button"), { type: "button", className: "coach-bars", textContent: words });
+      const words = found[0], link = Object.assign(document.createElement("button"), { type: "button", className: "coach-bars", textContent: words, title: "Pick these bars" });
       const on = () => score.point(words), off = () => score.point(null);
       link.addEventListener("pointerenter", on);
       link.addEventListener("focus", on);

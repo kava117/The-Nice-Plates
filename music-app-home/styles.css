@@ -1628,6 +1628,8 @@ kbd {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  -webkit-user-select: none;   /* dragging bars or a handle would select text, and scroll the page at its edge */
+  user-select: none;
 }
 
 .score-bar {

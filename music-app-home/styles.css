@@ -188,6 +188,29 @@ p {
   border-bottom: 1px solid var(--line);
 }
 
+/* While the next page loads (nav.js): a thin bar along the top edge. It slows as it goes, so a
+   slow server never makes it look finished. */
+.is-leaving {
+  cursor: progress;
+}
+
+.is-leaving body::after {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: leaving 12s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes leaving {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(0.92); }
+}
+
 /* 6. Sidebar ------------------------------------------------------------- */
 
 .sidebar {

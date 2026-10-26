@@ -15,6 +15,7 @@
 
 const STREAK = 3;   // clean reps in a row at one tempo before offering a faster one
 const SLIPS = 2;    // misses in a row before offering a slower one
+const DOTS = 5;     // most reps shown as dots for a passage, the same last few "next up" ranks by
 
 // els: the elements in practice.html's #controls; tempo: the player's tempo slider (percent).
 // onRep runs after each saved rep; onPick when the passage changes or a click moves the cursor;
@@ -287,7 +288,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   }
   function nextUp() {   // the saved passage with the fewest clean reps lately; never practiced beats long ago
     if (saved.length < 2) return null;
-    const rank = p => [p.recent.slice(-5).filter(r => r.clean).length, p.last_practiced || ""];
+    const rank = p => [p.recent.slice(-DOTS).filter(r => r.clean).length, p.last_practiced || ""];
     return saved.reduce((a, b) => {
       const [x, y] = [rank(a), rank(b)];
       return x[0] < y[0] || (x[0] === y[0] && x[1] <= y[1]) ? a : b;
@@ -384,9 +385,9 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   }
 
   // ---- the passage row and the rep row ----
-  function dotsFor(p, count) {
+  function dotsFor(p) {
     const box = Object.assign(document.createElement("span"), { className: "dots" });
-    for (const r of p ? p.recent.slice(-count) : []) {
+    for (const r of p ? p.recent.slice(-DOTS) : []) {
       const dot = Object.assign(document.createElement("span"), { className: r.clean ? "dot is-clean" : "dot" });
       dot.title = `${r.clean ? "Clean" : "Not yet"}${r.tempo ? ` at ${speedName(r.tempo)}` : ""}`;
       box.append(dot);
@@ -411,7 +412,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       const r = p.id && saved.find(s => s.id === p.id);
       const c = chip(span(p), on, () => on || pick(p), p.id ? "" : " is-draft");
       c.setAttribute("aria-label", `${label(p)}${r ? `, ${r.reps} reps, ${r.clean} clean` : ", not saved"}`);
-      if (r) c.append(dotsFor(r, 5));
+      if (r) c.append(dotsFor(r));
       if (up && r && up.id === r.id && !on) c.append(Object.assign(document.createElement("span"), { className: "chip-tag", textContent: "next up" }));
       list.push(c);
     }
@@ -425,7 +426,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     if (!active) return;
     title.textContent = label(active);
     yes.disabled = no.disabled = busy;
-    dots.replaceChildren(...dotsFor(record(), 8).childNodes);
+    dots.replaceChildren(...dotsFor(record()).childNodes);
     if (!note.textContent && !record()) note.textContent = pieceId ? "Play it through, then say how it went." : "Open a piece from your library to count reps.";
     showActions();
   }

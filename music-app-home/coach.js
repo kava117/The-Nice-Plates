@@ -8,7 +8,7 @@
 function addCoach(els, { pieceId, passage = () => null, title = () => "", score }) {
   const { panel, toggle, close, restart, sub, thread, empty, lead, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
-  let turns = load(), busy = false, failed = "";
+  let turns = load(), busy = false, slow = false, fresh = false, failed = "";
 
   function load() {
     try { return JSON.parse(sessionStorage.getItem(KEY)) || []; } catch { return []; }
@@ -106,18 +106,19 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
       }));
     }
     thread.querySelectorAll(".coach-turn, .coach-wait, .coach-error").forEach(el => el.remove());
-    for (const turn of turns) {
+    turns.forEach((turn, i) => {
       const el = document.createElement("div");
-      el.className = `coach-turn coach-${turn.role === "user" ? "q" : "a"}`;
+      el.className = `coach-turn coach-${turn.role === "user" ? "q" : "a"}${fresh && i === turns.length - 1 ? " is-new" : ""}`;
       el.append(paragraphs(turn.content, turn.role === "assistant"));
       if (turn.role === "assistant") el.append(...setUp(turn.content.split("\n")[0]));
       thread.append(el);
-    }
-    if (busy) {
-      thread.append(Object.assign(document.createElement("div"), {
-        className: "coach-wait", role: "status",
-        innerHTML: '<span class="coach-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="visually-hidden">Reading your practice log</span>',
-      }));
+    });
+    fresh = false;   // only the answer that just came draws in
+    if (busy) {   // its margin rule draws itself while the coach reads
+      const wait = Object.assign(document.createElement("div"), { className: "coach-wait", role: "status" });
+      wait.append(Object.assign(document.createElement("p"), { textContent: "Looking over your practice" }));
+      if (slow) wait.append(Object.assign(document.createElement("p"), { className: "coach-slow", textContent: "Taking a little longer than usual." }));
+      thread.append(wait);
     }
     if (failed) thread.append(Object.assign(document.createElement("p"), { className: "coach-error", role: "alert", textContent: failed }));
     send.disabled = busy || !input.value.trim();
@@ -140,6 +141,7 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
     busy = true; failed = "";
     input.value = ""; grow();
     render();
+    const later = setTimeout(() => { slow = true; render(); }, 8000);
     try {
       const r = await fetch("/api/coach", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -152,13 +154,15 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "The coach can't answer right now. Try again in a minute.");
       turns.push({ role: "assistant", content: data.reply });
+      fresh = true;
       save();
     } catch (err) {
       turns.pop();
       if (!input.value.trim()) { input.value = question; grow(); }   // back in the box, ready to send again
       failed = err instanceof TypeError ? "No connection. Check the network and send it again." : err.message;   // fetch throws TypeError offline
     } finally {
-      busy = false;
+      clearTimeout(later);
+      busy = slow = false;
       render();
       if (isOpen()) input.focus();
     }

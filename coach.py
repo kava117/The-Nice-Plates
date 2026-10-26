@@ -9,6 +9,7 @@ from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 
 MODEL = "claude-haiku-5-5"   # cheap and quick; COACH_MODEL swaps it
+MAX_MESSAGE = 1000           # characters in one question
 MAX_TURNS = 12               # earlier questions and answers sent back with a new one
 PER_HOUR = 40                # questions one account can ask in an hour
 

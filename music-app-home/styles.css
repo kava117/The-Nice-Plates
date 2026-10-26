@@ -1822,6 +1822,50 @@ body.coach-open main {
   overscroll-behavior: contain;   /* scrolling the thread to its end doesn't scroll the score */
 }
 
+/* Before the first question: sits low, next to where you type. */
+.coach-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: auto;
+}
+
+.coach-empty[hidden] {
+  display: none;
+}
+
+.coach-lead {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.coach-asks {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.coach-ask {
+  padding: 7px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coach-ask:hover {
+  border-color: var(--edge-neutral);
+}
+
 /* A notebook, not a chat: the question is a quiet line, the answer prose with a margin rule. */
 .coach-turn p + p {
   margin-top: 0.75em;

@@ -2,8 +2,9 @@
    A panel beside the score, so the bars it talks about stay in view. The conversation lives in
    sessionStorage per piece: it survives a reload, and a new tab starts fresh.
 
-   addCoach(els, { pieceId, passage }) wires it; passage() gives the picked bars as {first, last} indexes. */
-function addCoach(els, { pieceId, passage = () => null }) {
+   addCoach(els, { pieceId, passage, score }) wires it; passage() gives the picked bars as {first, last}
+   indexes, and score (passages.js) lights up and picks the bars an answer names. */
+function addCoach(els, { pieceId, passage = () => null, score }) {
   const { panel, toggle, close, restart, thread, empty, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
   let turns = load(), busy = false, failed = "";
@@ -34,13 +35,34 @@ function addCoach(els, { pieceId, passage = () => null }) {
       : `${name[0].toUpperCase()}${name.slice(1)} ${bars.first === bars.last ? "keeps" : "keep"} falling apart…`;
   }
 
-  function paragraphs(text) {   // a line each: an answer's first line is its next step (coach.py's SYSTEM)
+  function paragraphs(text, linked) {   // a line each: an answer's first line is its next step (coach.py's SYSTEM)
     const box = document.createDocumentFragment();
     for (const part of text.split(/\n+/)) {
+      if (!part.trim()) continue;
       const p = document.createElement("p");
-      p.textContent = part.trim();
-      if (p.textContent) box.append(p);
+      p.append(linked && score ? barLinks(part.trim()) : part.trim());
+      box.append(p);
     }
+    return box;
+  }
+
+  // "bars 17-20" in an answer: lights those bars on the score while pointed at, picks them on a click
+  const BARS = /\bbars? \d+(?:\s?(?:-|–|to)\s?\d+)?/gi;
+  function barLinks(text) {
+    const box = document.createDocumentFragment();
+    let at = 0;
+    for (const found of text.matchAll(BARS)) {
+      const words = found[0], link = Object.assign(document.createElement("button"), { type: "button", className: "coach-bars", textContent: words });
+      const on = () => score.point(words), off = () => score.point(null);
+      link.addEventListener("pointerenter", on);
+      link.addEventListener("focus", on);
+      link.addEventListener("pointerleave", off);
+      link.addEventListener("blur", off);
+      link.addEventListener("click", () => score.choose(words));
+      box.append(text.slice(at, found.index), link);
+      at = found.index + words.length;
+    }
+    box.append(text.slice(at));
     return box;
   }
 
@@ -58,7 +80,7 @@ function addCoach(els, { pieceId, passage = () => null }) {
     for (const turn of turns) {
       const el = document.createElement("div");
       el.className = `coach-turn coach-${turn.role === "user" ? "q" : "a"}`;
-      el.append(paragraphs(turn.content));
+      el.append(paragraphs(turn.content, turn.role === "assistant"));
       thread.append(el);
     }
     if (busy) {

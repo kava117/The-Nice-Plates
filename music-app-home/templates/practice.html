@@ -136,7 +136,7 @@
     panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"),
     thread: $("coach-thread"), empty: $("coach-empty"), asks: $("coach-asks"),
     form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
-  }, { pieceId: piece && +piece, passage: () => passages.bars });
+  }, { pieceId: piece && +piece, passage: () => passages.bars, score: passages });
 
   async function loadSong(url) {
     try {

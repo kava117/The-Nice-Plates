@@ -1646,6 +1646,12 @@ kbd {
   background: rgba(255, 253, 245, 0.72);
 }
 
+/* Bars the coach names, while the pointer is on its words (passages.js point) */
+.score-bar.pointed,
+.has-passage .score-bar.pointed {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 .has-passage .score-bar:not(.in):hover {
   background: rgba(255, 253, 245, 0.5);
 }
@@ -1919,6 +1925,26 @@ body.coach-open main {
   font-size: 1.0625rem;
   font-weight: 600;
   line-height: 1.45;
+}
+
+/* Bar numbers in an answer: the same tint as the bars they light up on the score. */
+.coach-bars {
+  padding: 0 2px;
+  margin: 0 -2px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted var(--accent) 1.5px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.coach-bars:hover,
+.coach-bars:focus-visible {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  text-decoration-style: solid;
 }
 
 .coach-wait {

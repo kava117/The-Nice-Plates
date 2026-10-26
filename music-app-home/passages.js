@@ -136,6 +136,19 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     if (marking !== null) { marking = preview = null; return render(); }   // Esc between [ and ] only drops the mark
     if (active) pick(null);
   }
+  // The coach (coach.js) names bars in its answers: they light up under the pointer, and a click picks them.
+  function point(text) {   // "bars 17-20" lights those bars; null turns them off
+    const shown = text && parse(text);
+    for (const el of layer.querySelectorAll(".score-bar")) {
+      const i = +el.dataset.index;
+      el.classList.toggle("pointed", !!shown && i >= shown.first && i <= shown.last);
+    }
+  }
+  function choose(text) {   // false: this piece has no such bars
+    const chosen = parse(text);
+    if (chosen) pick(chosen);
+    return !!chosen;
+  }
   // [ marks the first bar; moving the cursor stretches the passage; ] picks it.
   // ] on its own ends the picked passage (or a one-bar passage) at the cursor.
   function markStart() {
@@ -464,7 +477,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   }
 
   return {
-    ready, next, previous, toStart, markStart, markEnd, clear, moved,
+    ready, next, previous, toStart, markStart, markEnd, clear, moved, point, choose, setTempo,
     nextBar: () => bar(1), previousBar: () => bar(-1),
     rep: addRep,
     get bars() { return active && { first: active.first, last: active.last }; },

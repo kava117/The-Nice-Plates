@@ -1,4 +1,5 @@
 """One test per "Done when" box in FIX_FIRST.md."""
+import pytest
 from flask.sessions import SecureCookieSessionInterface
 
 from support import AIR, boot, db, flask_app, make_user
@@ -236,6 +237,7 @@ def test_home_and_progress_totals_match_sessions(user):
     assert totals == [420, 420]
 
 
+@pytest.mark.skipif(db.POSTGRES, reason="builds an old SQLite file")
 def test_migration_keeps_rows_in_a_db_from_main(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "DB_NAME", str(tmp_path / "old.db"))
     db.init_db()   # the schema main shipped: no migrations, user_version 0

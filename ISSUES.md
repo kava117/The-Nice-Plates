@@ -74,11 +74,11 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 |---|---|---|
 | `.mxl` uploads are saved, but the practice page can't draw them ("Corrupted zip") and falls back to the demo. | `ml/api.py:90` serves the zip as `application/xml`. | On upload, unzip `.mxl` to plain MusicXML before saving, e.g. `converter.parse(src).write("musicxml", ...)` or read `META-INF/container.xml`. |
 | `SCORE.PDF` (capital letters) fails on the Claude path. | `ml/api.py:51`: `with_suffix(".pdf")` points to a file that doesn't exist. | Keep the original path in a variable: `pdf = src; src = src.with_suffix(".png"); ... fitz.open(pdf)`. Also switch `import fitz` to `import pymupdf`. |
-| A missing or deleted piece quietly shows the Bach demo. | `practice.html:38` | Fall back only when no `?piece=` was given. Otherwise show "This piece couldn't be found" with a link to the library. |
+| ~~A missing or deleted piece quietly shows the Bach demo.~~ **Fixed** on `practice-sessions` | `practice.html:38` | Fall back only when no `?piece=` was given. Otherwise show "This piece couldn't be found" with a link to the library. |
 | Safari recordings won't play back. | `ml/api.py:102` always sends `audio/webm`; Safari records `audio/mp4`. | Store the upload's `mimetype` in a new `Recordings.mime` column and send it back on playback. |
 | `python ml/api.py` crashes on the first request (`no attribute 'login_manager'`). | `ml/api.py` `__main__` | Add `LoginManager(app)` in the `__main__` block, or drop the standalone mode from the README. |
 | Settings Save, "Log out of all devices" and "Delete account" do nothing. | `settings.html` | Add a `POST /settings` that updates `Users.name`, plus a delete-account route. Or hide these controls until they work. |
-| Sections can't be created, so `/api/practice/section` always returns 404. | `database.py` | Add `addSection` and a UI to make one, or remove the endpoint for now. |
+| ~~Sections can't be created, so `/api/practice/section` always returns 404.~~ **Fixed** on `practice-sessions`: passages | `database.py` | Add `addSection` and a UI to make one, or remove the endpoint for now. |
 
 ---
 
@@ -89,8 +89,8 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 | ~~Upload with an empty filename~~ **Fixed** | `save_upload` (`ml/api.py:21`) tries to save to a directory | Reject `not upload.filename` with a 400 or a library error message. |
 | ~~`/api/midi` with an unsupported type~~ **Fixed** | `convert` raises `ValueError` | Catch it and return a 400 with the message. |
 | `/api/transcribe` with no `OPENAI_API_KEY` | `OpenAIError` | Check the key first and return 503 "transcription not configured". |
-| `piece_id` = 10³⁰ | SQLite `OverflowError` | In `read_id`, reject ids outside 1…2⁶³−1. |
-| Timer notes sent as an object | SQLite can't store a dict | Accept a string only and cap its length (e.g. 2,000 characters). |
+| ~~`piece_id` = 10³⁰~~ **Fixed** on `practice-sessions` | SQLite `OverflowError` | In `read_id`, reject ids outside 1…2⁶³−1. |
+| ~~Timer notes sent as an object~~ **Fixed** on `practice-sessions` | SQLite can't store a dict | Accept a string only and cap its length (e.g. 2,000 characters). |
 | Google sign-in where the email already belongs to another account | `UNIQUE` on `Users.email` (`database.py:113`) | Catch `IntegrityError`, then link the accounts or show "an account with this email already exists". |
 
 Also add an app-wide `@app.errorhandler(500)` that shows a friendly page instead of Flask's default.
@@ -101,7 +101,7 @@ Also add an app-wide `@app.errorhandler(500)` that shows a friendly page instead
 
 - **Fixed:** ~~**No upload size limit.**~~ One big file can fill memory or disk on a 512 MB box. Set `app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024` and handle `413`.
 - **Fixed:** ~~**Temp files are never deleted.**~~ Each upload leaves 2 folders from `tempfile.mkdtemp()`. Use `tempfile.TemporaryDirectory()` as a context manager in `save_upload` and `add_piece`.
-- **Empty recordings are saved.** Reject zero-byte files with a 400.
+- **Fixed** on `practice-sessions`: ~~**Empty recordings are saved.**~~ Reject zero-byte files with a 400.
 - **Fixed:** ~~**A `#` in a filename cuts the error message short.**~~ For example `etude #3.xml` becomes "Could not read etude". Build the redirect with `url_for("library", error=msg)` so the message is URL-encoded.
 - **The demo account is shared.** Logged-out visitors can read and change the demo user's pieces, sessions and recordings, and recording ids are sequential. Once Google sign-in is live, consider making the demo read-only.
 - **`ml/text.py` misses phrases:**

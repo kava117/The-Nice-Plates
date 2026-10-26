@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, redirect, url_for, render_template, request, session
+from flask import Flask, abort, jsonify, redirect, url_for, render_template, request, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from database import database
 from datetime import date, datetime, timedelta, timezone
@@ -37,6 +37,11 @@ google = oauth.register(
     server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration",
     client_kwargs = {"scope": "openid email profile"},
 )
+
+if database.POSTGRES:
+    app.logger.warning("Database: Postgres (DATABASE_URL)")
+elif os.environ.get("RENDER"):   # Render's disk is wiped on deploy and spin-down
+    app.logger.warning("Database: SQLite on Render's disk. Accounts and sessions vanish on restart; set DATABASE_URL.")
 
 with app.app_context():
     database.init_db()
@@ -126,9 +131,10 @@ def practice_state():
 # returns the data of a single key
 def read_id(data, key):
     try:
-        return int(data.get(key))
-    except (TypeError, ValueError):
+        n = int(data.get(key))
+    except (TypeError, ValueError, AttributeError):
         return None
+    return n if 0 < n < 2**63 else None   # SQLite integers are 64-bit: a bigger id crashed the query
 
 # only track pieces once a timer exists (running or paused with banked time)
 def remember_piece(piece_id):
@@ -150,8 +156,9 @@ def api_select_piece():
     piece_id = read_id(request.get_json(silent=True) or {}, "piece_id")
     if piece_id is None or not database.getPieceForUser(user_id(), piece_id):
         return jsonify(error="piece not found"), 404
+    if session.get("current_piece_id") != piece_id:
+        session.pop("selected_section_id", None)   # a passage of another piece no longer applies
     session["current_piece_id"] = piece_id
-    session.pop("selected_section_id", None)   # this section no longer relevant
     remember_piece(piece_id)
     return jsonify(practice_state())
 
@@ -166,6 +173,61 @@ def api_select_section():
     session["current_piece_id"] = section["piece_id"]   # a section implies its piece
     remember_piece(section["piece_id"])
     return jsonify(practice_state())
+
+
+# ---- Passages: bars picked out of a piece to practice (Sections), and each time through them (Section_Reps) ----
+MAX_BAR = 10000
+
+def read_bars(data):
+    """(start, end) bar numbers from {"start": 12, "end": 16}, or None if they don't make a passage"""
+    try:
+        start, end = int(data.get("start")), int(data.get("end"))
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return (start, end) if 1 <= start <= end <= MAX_BAR else None
+
+def my_section(section_id):
+    return database.getSectionForUser(user_id(), section_id) or abort(404)
+
+@app.route("/api/pieces/<int:piece_id>/sections")
+def api_sections(piece_id):
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    return jsonify(database.getSections(user_id(), piece_id))
+
+@app.route("/api/pieces/<int:piece_id>/sections", methods=["POST"])
+def api_add_section(piece_id):
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    bars = read_bars(request.get_json(silent=True) or {})
+    if not bars:
+        return jsonify(error=f"start and end must be bar numbers from 1 to {MAX_BAR}, start first"), 400
+    section_id, created = database.addSection(piece_id, *bars)
+    return jsonify(database.getSectionRecord(section_id)), 201 if created else 200
+
+@app.route("/api/sections/<int:section_id>", methods=["DELETE"])
+def api_delete_section(section_id):
+    my_section(section_id)
+    database.deleteSection(section_id)
+    if session.get("selected_section_id") == section_id:
+        session.pop("selected_section_id")
+    return "", 204
+
+@app.route("/api/sections/<int:section_id>/reps", methods=["POST"])
+def api_add_rep(section_id):
+    my_section(section_id)
+    data = request.get_json(silent=True)
+    clean, tempo = (data.get("clean"), data.get("tempo")) if isinstance(data, dict) else (None, None)
+    if not isinstance(clean, bool):
+        return jsonify(error="clean must be true or false"), 400
+    if tempo is not None and not (isinstance(tempo, int) and 10 <= tempo <= 400):
+        return jsonify(error="tempo must be a whole percent from 10 to 400"), 400
+    database.addRep(section_id, clean, tempo)
+    return jsonify(database.getSectionRecord(section_id))
+
+@app.route("/api/sections/<int:section_id>/reps/last", methods=["DELETE"])
+def api_undo_rep(section_id):
+    my_section(section_id)
+    database.deleteLastRep(section_id)
+    return jsonify(database.getSectionRecord(section_id))
 
 #begin tracking a sessions length
 @app.route("/api/timer/start", methods=["POST"])
@@ -196,7 +258,11 @@ def api_timer_stop():
         total = min(total, MAX_SESSION)
     if too_long:
         total = 0
-    notes = (request.get_json(silent=True) or {}).get("notes")
+    data = request.get_json(silent=True)
+    notes = data.get("notes") if isinstance(data, dict) else None
+    if notes is not None and not isinstance(notes, str):
+        return jsonify(error="notes must be text"), 400
+    notes = notes[:2000] if notes else None
     session_id = None
     if total > 0:
         session_id = database.addSession(
@@ -243,7 +309,8 @@ def progress():
     monday = utc_today() - timedelta(days=utc_today().weekday())
     per_day = [sum(s["time_spent"] for s in sessions if s["date"][:10] == (monday + timedelta(days=i)).isoformat()) for i in range(7)]
     return render_template("progress.html", per_day=per_day, totals=list(accumulate(s["time_spent"] for s in reversed(sessions))),
-                           pieces=len(database.getPieces(user_id())), practiced=len(database.getPieceSeconds(user_id())))
+                           pieces=len(database.getPieces(user_id())), practiced=len(database.getPieceSeconds(user_id())),
+                           unsaved=timer_seconds(), saved=len(sessions))
 
 @app.route("/settings")
 def settings():
@@ -251,7 +318,15 @@ def settings():
 
 @app.route("/practice")
 def practice():
-    return render_template("practice.html")
+    # The sidebar's Practice link has no ?piece=: open the piece looked at last, so passages and reps can be saved.
+    latest = None if request.args.get("piece") else next(iter(database.getPieces(user_id())), None)
+    return render_template("practice.html", latest_piece=latest and latest["id"])
+
+def give_starter_piece(uid):
+    """Bach's Air, so a new account has a piece to practice before its first upload (the demo user gets it at startup)"""
+    if not database.getPieces(uid):
+        with open(os.path.join(app.static_folder, "AirOnG.musicxml"), "rb") as f:
+            database.addPiece(uid, "Air", "J. S. Bach", xml=f.read())
 
 @app.route("/login/google")
 def login_google():
@@ -272,6 +347,7 @@ def auth_google():
         email=info["email"],
         email_verified=info.get("email_verified", False),
     )
+    give_starter_piece(row["id"])
     clear_practice_state()
     login_user(User(row))
     return redirect(url_for("home"))

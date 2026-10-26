@@ -526,6 +526,29 @@ main {
   letter-spacing: normal;
 }
 
+/* Continue practicing: the action, with the piece's title under it. */
+.btn-stack {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.btn-sub {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* Upload: a label that opens the hidden file input, so one click reaches the file picker. */
+.upload-now {
+  display: flex;
+  flex: 1;
+}
+
+.upload-now input:focus-visible + .btn {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
 /* 11. Stat tiles (signed in only) ---------------------------------------- */
 
 /* Not clickable, so flat: no edge, press or hover effect. */
@@ -649,6 +672,15 @@ main {
   border: 1.5px solid var(--line);
   border-radius: var(--radius-tile);
   background: var(--surface);
+}
+
+.panel.unsaved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
 .panel + .panel {
@@ -1057,8 +1089,31 @@ main {
 }
 /* 15. Sheet music display ------------------------------------------------ */
 
+/* The practice controls stay pinned while the score scrolls under them:
+   following the cursor during playback would otherwise scroll Stop out of reach. */
+#controls {
+  --depth: 2px;             /* a shallower press for the small toolbar buttons */
+  position: sticky;
+  top: -28px;               /* main's top padding: pin to main's edge, not below its padding */
+  z-index: 2;
+  display: flex;
+  flex-direction: column;   /* rows: moving and listening, passages, reps (practice.html) */
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 0 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  #controls {
+    top: 0;                 /* here the window scrolls, not main */
+  }
+}
+
 /* Background for the music renderer */
 #score {
+  position: relative;       /* the bar overlay (passages.js) is placed against it */
   background: #fffdf5;
   padding: 1rem;
   border-radius: 8px;
@@ -1127,5 +1182,558 @@ body[data-auth="guest"] .welcome {
 
   .welcome-title {
     font-size: 1.625rem;
+  }
+}
+
+/* ==========================================================================
+   Additions for practice.html: toolbar, passages and reps (passages.js)
+   ========================================================================== */
+
+/* 21. Toolbar ------------------------------------------------------------ */
+
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tool {
+  --edge: var(--edge-neutral);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;     /* 13px */
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.tool:hover {
+  background: var(--bg);
+  border-color: var(--edge-neutral);
+}
+
+.tool[hidden] {
+  display: none;            /* the class's display would otherwise beat the hidden attribute */
+}
+
+.tool:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Play is the one button used every minute: accent outline, fixed width so Stop doesn't shift the row. */
+.tool-play {
+  --edge: var(--accent-edge);
+  min-width: 88px;
+  justify-content: center;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.tempo input {
+  width: 104px;
+  accent-color: var(--accent);
+}
+
+#tempo-label,
+.clock {
+  min-width: 52px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.take {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.take audio {
+  height: 32px;
+}
+
+/* Recording: a red dot that pulses, so it's plain the microphone is on. */
+.tool.is-recording {
+  border-color: var(--rec);
+  color: var(--rec);
+}
+
+.tool.is-recording::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rec-pulse {
+  50% { opacity: 0.25; }
+}
+
+:root {
+  --rec: #B3261E;
+}
+
+:root[data-theme="dark"] {
+  --rec: #F2867E;
+}
+
+/* Keyboard shortcuts: a details element, so it opens without script too. */
+.keys {
+  position: relative;
+  flex: none;
+}
+
+.tool-group-end {
+  margin-left: auto;
+}
+
+.keys summary {
+  list-style: none;
+}
+
+.keys summary::-webkit-details-marker {
+  display: none;
+}
+
+.keys-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  width: max-content;
+  max-width: min(380px, 90vw);
+  margin: 0;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  font-size: 0.8125rem;
+}
+
+.keys-panel dt {
+  white-space: nowrap;
+}
+
+.keys-panel dd {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 5px;
+  border: 1px solid var(--edge-neutral);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 600 0.6875rem/1.5 var(--font-body);
+  text-align: center;
+}
+
+.btn-solid kbd {
+  border-color: color-mix(in srgb, var(--on-accent) 45%, transparent);
+  background: transparent;
+  color: var(--on-accent);
+}
+
+/* 22. Passage row -------------------------------------------------------- */
+
+.passage-row {
+  flex-wrap: nowrap;
+}
+
+.row-label {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Chips scroll sideways once there are more than fit; the bottom padding leaves room for the press edge. */
+.chips {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 2px 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.chip {
+  --edge: var(--edge-neutral);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--bg);
+}
+
+/* The picked passage: same look as the current page in the sidebar. */
+.chip[aria-pressed="true"] {
+  --edge: var(--accent-edge);
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+/* Picked but not kept yet: it saves on its first rep, or with Save. */
+.chip.is-draft {
+  border-style: dashed;
+}
+
+.chip-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-2);
+  color: var(--on-accent-2);
+  font-size: 0.6875rem;
+}
+
+.chip-hint {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.bars-form {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.bars-input {
+  width: 76px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars-input:focus-visible {
+  outline-offset: 1px;
+}
+
+/* Recent reps: filled = clean, ring = not yet. */
+.dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--ink-muted);
+  border-radius: 50%;
+}
+
+.dot.is-clean {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.dots-large {
+  gap: 4px;
+}
+
+.dots-large .dot {
+  width: 10px;
+  height: 10px;
+}
+
+/* 23. Rep row ------------------------------------------------------------ */
+
+.rep-row {
+  gap: 10px 14px;
+  padding: 10px 14px 12px;
+  border-radius: var(--radius);
+  background: var(--band);
+}
+
+.rep-row[hidden] {
+  display: none;
+}
+
+.rep-title {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 400;
+}
+
+.rep-ask {
+  color: var(--ink-muted);
+}
+
+.rep-button {
+  gap: 10px;
+  min-width: 104px;
+  padding: 9px 16px;
+  letter-spacing: normal;
+}
+
+.rep-button:disabled {
+  opacity: 0.6;
+}
+
+.rep-note {
+  font-weight: 600;
+}
+
+.rep-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-left: auto;
+}
+
+.rep-offer {
+  padding: 6px 12px;
+  letter-spacing: normal;
+}
+
+.link-button {
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  color: var(--ink);
+}
+
+.score-loading {
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.score-loading[hidden] {
+  display: none;
+}
+
+.score-missing {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: var(--band);
+}
+
+.score-missing a {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* 24. Bars on the score -------------------------------------------------- */
+
+/* The score paper stays light in both themes, so these colours are fixed:
+   forest green for the passage, the paper colour to fade everything else. */
+.score-bars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.score-bar {
+  position: absolute;
+  border-radius: 4px;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: pan-y pinch-zoom;   /* scrolling still works on a phone; sideways drags pick bars */
+}
+
+.score-bar:hover {
+  background: rgba(47, 93, 62, 0.06);
+}
+
+.has-passage .score-bar:not(.in) {
+  background: rgba(255, 253, 245, 0.72);
+}
+
+.has-passage .score-bar:not(.in):hover {
+  background: rgba(255, 253, 245, 0.5);
+}
+
+.passage-frame {
+  position: absolute;
+  border-radius: 6px;
+  background: rgba(47, 93, 62, 0.06);
+  box-shadow: inset 0 0 0 2px rgba(47, 93, 62, 0.6);
+  pointer-events: none;
+}
+
+.passage-frame.is-preview {
+  background: rgba(47, 93, 62, 0.1);
+  box-shadow: inset 0 0 0 2px rgba(47, 93, 62, 0.35);
+}
+
+/* The passage's two handles: grab either end of the frame and drag it to another bar. */
+.passage-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  cursor: ew-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.passage-handle.is-start {
+  left: -9px;
+}
+
+.passage-handle.is-end {
+  right: -9px;
+}
+
+.passage-handle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 48px;
+  border: 2px solid #FFFDF5;
+  border-radius: 4px;
+  background: #2F5D3E;
+  transform: translate(-50%, -50%);
+}
+
+.passage-handle:hover::before {
+  width: 10px;
+  height: 58px;
+}
+
+.passage-tab {
+  position: absolute;
+  bottom: calc(100% - 2px);
+  left: 0;
+  padding: 2px 8px;
+  border-radius: 6px 6px 0 0;
+  background: #2F5D3E;
+  color: #F6EEDA;
+  font: 600 0.75rem/1.4 var(--font-body);
+  white-space: nowrap;
+}
+
+/* Phones: the same three rows, packed tighter so the score keeps most of the screen. */
+@media (max-width: 600px) {
+  #controls {
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .controls-row {
+    gap: 6px 10px;
+  }
+
+  .tempo-word,
+  .row-label,
+  .rep-ask,
+  .keys,
+  .tool-group-end {
+    display: none;            /* the controls speak for themselves; no keyboard, and pinch zooms */
+  }
+
+  .tempo input {
+    width: 72px;
+  }
+
+  .bars-input {
+    width: 64px;
+  }
+
+  .rep-row {
+    padding: 8px 10px 10px;
+  }
+
+  .rep-button {
+    min-width: 0;
+    padding: 9px 12px;
+  }
+
+  .rep-actions {
+    margin-left: 0;
+  }
+
+  .take audio {
+    width: 180px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool.is-recording::before {
+    animation: none;
   }
 }

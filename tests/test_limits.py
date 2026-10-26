@@ -58,7 +58,7 @@ def test_logout_route_signs_out(user):
 
 # ---------------------------------------------------------------- practice API
 @pytest.mark.parametrize("body", [{}, {"piece_id": "abc"}, {"piece_id": None}, {"piece_id": [1]},
-                                  pytest.param({"piece_id": 10**30}, marks=known("Crashes: huge piece_id overflows SQLite")), {"piece_id": -1}, "not json"])
+                                  {"piece_id": 10**30}, {"piece_id": -1}, "not json"])
 def test_select_piece_bad_input_is_404_not_500(guest, body):
     r = guest.post("/api/practice/piece", data=body if isinstance(body, str) else json.dumps(body),
                    content_type="application/json")
@@ -69,9 +69,8 @@ def test_cannot_select_another_users_piece(user):
     other_piece = db.addPiece(make_user(), "Secret", xml=AIR)
     assert client.post("/api/practice/piece", json={"piece_id": other_piece}).status_code == 404
 
-@known("Broken features: nothing creates Sections")
 def test_sections_can_be_selected():
-    """Sections table exists but nothing creates rows, so this endpoint can never succeed."""
+    """The practice page makes Sections rows (passages), so this endpoint can succeed."""
     assert any("Sections" in l and "INSERT" in l for l in Path(db.__file__).read_text().splitlines()), \
         "no code path creates a Section; /api/practice/section always 404s"
 
@@ -97,13 +96,14 @@ def test_timer_double_start_does_not_reset(user):
         client.post("/api/timer/start"); c.offset += 20
         assert client.post("/api/timer/stop").get_json()["time_spent"] == 120
 
-@known("Crashes: dict notes reach SQLite")
 def test_non_string_notes_are_rejected_cleanly(user):
     client, _ = user
     client.post("/api/timer/start")
     with clock(5)[1]:
         r = client.post("/api/timer/stop", json={"notes": {"a": 1}})
     assert r.status_code in (200, 400), f"got {r.status_code}"
+    with clock(5)[1]:
+        assert client.post("/api/timer/stop", json=["a list"]).status_code == 200   # no notes, still saves
 
 def test_abandoned_timer_does_not_log_a_30_hour_session(user):
     """Close the tab mid-practice, come back tomorrow, press Stop."""
@@ -194,6 +194,13 @@ def test_photo_uploads_via_claude(user, name, monkeypatch, tmp_path):
         r = upload(user[0], name, data)
     assert "/practice?piece=" in r.location, f"{name}: {r.location}"
 
+def test_photos_use_the_cheap_model_and_never_fall_back(user, monkeypatch):
+    monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude(AIR.decode()) as made:
+        upload(user[0], "photo.png", b"\x89PNG")
+    sent = made.return_value.beta.messages.stream.call_args.kwargs
+    assert sent["model"] == "claude-haiku-5-5" and "fallbacks" not in sent
+
 def test_claude_truncated_reply_shows_error(user, monkeypatch):
     monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     with fake_claude(AIR.decode()[:3000]):
@@ -267,7 +274,6 @@ def test_safari_recording_plays_back_with_its_own_type(user):
                       content_type="multipart/form-data").get_json()["id"]
     assert client.get(f"/api/recordings/{rid}").mimetype == "audio/mp4"
 
-@known("Will cause trouble: empty recordings saved")
 def test_empty_recording_is_rejected(user):
     client, uid = user
     pid = db.addPiece(uid, "Rec", xml=AIR)
@@ -288,6 +294,18 @@ def test_home_and_progress_show_saved_practice(user):
 def test_progress_with_no_sessions(user):
     prog = user[0].get("/progress").get_data(as_text=True)
     assert "0,150 600,150" in prog
+    assert "No practice saved yet" in prog
+
+def test_progress_offers_to_save_time_left_on_the_timer(user):
+    client, uid = user
+    with client.session_transaction() as s:
+        s["timer_elapsed"] = 25 * 60   # paused by leaving the practice page
+    prog = client.get("/progress").get_data(as_text=True)
+    assert "25 min</strong> on the practice timer" in prog and 'id="save-timer"' in prog
+    client.post("/api/timer/stop")
+    prog = client.get("/progress").get_data(as_text=True)
+    assert 'id="save-timer"' not in prog and "No practice saved yet" not in prog
+    assert [s["time_spent"] for s in db.getSessions(uid)] == [25 * 60]
 
 
 # ---------------------------------------------------------------- sign-in
@@ -336,3 +354,10 @@ def test_text_process(said, expect):
     from ml import text
     got = text.process(said)
     assert {k: got[k] for k in expect} == expect
+
+
+# ---------------------------------------------------------------- playback (player.js)
+@pytest.mark.parametrize("path", ["/player.js", "/Tone.js", "/samples/piano/C4.mp3", "/samples/piano/Fs7.mp3", "/samples/piano/A0.mp3"])
+def test_player_files_are_served(guest, path):
+    r = guest.get(path)
+    assert r.status_code == 200 and len(r.data) > 1000

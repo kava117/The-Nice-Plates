@@ -141,7 +141,7 @@
     form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
   }, {
     pieceId: piece && +piece, passage: () => passages.bars, score: passages,
-    title: () => ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // as printed on the score
+    title: () => {{ piece_title | tojson }} || ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // else as printed on the score
   });
 
   async function loadSong(url) {

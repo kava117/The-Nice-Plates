@@ -347,8 +347,13 @@ def settings():
 @app.route("/practice")
 def practice():
     # The sidebar's Practice link has no ?piece=: open the piece looked at last, so passages and reps can be saved.
-    latest = None if request.args.get("piece") else next(iter(database.getPieces(user_id())), None)
-    return render_template("practice.html", latest_piece=latest and latest["id"])
+    asked = request.args.get("piece")
+    if asked:
+        piece = database.getPieceForUser(user_id(), int(asked)) if asked.isdigit() else None
+    else:
+        piece = next(iter(database.getPieces(user_id())), None)
+    return render_template("practice.html", latest_piece=None if asked else piece and piece["id"],
+                           piece_title=piece and piece["title"])   # the library's name for it; an upload's score may have none
 
 def give_starter_piece(uid):
     """Bach's Air, so a new account has a piece to practice before its first upload (the demo user gets it at startup)"""

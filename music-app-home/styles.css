@@ -2024,33 +2024,31 @@ body.coach-open main {
   font-size: 0.875rem;
 }
 
+/* The same field and button as the rest of the page, not a chat app's. */
 .coach-form {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin: 0 16px 16px;
-  padding: 6px 6px 8px 14px;
-  border: 1.5px solid var(--line);
-  border-radius: 20px;
-  background: var(--bg);
-}
-
-.coach-form:focus-within {
-  border-color: var(--ink);   /* the textarea draws no ring of its own */
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--line);
 }
 
 .coach-input {
   flex: 1;
   min-width: 0;
-  padding: 6px 0;
-  border: 0;
-  outline: 0;
-  background: none;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
   color: var(--ink);
   font: inherit;
   font-size: 0.9375rem;
   line-height: 22px;
   resize: none;
+}
+
+.coach-input:focus-visible {
+  outline-offset: 1px;
 }
 
 .coach-input::placeholder {
@@ -2060,22 +2058,23 @@ body.coach-open main {
 
 .coach-send {
   --edge: var(--accent-edge);
-  display: grid;
   flex: none;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
+  height: 38px;   /* one line of the box beside it */
+  padding: 0 16px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
   background: var(--accent);
   color: var(--on-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .coach-send:disabled {
   box-shadow: none;
-  background: var(--line);
+  border-color: var(--line);
+  background: none;
   color: var(--ink-muted);
   cursor: default;
 }

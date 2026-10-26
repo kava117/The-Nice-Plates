@@ -166,7 +166,8 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
 
   function grow() {   // the box grows with the question, up to six lines
     input.style.height = "auto";
-    input.style.height = `${Math.min(input.scrollHeight, 6 * 22 + 20)}px`;
+    const border = input.offsetHeight - input.clientHeight;
+    input.style.height = `${Math.min(input.scrollHeight, 6 * 22 + 14) + border}px`;
   }
 
   form.addEventListener("submit", e => { e.preventDefault(); ask(input.value); });

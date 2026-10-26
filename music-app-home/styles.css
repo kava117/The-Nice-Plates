@@ -1885,8 +1885,17 @@ body.coach-open main {
 .coach-a {
   padding-left: 14px;
   border-left: 2px solid var(--accent);
+  color: var(--ink-muted);
   font-size: 0.9375rem;
   line-height: 1.6;
+}
+
+/* The first line is the next step: the part read from the music stand between goes. */
+.coach-a p:first-child {
+  color: var(--ink);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .coach-wait {

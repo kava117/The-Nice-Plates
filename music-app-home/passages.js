@@ -412,7 +412,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       const r = p.id && saved.find(s => s.id === p.id);
       const c = chip(span(p), on, () => on || pick(p), p.id ? "" : " is-draft");
       c.setAttribute("aria-label", `${label(p)}${r ? `, ${r.reps} reps, ${r.clean} clean` : ", not saved"}`);
-      if (r) c.append(dotsFor(r));
+      if (r && !on) c.append(dotsFor(r));   // the picked passage's dots are in the rep row below
       if (up && r && up.id === r.id && !on) c.append(Object.assign(document.createElement("span"), { className: "chip-tag", textContent: "next up" }));
       list.push(c);
     }

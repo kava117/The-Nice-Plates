@@ -123,3 +123,12 @@ def test_an_hour_has_a_limit(user, monkeypatch):
         codes = [user[0].post("/api/coach", json={"message": "?"}).status_code for _ in range(3)]
     assert codes == [200, 200, 429]
     assert coach.allowed(user[1], now=coach._asked[user[1]][0] + 3601)   # an hour on, it opens again
+
+
+def test_a_new_musician_gets_an_empty_record(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    client = login(flask_app.test_client(), make_user())
+    with fake_claude() as made:
+        assert client.post("/api/coach", json={"message": "Where do I start?"}).status_code == 200
+    practice = json.loads(sent(made)["system"].split("Practice record:\n", 1)[1])
+    assert practice["recent_sessions"] == [] and practice["totals"]["sessions"] == 0

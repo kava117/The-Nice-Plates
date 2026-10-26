@@ -6,7 +6,7 @@
    {first, last} indexes, title() the piece's title, and score (passages.js) lights up and picks the
    bars an answer names. */
 function addCoach(els, { pieceId, passage = () => null, title = () => "", score }) {
-  const { panel, toggle, close, restart, sub, thread, empty, lead, asks, form, input, send } = els;
+  const { panel, toggle, close, restart, sub, said, thread, empty, lead, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
   let turns = load(), busy = false, slow = false, fresh = false, failed = "";
 
@@ -115,7 +115,7 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
     });
     fresh = false;   // only the answer that just came draws in
     if (busy) {   // its margin rule draws itself while the coach reads
-      const wait = Object.assign(document.createElement("div"), { className: "coach-wait", role: "status" });
+      const wait = Object.assign(document.createElement("div"), { className: "coach-wait" });
       wait.append(Object.assign(document.createElement("p"), { textContent: "Looking over your practice" }));
       if (slow) wait.append(Object.assign(document.createElement("p"), { className: "coach-slow", textContent: "Taking a little longer than usual." }));
       thread.append(wait);
@@ -141,6 +141,8 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
     busy = true; failed = "";
     input.value = ""; grow();
     render();
+    // render() redraws the whole thread, so a screen reader hears only what's said here, once
+    said.textContent = "Looking over your practice";
     const later = setTimeout(() => { slow = true; render(); }, 8000);
     try {
       const r = await fetch("/api/coach", {
@@ -156,7 +158,9 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
       turns.push({ role: "assistant", content: data.reply });
       fresh = true;
       save();
+      said.textContent = data.reply;
     } catch (err) {
+      said.textContent = "";   // the error is an alert of its own
       turns.pop();
       if (!input.value.trim()) { input.value = question; grow(); }   // back in the box, ready to send again
       failed = err instanceof TypeError ? "No connection. Check the network and send it again." : err.message;   // fetch throws TypeError offline

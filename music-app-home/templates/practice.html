@@ -83,7 +83,8 @@
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </header>
-  <div class="coach-thread" id="coach-thread" aria-live="polite">
+  <p class="visually-hidden" id="coach-said" aria-live="polite"></p>
+  <div class="coach-thread" id="coach-thread">
     <div class="coach-empty" id="coach-empty">
       <p class="coach-lead" id="coach-lead">How’s practice going?</p>
       <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
@@ -135,7 +136,7 @@
 
   // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
   const coach = addCoach({
-    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"),
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"), said: $("coach-said"),
     thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
     form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
   }, {

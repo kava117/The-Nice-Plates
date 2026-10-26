@@ -75,10 +75,18 @@
 <aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
   <header class="coach-head">
     <h2 class="coach-title" id="coach-title">Coach</h2>
+    <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
     <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </header>
+  <div class="coach-thread" id="coach-thread" aria-live="polite"></div>
+  <form class="coach-form" id="coach-form">
+    <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
+    <button type="submit" class="coach-send press" id="coach-send" aria-label="Ask" disabled>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+    </button>
+  </form>
 </aside>
 
 <script src="/opensheetmusicdisplay.min.js"></script>
@@ -119,7 +127,11 @@
   tempo.addEventListener("input", showTempo);
 
   // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
-  const coach = addCoach({ panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close") });
+  const coach = addCoach({
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"),
+    thread: $("coach-thread"),
+    form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
+  }, { pieceId: piece && +piece, passage: () => passages.bars });
 
   async function loadSong(url) {
     try {

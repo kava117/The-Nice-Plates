@@ -1812,12 +1812,137 @@ body.coach-open main {
   color: var(--ink);
 }
 
+.coach-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;   /* scrolling the thread to its end doesn't scroll the score */
+}
+
+/* A notebook, not a chat: the question is a quiet line, the answer prose with a margin rule. */
+.coach-turn p + p {
+  margin-top: 0.75em;
+}
+
+.coach-q {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.coach-q + .coach-a,
+.coach-q + .coach-wait {
+  margin-top: -10px;
+}
+
+.coach-a {
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.coach-wait {
+  padding: 6px 0 6px 14px;
+  border-left: 2px solid var(--line);
+}
+
+.coach-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.coach-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  animation: coach-dot 1.2s ease-in-out infinite;
+}
+
+.coach-dots i:nth-child(2) { animation-delay: 0.15s; }
+.coach-dots i:nth-child(3) { animation-delay: 0.3s; }
+
+.coach-error {
+  color: var(--rec);
+  font-size: 0.875rem;
+}
+
+.coach-error .link-button {
+  color: inherit;
+}
+
+.coach-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 0 16px 16px;
+  padding: 6px 6px 8px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  background: var(--bg);
+}
+
+.coach-form:focus-within {
+  border-color: var(--ink);   /* the textarea draws no ring of its own */
+}
+
+.coach-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 22px;
+  resize: none;
+}
+
+.coach-input::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.8;
+}
+
+.coach-send {
+  --edge: var(--accent-edge);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+}
+
+.coach-send:disabled {
+  box-shadow: none;
+  background: var(--line);
+  color: var(--ink-muted);
+  cursor: default;
+}
+
 @keyframes coach-in {
   from { opacity: 0; transform: translateX(12px); }
 }
 
+@keyframes coach-dot {
+  0%, 80%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .coach {
+  .coach,
+  .coach-dots i {
     animation: none;
   }
 }

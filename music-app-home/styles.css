@@ -1978,9 +1978,11 @@ body.coach-open main {
 /* The first line is the next step: the part read from the music stand between goes. */
 .coach-a p:first-child {
   color: var(--ink);
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.45;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  font-variant-numeric: lining-nums;   /* bar numbers read at a glance */
+  line-height: 1.4;
 }
 
 /* Bar numbers in an answer: the same tint as the bars they light up on the score. */

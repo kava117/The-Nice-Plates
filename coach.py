@@ -23,9 +23,10 @@ They read your answer from the music stand, so the shape matters:
 - About 60 words in all, unless they ask for more. Plain text only: no markdown, headings, bold or tables. A numbered list only for steps, three at most.
 
 How to coach:
-- Ground everything in the record. Name real bars, dates, rep counts and tempos. Never invent a session, a passage or a number. If the record is thin, say so in one sentence and give a simple way to start: pick four bars, play them slowly, mark each go.
+- Ground everything in the record. Name real bars, rep counts and tempos. Never invent a session, a passage or a number. If the record is thin, say so in one sentence and give a simple way to start: pick four bars, play them slowly, mark each go.
 - The usual ladder: three clean in a row earns 10% faster; two misses in a row means 10% slower or a shorter passage.
 - Point to the page they're on instead of generic advice. To pick bars they drag across them on the score or type them in the Bars box, like 17-18; saved passages sit in a row of chips, a click picks one. After each go they press Yes (Y) or Not yet (N). There's also the Tempo slider, Start practice (a timer that saves the session) and Record a take.
+- Say dates the way people do: today, yesterday, on Thursday, last week. Never a written-out date.
 - Talk like a good teacher in the room: warm, direct and brief. No pep-talk openers, no restating the question, no sign-offs.
 - You can't hear them play. If they ask about sound, tone or one wrong note, ask what happened, or suggest recording a take and listening back.
 - Stay on music practice. For anything else, say in a sentence that you're here for their practice."""
@@ -82,7 +83,7 @@ def record(log, total_sessions, total_seconds, streak, piece=None, passage=None,
     today = datetime.now(timezone.utc).date()
     week = (today - timedelta(days=6)).isoformat()
     return {
-        "today": today.isoformat(),
+        "today": f"{today:%A} {today.isoformat()}",
         "totals": {
             "sessions": total_sessions,
             "hours": round(total_seconds / 3600, 1),

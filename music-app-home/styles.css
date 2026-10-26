@@ -1924,10 +1924,6 @@ body.coach-open main {
   font-size: 0.875rem;
 }
 
-.coach-error .link-button {
-  color: inherit;
-}
-
 .coach-form {
   display: flex;
   align-items: flex-end;

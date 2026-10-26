@@ -14,6 +14,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece, and says so if a picked piece is gone. Keys for everything common; **Keys** on the page lists them |
 | Passages | Drag across bars on the score (or type `12-16`, or `[` then `]` at the cursor) to pick a passage, and drag the handles at either end to change it. Bars outside it fade, Play loops it, and Next/Reset stay inside it. After each time through, **Yes** / **Not yet** (`Y` / `N`) counts a rep: 3 clean in a row offers a faster tempo, 2 misses a slower one. Passages save on their first rep and sit above the score with their last reps; "next up" marks the one with the fewest clean reps lately. See `PRACTICE_PLAN.md` |
 | Playback | ▶ Play on the practice page plays the score on a piano sound, cursor following, from wherever the cursor is; tempo slider. Plays from the MusicXML (repeats included), not the stored MIDI |
+| Coach | **Coach** on the practice page (or `C`) opens a panel beside the score. Ask about your practice and Claude answers from your own record: saved sessions, pieces, passages and their clean / not-yet reps, plus the piece and bars you have open. Needs `ANTHROPIC_API_KEY`; without it the panel says the coach isn't switched on. The conversation stays in the tab (per piece) until **Start over** |
 | Practice timer + session logging | Start / Pause / Stop and save on the practice page writes a `Sessions` row. Leaving the page pauses it; each timer saves once, and runs over 4 h aren't saved |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
@@ -62,7 +63,8 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in; without them everyone is `Sample User` |
 | `FORWARDED_ALLOW_IPS=*` | so the sign-in redirect is built as https behind Render's proxy |
 | `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
-| `ANTHROPIC_API_KEY` | needed for that; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
+| `ANTHROPIC_API_KEY` | needed for that and for the coach; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
+| `COACH_MODEL` | optional, default `claude-haiku-5-5`. Each question sends the practice record (a few thousand tokens), so Haiku keeps it to a fraction of a cent |
 | `CLAUDE_MODEL` | optional, default `claude-haiku-5-5` (under a cent a page; `claude-sonnet-5-5` reads dotted rhythms better at 20 times the price) |
 | `DATABASE_URL` | **Needed for saved data.** A Postgres connection string, e.g. from a free Neon project. Without it the app uses SQLite on the instance disk, which Render wipes on every deploy and every spin-down, so accounts, pieces and sessions vanish |
 
@@ -71,6 +73,7 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 | Path | What's in it |
 |---|---|
 | `app.py` | The Flask app: pages, Google login, practice/timer API |
+| `coach.py` | The coach: what Claude is told about your practice, and the call itself |
 | `database.py` | SQLite schema, migrations, and queries |
 | `ml/api.py` | The `/api` routes for pieces, MIDI conversion, and transcription |
 | `ml/text.py` | Pulls tempo, key, and time signature out of transcribed speech |
@@ -161,6 +164,7 @@ The piece and ML routes (`ml/api.py`) use the demo account if nobody's signed in
 | `DELETE /api/sections/<id>` | demo is fine, has to be yours | Removes a passage and its reps |
 | `POST /api/sections/<id>/reps` | demo is fine, has to be yours | Counts one time through (`{clean: true/false, tempo: percent}`) and gives back the passage |
 | `DELETE /api/sections/<id>/reps/last` | demo is fine, has to be yours | Takes back the newest rep (Undo) |
+| `POST /api/coach` | demo is fine | Answers a question about your practice (`{message, history, piece_id, passage: {start, end}}`; `history` is the earlier questions and answers in turn). Gives back `{reply}`. 503 with no Anthropic key, 429 past 40 questions an hour |
 
 ## Database
 

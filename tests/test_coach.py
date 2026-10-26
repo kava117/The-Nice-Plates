@@ -81,3 +81,17 @@ def test_a_long_conversation_is_cut_at_a_question(user, monkeypatch):
         client.post("/api/coach", json={"message": "And now?", "history": history[1:]})
     messages = sent(made)["messages"]
     assert messages[0]["role"] == "user" and len(messages) <= coach.MAX_TURNS + 1
+
+
+@pytest.mark.parametrize("body", [
+    {}, {"message": ""}, {"message": "   "}, {"message": 5}, {"message": "x" * (coach.MAX_MESSAGE + 1)},
+    {"message": "hi", "history": "no"},
+    {"message": "hi", "history": [{"role": "user", "content": "a"}]},                         # ends on a question
+    {"message": "hi", "history": [{"role": "user", "content": "a"}, {"role": "user", "content": "b"}]},
+    {"message": "hi", "history": [{"role": "system", "content": "a"}, {"role": "assistant", "content": "b"}]},
+])
+def test_bad_questions_are_400(user, body, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude() as made:
+        assert user[0].post("/api/coach", json=body).status_code == 400
+    assert not made.called

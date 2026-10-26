@@ -24,6 +24,9 @@
     <div class="tool-group" role="group" aria-label="Record">
       <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
     </div>
+    <div class="tool-group" role="group" aria-label="Coach">
+      <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
+    </div>
     <div class="tool-group tool-group-end" role="group" aria-label="Zoom">
       <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
       <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
@@ -48,6 +51,7 @@
         <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Mark a passage: [ on its first bar, ] on its last</dd>
         <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That went clean, or not yet</dd>
         <dt><kbd>Esc</kbd></dt><dd>Back to the whole piece</dd>
+        <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
       </dl>
     </details>
@@ -68,9 +72,19 @@
 <p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to your library</a></p>
 <div id="score"></div>
 
+<aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
+  <header class="coach-head">
+    <h2 class="coach-title" id="coach-title">Coach</h2>
+    <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+</aside>
+
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
 <script src="/passages.js"></script>
+<script src="/coach.js"></script>
 <script>
   // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
   const piece = new URLSearchParams(location.search).get("piece") || {{ latest_piece | tojson }};
@@ -103,6 +117,9 @@
     tempoLabel.textContent = bpm ? `${Math.round(bpm * tempo.value / 100)} bpm` : `${tempo.value} %`;
   };
   tempo.addEventListener("input", showTempo);
+
+  // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
+  const coach = addCoach({ panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close") });
 
   async function loadSong(url) {
     try {
@@ -173,6 +190,7 @@
     "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },
+    "c": () => coach.toggle(),
   };
   document.addEventListener("keydown", e => {
     const act = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];

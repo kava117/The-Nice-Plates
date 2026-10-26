@@ -1739,3 +1739,85 @@ kbd {
     animation: none;
   }
 }
+
+/* 25. Coach panel (coach.js) --------------------------------------------- */
+
+/* A column beside the score, under the top bar. The score moves over instead of
+   hiding underneath, so the bars the coach names stay readable. */
+:root {
+  --coach-w: 368px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.coach {
+  --depth: 2px;
+  position: fixed;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: var(--coach-w);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  animation: coach-in 0.45s var(--ease-out);
+}
+
+.coach[hidden] {
+  display: none;
+}
+
+body.coach-open main {
+  padding-right: calc(var(--coach-w) + 32px);
+}
+
+/* The Coach button while the panel is open: marked like the current page in the sidebar. */
+.tool.is-on {
+  --edge: var(--accent-edge);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.coach-title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+}
+
+.coach-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.coach-close:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+@keyframes coach-in {
+  from { opacity: 0; transform: translateX(12px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach {
+    animation: none;
+  }
+}

@@ -467,8 +467,13 @@ def getPracticeRecord(user_id, sessions=20):
                            "passages": [sectionRecord(database, row) for row in rows]})
         return {"sessions": recent, "pieces": pieces}
 
+_demo_ids = {}   # per database; a guest's page asked three or four times, each a trip to the database
+
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""
-    with get_db() as database:
-        database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
-        return database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]
+    where = DATABASE_URL or DB_NAME
+    if where not in _demo_ids:
+        with get_db() as database:
+            database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
+            _demo_ids[where] = database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]
+    return _demo_ids[where]

@@ -95,3 +95,22 @@ def test_bad_questions_are_400(user, body, monkeypatch):
     with fake_claude() as made:
         assert user[0].post("/api/coach", json=body).status_code == 400
     assert not made.called
+
+
+def test_without_a_key_it_says_so(user):
+    r = user[0].post("/api/coach", json={"message": "What next?"})
+    assert r.status_code == 503 and "isn't switched on" in r.get_json()["error"]
+
+
+def test_a_failed_call_is_a_plain_message(user, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude() as made:
+        made.return_value.messages.create.side_effect = RuntimeError("401 invalid x-api-key")
+        r = user[0].post("/api/coach", json={"message": "What next?"})
+    assert r.status_code == 502 and "x-api-key" not in r.get_json()["error"]
+
+
+def test_markdown_comes_out_plain(user, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude("## Next\nPlay **bars 1-4** slowly."):
+        assert user[0].post("/api/coach", json={"message": "?"}).get_json()["reply"] == "Next\nPlay bars 1-4 slowly."

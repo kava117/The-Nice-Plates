@@ -211,6 +211,44 @@ p {
   to { transform: scaleX(0.92); }
 }
 
+/* After five seconds of that: the server is probably waking up, and says so. */
+.leaving-note {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  z-index: 100;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  transform: translateX(-50%);
+  animation: leaving-note 0.3s ease-out;
+  pointer-events: none;   /* every link under it still works */
+}
+
+@keyframes leaving-note {
+  from { opacity: 0; transform: translate(-50%, -4px); }
+}
+
+@media (max-width: 900px) {   /* the nav sits at the top here: keep it clear */
+  .leaving-note {
+    top: auto;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaving-note {
+    animation: none;
+  }
+}
+
 /* 6. Sidebar ------------------------------------------------------------- */
 
 .sidebar {

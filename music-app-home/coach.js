@@ -4,7 +4,7 @@
 
    addCoach(els, { pieceId, passage }) wires it; passage() gives the picked bars as {first, last} indexes. */
 function addCoach(els, { pieceId, passage = () => null }) {
-  const { panel, toggle, close, restart, thread, form, input, send } = els;
+  const { panel, toggle, close, restart, thread, empty, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
   let turns = load(), busy = false, failed = null;
 
@@ -13,6 +13,19 @@ function addCoach(els, { pieceId, passage = () => null }) {
   }
   function save() {
     try { sessionStorage.setItem(KEY, JSON.stringify(turns.slice(-24))); } catch {}
+  }
+
+  const named = b => (b.first === b.last ? `bar ${b.first + 1}` : `bars ${b.first + 1}-${b.last + 1}`);
+
+  // ---- what's on the page ----
+  function suggestions() {
+    const bars = passage();
+    return [
+      ["What should I practise now?", "What should I practise now?"],
+      bars ? [`Help with ${named(bars)}`, `How should I work on ${named(bars)}?`]
+           : ["Which passage needs work?", "Which passage needs the most work, and how should I start on it?"],
+      ["Am I ready to go faster?", "Am I ready to go faster on what I've been practising?"],
+    ];
   }
 
   function paragraphs(text) {
@@ -26,7 +39,15 @@ function addCoach(els, { pieceId, passage = () => null }) {
   }
 
   function render() {
+    empty.hidden = turns.length > 0 || busy;
     restart.hidden = turns.length === 0;
+    if (!empty.hidden) {
+      asks.replaceChildren(...suggestions().map(([label, question]) => {
+        const b = Object.assign(document.createElement("button"), { type: "button", className: "coach-ask press", textContent: label });
+        b.addEventListener("click", () => ask(question));
+        return b;
+      }));
+    }
     thread.querySelectorAll(".coach-turn, .coach-wait, .coach-error").forEach(el => el.remove());
     for (const turn of turns) {
       const el = document.createElement("div");
@@ -48,7 +69,7 @@ function addCoach(els, { pieceId, passage = () => null }) {
       thread.append(el);
     }
     send.disabled = busy || !input.value.trim();
-    thread.scrollTop = thread.scrollHeight;   // newest answer in view
+    thread.scrollTop = empty.hidden ? thread.scrollHeight : 0;   // newest answer in view; before one, the lead line
   }
 
   // ---- asking ----
@@ -124,5 +145,5 @@ function addCoach(els, { pieceId, passage = () => null }) {
   try { wasOpen = !!sessionStorage.getItem(OPEN); } catch {}
   if (wasOpen) setOpen(true, { focus: false });
 
-  return { toggle: flip, get open() { return isOpen(); } };
+  return { toggle: flip, get open() { return isOpen(); }, refresh: () => isOpen() && !turns.length && render() };
 }

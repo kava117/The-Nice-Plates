@@ -80,7 +80,12 @@
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </header>
-  <div class="coach-thread" id="coach-thread" aria-live="polite"></div>
+  <div class="coach-thread" id="coach-thread" aria-live="polite">
+    <div class="coach-empty" id="coach-empty">
+      <p class="coach-lead">Ask about your practice.</p>
+      <div class="coach-asks" id="coach-asks"></div>
+    </div>
+  </div>
   <form class="coach-form" id="coach-form">
     <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
     <button type="submit" class="coach-send press" id="coach-send" aria-label="Ask" disabled>
@@ -117,7 +122,7 @@
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
-    onPick: () => player.stop(),
+    onPick: () => { player.stop(); coach.refresh(); },   // the coach's suggestions name the picked bars
     onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
@@ -129,7 +134,7 @@
   // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
   const coach = addCoach({
     panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"),
-    thread: $("coach-thread"),
+    thread: $("coach-thread"), empty: $("coach-empty"), asks: $("coach-asks"),
     form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
   }, { pieceId: piece && +piece, passage: () => passages.bars });
 

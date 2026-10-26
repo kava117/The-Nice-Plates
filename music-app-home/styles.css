@@ -1099,8 +1099,8 @@ main {
   display: flex;
   flex-direction: column;   /* rows: moving and listening, passages, reps (practice.html) */
   gap: 10px;
-  margin-bottom: 12px;
-  padding: 8px 0 12px;
+  margin: 0 -32px 12px;     /* out through main's side padding: pinned, it's one flat bar edge to edge, not a card over the score */
+  padding: 8px 32px 12px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
@@ -1108,6 +1108,8 @@ main {
 @media (max-width: 900px) {
   #controls {
     top: 0;                 /* here the window scrolls, not main */
+    margin-inline: -16px;
+    padding-inline: 16px;
   }
 }
 

@@ -429,6 +429,37 @@ def deleteLastRep(section_id):
             database.execute("UPDATE Sections SET times_practiced = CASE WHEN times_practiced > 0 THEN times_practiced - 1 ELSE 0 END WHERE id = ?", (section_id,))
         return bool(gone)
 
+def getPracticeRecord(user_id, sessions=20):
+    """what the coach reads, in one connection: recent sessions with their pieces, and every piece with its passages"""
+    with get_db() as database:
+        recent = []
+        for s in database.execute(
+            "SELECT id, time_spent, date, session_notes FROM Sessions WHERE user_id = ? ORDER BY date DESC LIMIT ?",
+            (user_id, sessions),
+        ).fetchall():
+            titles = database.execute(
+                "SELECT p.title FROM Session_Pieces sp JOIN Pieces p ON p.id = sp.piece_id WHERE sp.session_id = ?",
+                (s["id"],),
+            ).fetchall()
+            recent.append({"date": s["date"], "seconds": s["time_spent"], "notes": s["session_notes"],
+                           "pieces": [t["title"] for t in titles]})
+        seconds = {row["piece_id"]: row["seconds"] for row in database.execute(
+            "SELECT sp.piece_id, SUM(s.time_spent) AS seconds FROM Session_Pieces sp JOIN Sessions s ON s.id = sp.session_id WHERE s.user_id = ? GROUP BY sp.piece_id",
+            (user_id,),
+        ).fetchall()}
+        pieces = []
+        for p in database.execute(
+            "SELECT id, title, composer, bpm FROM Pieces WHERE user_id = ? ORDER BY COALESCE(last_viewed, date_created) DESC, id DESC",
+            (user_id,),
+        ).fetchall():
+            rows = database.execute(
+                "SELECT id, piece_id, start_measure, end_measure FROM Sections WHERE piece_id = ? ORDER BY start_measure, end_measure",
+                (p["id"],),
+            ).fetchall()
+            pieces.append({**dict(p), "seconds": seconds.get(p["id"], 0),
+                           "passages": [sectionRecord(database, row) for row in rows]})
+        return {"sessions": recent, "pieces": pieces}
+
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""
     with get_db() as database:

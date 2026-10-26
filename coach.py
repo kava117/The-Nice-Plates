@@ -4,11 +4,13 @@ The page sends a question and the conversation so far; the server adds the recor
 (sessions, pieces, passages and their reps) so every answer is about this
 musician's practice, and nothing the browser says can change whose record it is.
 """
-import json, logging, os, re
+import json, logging, os, re, threading, time
+from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 
 MODEL = "claude-haiku-5-5"   # cheap and quick; COACH_MODEL swaps it
 MAX_TURNS = 12               # earlier questions and answers sent back with a new one
+PER_HOUR = 40                # questions one account can ask in an hour
 
 SYSTEM = """You are the practice coach in The Nice Plates, a practice log for beginner and intermediate musicians. You are talking with one musician who is at their instrument, between goes.
 
@@ -48,6 +50,21 @@ def read_history(value):
     if turns and turns[-1]["role"] != "assistant":
         return None
     return [{"role": t["role"], "content": t["content"]} for t in turns]
+
+
+_asked, _lock = defaultdict(deque), threading.Lock()
+
+def allowed(uid, now=None):
+    """counts this question against the account's hour; False once it's used up"""
+    now = time.time() if now is None else now
+    with _lock:
+        asked = _asked[uid]
+        while asked and now - asked[0] > 3600:
+            asked.popleft()
+        if len(asked) >= PER_HOUR:
+            return False
+        asked.append(now)
+        return True
 
 
 def minutes(seconds):

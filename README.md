@@ -10,9 +10,9 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 |---|---|
 | Google sign-in / sign-out | Works if you've set the Google keys, otherwise you're in demo mode |
 | Library | Works, shows your pieces |
-| Uploading (PDF, PNG/JPG, MusicXML) | Works, saves MusicXML + MIDI. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
+| Uploading (PDF, PNG/JPG, MusicXML) | Works, up to 20 MB, saves MusicXML + MIDI. Other file types are turned away. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece |
-| Practice timer + session logging | Start practice / Stop and save on the practice page writes a `Sessions` row |
+| Practice timer + session logging | Start / Pause / Stop and save on the practice page writes a `Sessions` row. Leaving the page pauses it; each timer saves once, and runs over 4 h aren't saved |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
 | Home tiles + stats | Your three most recently opened pieces, minutes on each, total time, day streak |
@@ -26,7 +26,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 
 ![](docs/system.svg)
 
-It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. There's no background worker, so if a conversion takes a while, the page just sits there loading until it's done.
+It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. There's no background worker, so if a conversion takes a while, the upload page just sits there loading until it's done. Gunicorn runs 4 threads, so other visitors' pages keep loading meanwhile, and only one conversion runs at a time (a second upload waits its turn) so two homr runs can't share the 512 MB box.
 
 - **Front end:** plain Jinja templates, no framework, no build step. Scores are drawn with [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) (it's checked in as `opensheetmusicdisplay.min.js`). There's light/dark mode, keyboard support, and reduced-motion handling.
 - **Accounts:** Google sign-in through Authlib, with Flask-Login keeping you logged in. No Google keys means everyone just shares one demo account (`Sample User`).
@@ -57,7 +57,8 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 
 | Variable | Why |
 |---|---|
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SECRET_KEY` | Google sign-in; without them everyone is `Sample User` |
+| `SECRET_KEY` | **Required.** Signs login cookies; the app refuses to start on Render without it. A Blueprint generates it; otherwise make one with `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in; without them everyone is `Sample User` |
 | `FORWARDED_ALLOW_IPS=*` | so the sign-in redirect is built as https behind Render's proxy |
 | `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
 | `ANTHROPIC_API_KEY` | needed for that; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
@@ -97,13 +98,22 @@ The app still starts up if you skip the ML install. The pages will load, but upl
 
 You can also run `ml/api.py` by itself on port 8002 with `python ml/api.py`.
 
+### Tests
+
+```bash
+pip install -r requirements.txt -r ml/requirements.txt -r requirements-dev.txt
+python -m pytest tests/
+```
+
+The tests use a throwaway database in a temp folder and ignore your `.env`. `tests/test_limits.py` marks known bugs as expected failures (`xfail`, with the `ISSUES.md` entry). When you fix one, its test starts failing with `XPASS(strict)`. That's the cue to delete the `@known(...)` marker.
+
 ## Config
 
-You don't need any secrets to get it running. Each one just turns on a feature. Put them in a `.env` file in the project root (it's git-ignored, so please don't commit it).
+You don't need any secrets to run it locally. Each one just turns on a feature. Copy `.env.example` to `.env` in the project root and fill in what you need (`.env` is git-ignored, so please don't commit it).
 
 | Variable | What it's for | If you leave it out |
 |---|---|---|
-| `SECRET_KEY` | Signs the session cookie | Uses `"dev-only"`, which is fine locally but not anywhere else |
+| `SECRET_KEY` | Signs the session cookie | Uses `"dev-only"` locally. On Render (where `RENDER` is set) the app refuses to start without it |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Demo mode, sign-in just drops you on `/home` |
 | `OPENAI_API_KEY` | `/api/transcribe` | That route won't work |
 | `PORT` | Port on Render | Runs on 8001 locally |
@@ -122,10 +132,12 @@ There are three requirements files:
 `render.yaml` sets up one free Render web service on Python 3.11.9. It installs the app + ML requirements and starts with:
 
 ```bash
-gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300
+gunicorn app:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
 ```
 
-Right now Render doesn't have any env vars set besides `PYTHON_VERSION`, so the live site is in demo mode and using the `dev-only` secret. Also, the database lives on Render's disk, which gets **wiped every time we deploy**.
+Keep it at one worker: a second worker is a second process, which would double homr's memory.
+
+Without Google keys the live site is in demo mode. It needs a `SECRET_KEY` (see above) or it won't start. Also, the database lives on Render's disk, which gets **wiped every time we deploy**.
 
 ## API
 
@@ -161,19 +173,16 @@ If you change the schema, add it to the `MIGRATIONS` list in `database.py` (it's
 ## Known issues
 
 **Priority**
-- `SECRET_KEY` falls back to `"dev-only"` and Render doesn't set a real one, so once Google login is on, someone could fake a session cookie.
-- `/api/transcribe` and `/api/midi` don't need a login and don't have an upload size limit, so anyone could burn through our OpenAI credits or bog down the server.
+- `/api/transcribe` and `/api/midi` don't need a login, so anyone could burn through our OpenAI credits.
 
 **Also Problems**
 - Nothing on the front end calls the timer/practice API yet. Plus those routes need a real login while the live site is in demo mode, so practice time never actually gets saved.
-- The "Log out" button goes to `/index` instead of `/logout`, so you don't actually get logged out.
 - The sidebar always says "Sample User" no matter who's signed in.
 - Every page is public, and all guests share the demo account, so if one guest uploads something, every guest sees it.
 - If an upload fails, you just get a plain 500 page with no explanation.
-- OMR runs during the request on a free Render instance, so it might hit the 300 s timeout or run out of memory (haven't tested this yet).
+- OMR runs during the request, one upload at a time, so a queue of uploads can hit the 300 s timeout (haven't tested this on Render yet).
 - The ML and conversion requirements aren't pinned.
 - The database on Render gets wiped every deploy.
-- Temp upload folders never get cleaned up.
 - Going to `/auth/google` without Google keys, or hitting "deny" on the Google screen, crashes instead of redirecting.
 - `niceplates.db` is opened relative to wherever you run the app from, so starting it from a different folder quietly gives you a brand new empty database.
-- No tests yet, and `ml/README.md` is out of date (it still says Google login isn't done).
+- `ml/README.md` is out of date (it still says Google login isn't done).

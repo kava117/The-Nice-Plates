@@ -1947,6 +1947,26 @@ body.coach-open main {
   text-decoration-style: solid;
 }
 
+/* Under an answer: its next step in one press. */
+.coach-setup {
+  --edge: var(--accent-edge);
+  height: 32px;
+  margin-top: 14px;
+  padding: 0 12px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.coach-setup:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+
 .coach-wait {
   padding: 6px 0 6px 14px;
   border-left: 2px solid var(--line);

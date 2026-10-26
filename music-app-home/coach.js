@@ -66,6 +66,23 @@ function addCoach(els, { pieceId, passage = () => null, score }) {
     return box;
   }
 
+  // Under an answer, its first line in one press: those bars picked and that tempo set, ready to play.
+  function setUp(step) {
+    const bars = (step.match(BARS) || [])[0], percent = +(step.match(/\b(\d{2,3}) ?%/) || [])[1];
+    if (!bars || !score) return [];
+    const tempo = percent >= 40 && percent <= 200 && percent % 10 === 0 ? percent : 0;   // what the slider can be set to
+    const label = `Set up ${bars.toLowerCase().replace("-", "–")}${tempo ? ` at ${tempo}%` : ""}`;
+    const button = Object.assign(document.createElement("button"), { type: "button", className: "coach-setup press", textContent: label });
+    button.addEventListener("click", () => {
+      if (!score.choose(bars)) return;
+      if (tempo) score.setTempo(tempo);
+      button.textContent = "Ready when you are";
+      setTimeout(() => { button.textContent = label; }, 2500);
+      if (matchMedia("(max-width: 900px)").matches) setOpen(false, { focus: false });   // the sheet covers the score
+    });
+    return [button];
+  }
+
   function render() {
     empty.hidden = turns.length > 0 || busy;
     restart.hidden = turns.length === 0;
@@ -81,6 +98,7 @@ function addCoach(els, { pieceId, passage = () => null, score }) {
       const el = document.createElement("div");
       el.className = `coach-turn coach-${turn.role === "user" ? "q" : "a"}`;
       el.append(paragraphs(turn.content, turn.role === "assistant"));
+      if (turn.role === "assistant") el.append(...setUp(turn.content.split("\n")[0]));
       thread.append(el);
     }
     if (busy) {

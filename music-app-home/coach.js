@@ -28,9 +28,9 @@ function addCoach(els, { pieceId, passage = () => null }) {
     ];
   }
 
-  function paragraphs(text) {
+  function paragraphs(text) {   // a line each: an answer's first line is its next step (coach.py's SYSTEM)
     const box = document.createDocumentFragment();
-    for (const part of text.split(/\n{2,}/)) {
+    for (const part of text.split(/\n+/)) {
       const p = document.createElement("p");
       p.textContent = part.trim();
       if (p.textContent) box.append(p);

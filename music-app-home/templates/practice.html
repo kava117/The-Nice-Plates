@@ -74,7 +74,10 @@
 
 <aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
   <header class="coach-head">
-    <h2 class="coach-title" id="coach-title">Coach</h2>
+    <div class="coach-heading">
+      <h2 class="coach-title" id="coach-title">Coach</h2>
+      <p class="coach-sub" id="coach-sub" hidden></p>
+    </div>
     <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
     <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -133,10 +136,13 @@
 
   // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
   const coach = addCoach({
-    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"),
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"),
     thread: $("coach-thread"), empty: $("coach-empty"), asks: $("coach-asks"),
     form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
-  }, { pieceId: piece && +piece, passage: () => passages.bars, score: passages });
+  }, {
+    pieceId: piece && +piece, passage: () => passages.bars, score: passages,
+    title: () => ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // as printed on the score
+  });
 
   async function loadSong(url) {
     try {
@@ -149,6 +155,7 @@
       document.getElementById("score-loading").hidden = true;
       play.disabled = false;
       showTempo();
+      coach.refresh();   // the piece's title, under the coach's name
       passages.ready((await firstState).section_id);   // back on the passage the last visit left on
     } catch (err) {
       console.error("Couldn't load song:", err);

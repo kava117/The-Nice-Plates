@@ -2,10 +2,11 @@
    A panel beside the score, so the bars it talks about stay in view. The conversation lives in
    sessionStorage per piece: it survives a reload, and a new tab starts fresh.
 
-   addCoach(els, { pieceId, passage, score }) wires it; passage() gives the picked bars as {first, last}
-   indexes, and score (passages.js) lights up and picks the bars an answer names. */
-function addCoach(els, { pieceId, passage = () => null, score }) {
-  const { panel, toggle, close, restart, thread, empty, asks, form, input, send } = els;
+   addCoach(els, { pieceId, passage, title, score }) wires it; passage() gives the picked bars as
+   {first, last} indexes, title() the piece's title, and score (passages.js) lights up and picks the
+   bars an answer names. */
+function addCoach(els, { pieceId, passage = () => null, title = () => "", score }) {
+  const { panel, toggle, close, restart, sub, thread, empty, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
   let turns = load(), busy = false, failed = "";
 
@@ -16,9 +17,16 @@ function addCoach(els, { pieceId, passage = () => null, score }) {
     try { sessionStorage.setItem(KEY, JSON.stringify(turns.slice(-24))); } catch {}
   }
 
-  const named = b => (b.first === b.last ? `bar ${b.first + 1}` : `bars ${b.first + 1}-${b.last + 1}`);
+  const named = b => (b.first === b.last ? `bar ${b.first + 1}` : `bars ${b.first + 1}–${b.last + 1}`);
+  const capital = text => text[0].toUpperCase() + text.slice(1);
 
   // ---- what's on the page ----
+  function where() {   // under the coach's name: what it's looking at
+    const name = title(), bars = passage();
+    sub.textContent = name ? `${name} · ${bars ? named(bars) : "whole piece"}` : bars ? capital(named(bars)) : "";
+    sub.hidden = !sub.textContent;
+  }
+
   function suggestions() {
     const bars = passage();
     return [
@@ -32,7 +40,7 @@ function addCoach(els, { pieceId, passage = () => null, score }) {
   function hint() {
     const bars = passage(), name = bars && named(bars);
     input.placeholder = !bars ? "The left hand keeps rushing…"
-      : `${name[0].toUpperCase()}${name.slice(1)} ${bars.first === bars.last ? "keeps" : "keep"} falling apart…`;
+      : `${capital(name)} ${bars.first === bars.last ? "keeps" : "keep"} falling apart…`;
   }
 
   function paragraphs(text, linked) {   // a line each: an answer's first line is its next step (coach.py's SYSTEM)
@@ -110,6 +118,7 @@ function addCoach(els, { pieceId, passage = () => null, score }) {
     if (failed) thread.append(Object.assign(document.createElement("p"), { className: "coach-error", role: "alert", textContent: failed }));
     send.disabled = busy || !input.value.trim();
     hint();
+    where();
     // waiting or failed: the bottom. An answer: its question at the top, so it reads from the start.
     const asked = !busy && !failed && [...thread.querySelectorAll(".coach-q")].pop();
     thread.scrollTop = !empty.hidden ? 0 : asked
@@ -192,5 +201,5 @@ function addCoach(els, { pieceId, passage = () => null, score }) {
   if (wasOpen) setOpen(true, { focus: false });
 
   hint();
-  return { toggle: flip, get open() { return isOpen(); }, refresh: () => { hint(); if (isOpen() && !turns.length) render(); } };
+  return { toggle: flip, get open() { return isOpen(); }, refresh: () => { hint(); where(); if (isOpen() && !turns.length) render(); } };
 }

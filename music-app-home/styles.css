@@ -1816,11 +1816,24 @@ body.coach-open main {
   border-bottom: 1px solid var(--line);
 }
 
-.coach-title {
+.coach-heading {
   flex: 1;
+  min-width: 0;
+}
+
+.coach-title {
   font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 400;
+}
+
+/* What it's looking at: the piece and the picked bars. */
+.coach-sub {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .coach-close {

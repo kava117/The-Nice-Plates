@@ -28,6 +28,12 @@ function addCoach(els, { pieceId, passage = () => null }) {
     ];
   }
 
+  function hint() {
+    const bars = passage(), name = bars && named(bars);
+    input.placeholder = !bars ? "The left hand keeps rushing…"
+      : `${name[0].toUpperCase()}${name.slice(1)} ${bars.first === bars.last ? "keeps" : "keep"} falling apart…`;
+  }
+
   function paragraphs(text) {   // a line each: an answer's first line is its next step (coach.py's SYSTEM)
     const box = document.createDocumentFragment();
     for (const part of text.split(/\n+/)) {
@@ -63,6 +69,7 @@ function addCoach(els, { pieceId, passage = () => null }) {
     }
     if (failed) thread.append(Object.assign(document.createElement("p"), { className: "coach-error", role: "alert", textContent: failed }));
     send.disabled = busy || !input.value.trim();
+    hint();
     // waiting or failed: the bottom. An answer: its question at the top, so it reads from the start.
     const asked = !busy && !failed && [...thread.querySelectorAll(".coach-q")].pop();
     thread.scrollTop = !empty.hidden ? 0 : asked
@@ -144,5 +151,6 @@ function addCoach(els, { pieceId, passage = () => null }) {
   try { wasOpen = !!sessionStorage.getItem(OPEN); } catch {}
   if (wasOpen) setOpen(true, { focus: false });
 
-  return { toggle: flip, get open() { return isOpen(); }, refresh: () => isOpen() && !turns.length && render() };
+  hint();
+  return { toggle: flip, get open() { return isOpen(); }, refresh: () => { hint(); if (isOpen() && !turns.length) render(); } };
 }

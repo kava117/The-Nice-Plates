@@ -6,7 +6,7 @@
 function addCoach(els, { pieceId, passage = () => null }) {
   const { panel, toggle, close, restart, thread, empty, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
-  let turns = load(), busy = false, failed = null;
+  let turns = load(), busy = false, failed = "";
 
   function load() {
     try { return JSON.parse(sessionStorage.getItem(KEY)) || []; } catch { return []; }
@@ -61,13 +61,7 @@ function addCoach(els, { pieceId, passage = () => null }) {
         innerHTML: '<span class="coach-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="visually-hidden">Reading your practice log</span>',
       }));
     }
-    if (failed) {
-      const el = Object.assign(document.createElement("p"), { className: "coach-error", role: "alert", textContent: failed.error + " " });
-      const again = Object.assign(document.createElement("button"), { type: "button", className: "link-button", textContent: "Ask again" });
-      again.addEventListener("click", () => { const q = failed.question; failed = null; ask(q); });
-      el.append(again);
-      thread.append(el);
-    }
+    if (failed) thread.append(Object.assign(document.createElement("p"), { className: "coach-error", role: "alert", textContent: failed }));
     send.disabled = busy || !input.value.trim();
     // waiting or failed: the bottom. An answer: its question at the top, so it reads from the start.
     const asked = !busy && !failed && [...thread.querySelectorAll(".coach-q")].pop();
@@ -83,7 +77,7 @@ function addCoach(els, { pieceId, passage = () => null }) {
     const history = turns.slice();
     const bars = passage();
     turns.push({ role: "user", content: question });
-    busy = true; failed = null;
+    busy = true; failed = "";
     input.value = ""; grow();
     render();
     try {
@@ -100,8 +94,9 @@ function addCoach(els, { pieceId, passage = () => null }) {
       turns.push({ role: "assistant", content: data.reply });
       save();
     } catch (err) {
-      turns.pop();   // the question goes back in the box, ready to send again
-      failed = { question, error: err instanceof TypeError ? "No connection. Check the network and ask again." : err.message };   // fetch throws TypeError offline
+      turns.pop();
+      if (!input.value.trim()) { input.value = question; grow(); }   // back in the box, ready to send again
+      failed = err instanceof TypeError ? "No connection. Check the network and send it again." : err.message;   // fetch throws TypeError offline
     } finally {
       busy = false;
       render();
@@ -120,7 +115,7 @@ function addCoach(els, { pieceId, passage = () => null }) {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ask(input.value); }
   });
   restart.addEventListener("click", () => {
-    turns = []; failed = null; save();
+    turns = []; failed = ""; save();
     render();
     input.focus();
   });

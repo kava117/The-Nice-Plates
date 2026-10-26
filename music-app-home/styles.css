@@ -1868,7 +1868,6 @@ body.coach-open main {
 .coach-empty {
   display: flex;
   flex-direction: column;
-  gap: 18px;
   margin-top: auto;
 }
 
@@ -1878,34 +1877,53 @@ body.coach-open main {
 
 .coach-lead {
   font-family: var(--font-display);
-  font-size: 1.625rem;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
+.coach-knows {
+  margin: 8px 0 20px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Questions to start with: plain lines, each asked exactly as written. */
 .coach-asks {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+  border-top: 1px solid var(--line);
 }
 
 .coach-ask {
-  padding: 7px 14px;
-  border: 1.5px solid var(--line);
-  border-radius: 999px;
-  background: var(--bg);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
   color: var(--ink);
   font: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.9375rem;
   text-align: left;
   cursor: pointer;
 }
 
-.coach-ask:hover {
-  border-color: var(--edge-neutral);
+.coach-ask::after {
+  content: "→";
+  color: var(--ink-muted);
+  transition: transform 0.2s var(--ease-out), color 0.15s;
+}
+
+.coach-ask:hover::after,
+.coach-ask:focus-visible::after {
+  color: var(--accent);
+  transform: translateX(3px);
 }
 
 /* A notebook, not a chat: the question is a quiet line, the answer prose with a margin rule. */

@@ -6,7 +6,7 @@
    {first, last} indexes, title() the piece's title, and score (passages.js) lights up and picks the
    bars an answer names. */
 function addCoach(els, { pieceId, passage = () => null, title = () => "", score }) {
-  const { panel, toggle, close, restart, sub, thread, empty, asks, form, input, send } = els;
+  const { panel, toggle, close, restart, sub, thread, empty, lead, asks, form, input, send } = els;
   const KEY = `coach:${pieceId || "demo"}`, OPEN = "coach-open";
   let turns = load(), busy = false, failed = "";
 
@@ -27,13 +27,16 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
     sub.hidden = !sub.textContent;
   }
 
-  function suggestions() {
+  function greeting() {   // a teacher at the start of a lesson
+    const name = title();
+    return name && name.length <= 24 ? `How’s ${name} going?` : "How’s practice going?";
+  }
+  function questions() {   // asked word for word: what you press is what it reads
     const bars = passage();
     return [
-      ["What should I practise now?", "What should I practise now?"],
-      bars ? [`Help with ${named(bars)}`, `How should I work on ${named(bars)}?`]
-           : ["Which passage needs work?", "Which passage needs the most work, and how should I start on it?"],
-      ["Am I ready to go faster?", "Am I ready to go faster on what I've been practising?"],
+      bars ? `How should I work on ${named(bars)}?` : "Which passage needs the most work?",
+      "What should I practise next?",
+      "Am I ready to go faster?",
     ];
   }
 
@@ -95,8 +98,9 @@ function addCoach(els, { pieceId, passage = () => null, title = () => "", score 
     empty.hidden = turns.length > 0 || busy;
     restart.hidden = turns.length === 0;
     if (!empty.hidden) {
-      asks.replaceChildren(...suggestions().map(([label, question]) => {
-        const b = Object.assign(document.createElement("button"), { type: "button", className: "coach-ask press", textContent: label });
+      lead.textContent = greeting();
+      asks.replaceChildren(...questions().map(question => {
+        const b = Object.assign(document.createElement("button"), { type: "button", className: "coach-ask", textContent: question });
         b.addEventListener("click", () => ask(question));
         return b;
       }));

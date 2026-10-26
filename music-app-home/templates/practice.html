@@ -85,7 +85,8 @@
   </header>
   <div class="coach-thread" id="coach-thread" aria-live="polite">
     <div class="coach-empty" id="coach-empty">
-      <p class="coach-lead">Ask about your practice.</p>
+      <p class="coach-lead" id="coach-lead">How’s practice going?</p>
+      <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
       <div class="coach-asks" id="coach-asks"></div>
     </div>
   </div>
@@ -137,7 +138,7 @@
   // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
   const coach = addCoach({
     panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"),
-    thread: $("coach-thread"), empty: $("coach-empty"), asks: $("coach-asks"),
+    thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
     form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
   }, {
     pieceId: piece && +piece, passage: () => passages.bars, score: passages,

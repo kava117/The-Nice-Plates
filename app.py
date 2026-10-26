@@ -1,6 +1,7 @@
 from flask import Flask, abort, jsonify, redirect, url_for, render_template, request, session
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from database import database
+import coach
 from datetime import date, datetime, timedelta, timezone
 from itertools import accumulate
 import os, secrets, time
@@ -273,6 +274,33 @@ def api_timer_stop():
     for key in TIMER_KEYS:
         session.pop(key, None)
     return jsonify(saved_session_id=session_id, time_spent=total, too_long=too_long, **practice_state())
+
+
+# ---- Coach (coach.py): Claude answers questions about this musician's own practice record ----
+@app.route("/api/coach", methods=["POST"])
+def api_coach():
+    data = request.get_json(silent=True)
+    data = data if isinstance(data, dict) else {}
+    message = data.get("message")
+    if not isinstance(message, str) or not message.strip():
+        return jsonify(error="message must be text"), 400
+    if len(message) > coach.MAX_MESSAGE:
+        return jsonify(error=f"keep a question under {coach.MAX_MESSAGE} characters"), 400
+    history = coach.read_history(data.get("history"))
+    if history is None:
+        return jsonify(error="history must be questions and answers in turn, ending on an answer"), 400
+    uid = user_id()
+    if not coach.allowed(uid):
+        return jsonify(error="That's a lot of questions for one hour. Try again a little later."), 429
+    piece_id = read_id(data, "piece_id")
+    piece = database.getPieceForUser(uid, piece_id) if piece_id else None   # someone else's piece reads as none
+    sessions = database.getSessions(uid)
+    practice = coach.record(database.getPracticeRecord(uid), len(sessions), sum(s["time_spent"] for s in sessions),
+                            streak(sessions), piece, piece and read_bars(data.get("passage") or {}), timer_seconds())
+    try:
+        return jsonify(reply=coach.ask(practice, history, message.strip()))
+    except coach.Unavailable as e:
+        return jsonify(error=str(e)), e.status
 
 
 # ==================================================================

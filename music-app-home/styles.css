@@ -1979,9 +1979,33 @@ body.coach-open main {
   from { opacity: 0; transform: translateX(12px); }
 }
 
+@keyframes coach-up {
+  from { opacity: 0; transform: translateY(16px); }
+}
+
 @keyframes coach-dot {
   0%, 80%, 100% { opacity: 0.25; }
   40% { opacity: 1; }
+}
+
+/* Below 900px there's no room for a column: the panel is a sheet from the bottom. */
+@media (max-width: 900px) {
+  .coach {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: min(72dvh, 560px);
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-radius: var(--radius-tile) var(--radius-tile) 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.12);
+    animation-name: coach-up;
+  }
+
+  body.coach-open main {
+    padding-right: 16px;
+    padding-bottom: calc(min(72dvh, 560px) + 32px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

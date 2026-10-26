@@ -13,7 +13,14 @@ POSTGRES = DATABASE_URL.startswith(("postgres://", "postgresql://"))
 if POSTGRES:
     import psycopg
     from psycopg.rows import dict_row
+    from psycopg_pool import ConnectionPool
     IntegrityError = (sqlite3.IntegrityError, psycopg.IntegrityError)
+    # A new connection to Neon costs about half a second and a page asks for up to eight, so they're
+    # kept open and reused. check= replaces one Neon dropped while idle; no prepared statements,
+    # which Neon's pooler may not keep between uses.
+    POOL = ConnectionPool(DATABASE_URL, min_size=1, max_size=8, max_idle=240, open=True,
+                          kwargs={"row_factory": dict_row, "prepare_threshold": None},
+                          check=ConnectionPool.check_connection)
 else:
     IntegrityError = sqlite3.IntegrityError
 
@@ -55,9 +62,9 @@ class Result:
         return [Row({k: plain(v) for k, v in row.items()}) for row in self.cursor.fetchall()] if self.cursor.description else []
 
 class PostgresDB:
-    """the slice of sqlite3.Connection this file uses, on a Postgres connection"""
+    """the slice of sqlite3.Connection this file uses, on a Postgres connection from the pool"""
     def __init__(self):
-        self.conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+        self.conn = POOL.getconn()
     def execute(self, sql, params=()):
         if sql.strip().upper() == "BEGIN IMMEDIATE":
             return Result(self.conn.cursor())   # Postgres opens the transaction by itself
@@ -77,7 +84,7 @@ class PostgresDB:
                 self.conn.execute(translate(statement))
     def commit(self): self.conn.commit()
     def rollback(self): self.conn.rollback()
-    def close(self): self.conn.close()
+    def close(self): POOL.putconn(self.conn)   # back to the pool, not closed
 
 #helper to get the database and enable references (foreign keys) properly
 def connect():

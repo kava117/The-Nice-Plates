@@ -19,6 +19,9 @@
 
   <!-- No defer: sets the theme before first paint to avoid a flash. -->
   <script src="theme.js"></script>
+  <!-- Chrome and Edge fetch a sidebar page while the pointer rests on its link, so the click lands
+       on a page already here. Other browsers ignore it. The sidebar pages only read. -->
+  <script type="speculationrules">{"prefetch": [{"where": {"selector_matches": ".nav-link, .brand"}, "eagerness": "moderate"}]}</script>
 </head>
 <body data-auth="{{ auth | default('signed-in') }}">
   <a class="skip-link press" href="#main">Skip to content</a>

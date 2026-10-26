@@ -4,7 +4,10 @@ The page sends a question and the conversation so far; the server adds the recor
 (sessions, pieces, passages and their reps) so every answer is about this
 musician's practice, and nothing the browser says can change whose record it is.
 """
+import json, logging, os, re
 from datetime import datetime, timedelta, timezone
+
+MODEL = "claude-haiku-5-5"   # cheap and quick; COACH_MODEL swaps it
 
 SYSTEM = """You are the practice coach in The Nice Plates, a practice log for beginner and intermediate musicians. You are talking with one musician who is at their instrument, between goes.
 
@@ -19,6 +22,13 @@ How to coach:
 - Keep to about 80 words unless they ask for more.
 - You can't hear them play. If they ask about sound, tone or one wrong note, ask what happened, or suggest recording a take and listening back.
 - Stay on music practice. For anything else, say in a sentence that you're here for their practice."""
+
+
+class Unavailable(Exception):
+    """the coach can't answer; the message is for the musician, the cause goes to the log"""
+    def __init__(self, message, status=503):
+        super().__init__(message)
+        self.status = status
 
 
 def minutes(seconds):
@@ -61,3 +71,40 @@ def record(log, total_sessions, total_seconds, streak, piece=None, passage=None,
             "minutes_on_the_timer": minutes(timer),
         },
     }
+
+
+def plain(text):
+    """what's left if the model slips into markdown anyway"""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    return re.sub(r"^#+\s*", "", text, flags=re.M).strip()
+
+
+def ask(practice, history, message):
+    """one answer from Claude, about this practice record"""
+    key, workspace = (os.environ.get(k, "").strip() for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"))
+    if not key:
+        raise Unavailable("The coach isn't switched on for this site yet.")
+    try:
+        import anthropic   # in ml/requirements.txt, not the bare web app's
+    except ImportError:
+        logging.warning("coach: ANTHROPIC_API_KEY is set but the anthropic package isn't installed")
+        raise Unavailable("The coach isn't switched on for this site yet.")
+    client = anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {},
+                                 timeout=45, max_retries=2)
+    try:
+        reply = client.messages.create(
+            model=os.environ.get("COACH_MODEL", MODEL), max_tokens=700,
+            system=SYSTEM + "\n\nPractice record:\n" + json.dumps(practice, ensure_ascii=False),
+            messages=[*history, {"role": "user", "content": message}],
+        )
+    except anthropic.RateLimitError as e:
+        logging.warning("coach: rate limited: %s", e)
+        raise Unavailable("The coach is busy. Ask again in a few seconds.", 429)
+    except Exception as e:   # a bad key, no credit, no network: the musician can't fix any of these
+        logging.exception("coach: Claude call failed")
+        raise Unavailable("The coach can't answer right now. Try again in a minute.", 502) from e
+    used = getattr(reply, "usage", None)
+    logging.warning("Coach answered with %s: %s tokens in, %s out", getattr(reply, "model", "?"),
+                    getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # what each question cost, in Render's log
+    text = plain("".join(b.text for b in reply.content if getattr(b, "type", "") == "text"))
+    return text or "I don't have anything useful on that. Try asking about a passage or today's practice."

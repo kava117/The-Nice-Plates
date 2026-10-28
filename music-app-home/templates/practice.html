@@ -50,6 +50,7 @@
         <dt>Mouse</dt><dd>Drag across bars to pick a passage; drag its handles to move either end</dd>
         <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Mark a passage: [ on its first bar, ] on its last</dd>
         <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That went clean, or not yet</dd>
+        <dt><kbd>L</kbd></dt><dd>Listen, and mark each go for you</dd>
         <dt><kbd>Esc</kbd></dt><dd>Back to the whole piece</dd>
         <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
@@ -59,7 +60,11 @@
 
   <div class="controls-row rep-row" id="rep" hidden>
     <strong class="rep-title" id="rep-title"></strong>
-    <span class="rep-ask">Was that clean?</span>
+    <button type="button" class="tool press listen" id="listen" aria-pressed="false" title="Hears each go and marks it for you. Nothing is recorded. (L)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      <span class="listen-word">Listen</span>
+    </button>
+    <span class="rep-ask" id="rep-ask">Was that clean?</span>
     <button type="button" class="btn btn-solid press rep-button" id="rep-yes">Yes <kbd>Y</kbd></button>
     <button type="button" class="btn btn-ghost press rep-button" id="rep-no">Not yet <kbd>N</kbd></button>
     <span class="dots dots-large" id="rep-dots" aria-hidden="true"></span>
@@ -100,6 +105,7 @@
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
 <script src="/passages.js"></script>
+<script src="/listen.js"></script>
 <script src="/coach.js"></script>
 <script>
   // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
@@ -125,7 +131,7 @@
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
-    onPick: () => { player.stop(); coach.refresh(); },   // the coach's suggestions name the picked bars
+    onPick: () => { player.stop(); coach.refresh(); listening.picked(); },   // the coach's suggestions name the picked bars
     onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
@@ -133,6 +139,9 @@
     tempoLabel.textContent = bpm ? `${Math.round(bpm * tempo.value / 100)} bpm` : `${tempo.value} %`;
   };
   tempo.addEventListener("input", showTempo);
+
+  // ---- Listen (listen.js): hears each go at the passage and marks the rep, on this device ----
+  const listening = addListening(osmd, { button: $("listen"), status: $("rep-ask") }, { passages, player, tempo });
 
   // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
   const coach = addCoach({
@@ -211,6 +220,7 @@
     "]": () => passages.markEnd(),
     "y": () => passages.rep(true),
     "n": () => passages.rep(false),
+    "l": () => listening.toggle(),
     "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },

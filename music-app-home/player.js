@@ -7,7 +7,7 @@
 
 const PIANO = ["A0", "C1", "Fs1", "C2", "Fs2", "C3", "Fs3", "C4", "Fs4", "C5", "Fs5", "C6", "Fs6", "C7", "Fs7", "C8"];
 
-// One entry per cursor step from `start` to the end: when it sounds and which notes start there.
+// One entry per cursor step from `start` to the end: when it sounds, in which bar, and which notes start there.
 // OSMD timestamps and lengths are in whole notes; halfTone + 12 is the MIDI number.
 // With `keep`, the walk stops at the first step keep(iterator) turns down, and events.end
 // is when that step would sound: the end of the passage, rests included.
@@ -25,10 +25,10 @@ function scoreEvents(start, keep) {
       for (const note of entry.Notes) {
         if (note.isRest() || (note.NoteTie && note.NoteTie.StartNote !== note)) continue;   // a tie sounds once, for its whole length
         const length = entry.IsGrace ? 1 / 32 : (note.NoteTie ? note.NoteTie.Duration : note.Length).RealValue;
-        notes.push({ midi: note.halfTone + 12, seconds: length * 4 * 60 / bpm });
+        notes.push({ midi: note.halfTone + 12, seconds: length * 4 * 60 / bpm, pitch: note.Pitch });
       }
     }
-    events.push({ seconds, notes });
+    events.push({ seconds, measure: it.CurrentMeasureIndex, notes });
     it.moveToNext();
   }
   return events;

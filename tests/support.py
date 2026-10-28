@@ -11,7 +11,7 @@ WORK = Path(tempfile.mkdtemp(prefix="niceplates-test-"))
 
 # never use a developer's real keys or settings
 ENV_KEYS = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SECRET_KEY", "RENDER", "ANTHROPIC_API_KEY",
-            "ANTHROPIC_WORKSPACE_ID", "CLAUDE_MODEL", "PHOTO_UPLOADS", "OPENAI_API_KEY")
+            "ANTHROPIC_WORKSPACE_ID", "CLAUDE_MODEL", "PHOTO_UPLOADS", "OPENAI_API_KEY", "HOMR_URL", "HOMR_TOKEN")
 for k in ENV_KEYS:
     os.environ.pop(k, None)
 

@@ -16,5 +16,9 @@ services:
         generateValue: true
       - key: PHOTO_UPLOADS   # homr needs ~1 GB of RAM; the free plan has 512 MB. Remove this on a bigger plan.
         value: "off"
+      - key: HOMR_URL   # homr on Azure (homr_service/): photos go there first, and to Claude if it can't read them
+        sync: false
+      - key: HOMR_TOKEN   # the token the Azure box was started with
+        sync: false
       - key: DATABASE_URL   # paste the Postgres connection string in the dashboard
         sync: false

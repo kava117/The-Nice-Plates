@@ -2,7 +2,7 @@
 
 ![](../docs/system.svg)
 
-Sheet music goes through Robert's `fileConversion/` pipeline. With `PHOTO_UPLOADS=off` and an `ANTHROPIC_API_KEY`, `claude_reads` in `api.py` writes the MusicXML from the image instead of homr. Recordings go through Whisper (`transcribe.py`) and `text.py` for tempo, key and time.
+Sheet music goes through Robert's `fileConversion/` pipeline. With `HOMR_URL` set, homr runs on its own box (`homr_service/`) instead of in this process. When homr can't run or can't read a page and there's an `ANTHROPIC_API_KEY`, `claude_reads` in `api.py` writes the MusicXML from the image instead. Recordings go through Whisper (`transcribe.py`) and `text.py` for tempo, key and time.
 
 ```bash
 pip install -r ml/requirements.txt    # Python 3.11+

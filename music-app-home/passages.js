@@ -151,17 +151,10 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     if (chosen) pick(chosen);
     return !!chosen;
   }
-  // [{bar, level, text}]: where a go slipped, marked on the score until the next one. A clean go lights the passage.
-  function mark(list, clean = false) {
-    slips = new Map(list.map(s => [s.bar, s]));
+  // [{bar, text}]: where a go slipped, marked on the score until the next one
+  function mark(list) {
+    slips = new Map(list.map(s => [s.bar, s.text]));
     paint();
-    if (!clean) return;
-    for (const el of layer.querySelectorAll(".score-bar.in")) {
-      el.classList.remove("clean");
-      void el.offsetWidth;   // restarts the glow when two clean goes come close together
-      el.classList.add("clean");
-      el.addEventListener("animationend", () => el.classList.remove("clean"), { once: true });
-    }
   }
   // [ marks the first bar; moving the cursor stretches the passage; ] picks it.
   // ] on its own ends the picked passage (or a one-bar passage) at the cursor.
@@ -216,10 +209,8 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     for (const el of layer.querySelectorAll(".score-bar")) {
       const i = +el.dataset.index;
       el.classList.toggle("in", !!shown && i >= shown.first && i <= shown.last);
-      const slip = slips.get(i);
-      el.classList.toggle("slip", !!slip);
-      el.classList.toggle("slip-bad", !!slip && slip.level > 1);
-      if (slip) el.title = slip.text;
+      el.classList.toggle("slip", slips.has(i));
+      if (slips.has(i)) el.title = slips.get(i);
       else el.removeAttribute("title");
     }
     if (!shown) return;

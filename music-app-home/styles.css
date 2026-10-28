@@ -1732,20 +1732,10 @@ kbd {
   background: rgba(255, 253, 245, 0.5);
 }
 
-/* Where the last go heard slipped (listen.js): a pencil mark over the bar, amber for one slip and a
-   thicker red for more, so it reads without the colour too; what happened shows on hover.
-   A clean go lights the passage green for a moment. */
-.score-bar {
-  --slip: #C27A00;
-}
-
-.score-bar.slip-bad {
-  --slip: #B3261E;
-}
-
+/* Where the last go heard slipped (listen.js): a pencil mark over the bar; what happened shows on hover. */
 .score-bar.slip,
 .has-passage .score-bar.slip {
-  background: color-mix(in srgb, var(--slip) 7%, transparent);
+  background: color-mix(in srgb, #C27A00 7%, transparent);
 }
 
 .score-bar.slip::after {
@@ -1756,28 +1746,14 @@ kbd {
   right: 20%;
   height: 3px;
   border-radius: 2px;
-  background: var(--slip);
+  background: #C27A00;
   opacity: 0.85;
   transform-origin: left;
   animation: slip-in 0.45s var(--ease-out) both;
 }
 
-.score-bar.slip-bad::after {
-  height: 5px;
-  left: 10%;
-  right: 10%;
-}
-
 @keyframes slip-in {
   from { transform: scaleX(0); }
-}
-
-.score-bar.clean {
-  animation: clean-glow 1.2s var(--ease-out);
-}
-
-@keyframes clean-glow {
-  from { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 }
 
 .passage-frame {
@@ -1891,10 +1867,6 @@ kbd {
   .tool.is-recording::before,
   .score-bar.slip::after {
     animation: none;
-  }
-
-  .score-bar.clean {
-    animation-duration: 1ms;
   }
 
   .listen.is-on::before {

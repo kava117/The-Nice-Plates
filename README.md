@@ -10,7 +10,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 |---|---|
 | Google sign-in / sign-out | Works if you've set the Google keys, otherwise you're in demo mode |
 | Library | Works, shows your pieces |
-| Uploading (PDF, PNG/JPG, MusicXML) | Works, up to 20 MB, saves MusicXML + MIDI. Other file types are turned away. Photos need homr (1 GB of memory) or, on a small server, an Anthropic key |
+| Uploading (PDF, PNG/JPG, MusicXML) | Works, up to 20 MB, saves MusicXML + MIDI. Other file types are turned away. Photos are read by homr (here, or on Azure through `HOMR_URL`), and by Claude when homr can't and there's an Anthropic key |
 | Practice page (score, cursor, zoom) | Works, shows a Bach *Air* demo if you haven't picked a piece, and says so if a picked piece is gone. Keys for everything common; **Keys** on the page lists them |
 | Passages | Drag across bars on the score (or type `12-16`, or `[` then `]` at the cursor) to pick a passage, and drag the handles at either end to change it. Bars outside it fade, Play loops it, and Next/Reset stay inside it. After each time through, **Yes** / **Not yet** (`Y` / `N`) counts a rep: 3 clean in a row offers a faster tempo, 2 misses a slower one. Passages save on their first rep and sit above the score with their last reps; "next up" marks the one with the fewest clean reps lately. See `PRACTICE_PLAN.md` |
 | Playback | ▶ Play on the practice page plays the score on a piano sound, cursor following, from wherever the cursor is; tempo slider. Plays from the MusicXML (repeats included), not the stored MIDI |
@@ -28,7 +28,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 
 ![](docs/system.svg)
 
-It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. There's no background worker, so if a conversion takes a while, the upload page just sits there loading until it's done. Gunicorn runs 4 threads, so other visitors' pages keep loading meanwhile, and only one conversion runs at a time (a second upload waits its turn) so two homr runs can't share the 512 MB box.
+It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: SQLite, the sheet music converter, Google sign-in, and OpenAI. The one exception is homr on Render: it needs more memory than the free box has, so it runs on Azure (`homr_service/`) and Flask sends it each page. There's no background worker, so if a conversion takes a while, the upload page just sits there loading until it's done. Gunicorn runs 4 threads, so other visitors' pages keep loading meanwhile, and only one conversion runs at a time (a second upload waits its turn) so two homr runs can't share the 512 MB box.
 
 - **Front end:** plain Jinja templates, no framework, no build step. Scores are drawn with [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) (it's checked in as `opensheetmusicdisplay.min.js`). There's light/dark mode, keyboard support, and reduced-motion handling.
 - **Accounts:** Google sign-in through Authlib, with Flask-Login keeping you logged in. No Google keys means everyone just shares one demo account (`Sample User`).
@@ -43,7 +43,9 @@ Whatever you upload gets picked up at the right step for its file type and comes
 |---|---|
 | `.pdf` | each page gets turned into an image at 300 DPI → homr reads each page → pages get merged → MIDI |
 | `.png`, `.jpg`, `.jpeg` | homr reads the image → MIDI |
-| any of those, with `PHOTO_UPLOADS=off` | Claude reads the image instead of homr (first page of a PDF) → MIDI |
+| any of those, with `HOMR_URL` set | the same, but each page goes to homr on its own box (`homr_service/`, on Azure) |
+| any of those, when homr fails and `ANTHROPIC_API_KEY` is set | Claude reads the image instead (first page of a PDF) → MIDI |
+| any of those, with `PHOTO_UPLOADS=off` and no `HOMR_URL` | Claude reads it, and homr never runs |
 | `.musicxml`, `.xml`, `.mxl` | already good to go → MIDI |
 
 Couple things to know:
@@ -55,18 +57,46 @@ Couple things to know:
 
 ## Running it on Render (free tier)
 
-The free box has 512 MB, which is not enough for homr, so photos go to Claude instead. Set these in the Render dashboard (it does not read them from `render.yaml`) and press Manual Deploy after each push.
+The free box has 512 MB, which is not enough for homr, so homr runs on Azure (see "homr on Azure" below) and Claude is the backup. Set these in the Render dashboard (it does not read them from `render.yaml`) and press Manual Deploy after each push.
 
 | Variable | Why |
 |---|---|
 | `SECRET_KEY` | **Required.** Signs login cookies; the app refuses to start on Render without it. A Blueprint generates it; otherwise make one with `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in; without them everyone is `Sample User` |
 | `FORWARDED_ALLOW_IPS=*` | so the sign-in redirect is built as https behind Render's proxy |
-| `PHOTO_UPLOADS=off` | photos and PDFs go to Claude instead of homr |
-| `ANTHROPIC_API_KEY` | needed for that and for the coach; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
+| `PHOTO_UPLOADS=off` | homr never starts on the 512 MB box itself. Photos and PDFs go to `HOMR_URL`, or to Claude without it |
+| `HOMR_URL`, `HOMR_TOKEN` | homr on Azure: the box's `https://` address and the token it was started with |
+| `ANTHROPIC_API_KEY` | needed for the coach, and for Claude to read photos homr can't; `ANTHROPIC_WORKSPACE_ID` too if the key was made outside a workspace |
 | `COACH_MODEL` | optional, default `claude-haiku-5-5`. Each question sends the practice record (a few thousand tokens), so Haiku keeps it to a fraction of a cent |
 | `CLAUDE_MODEL` | optional, default `claude-haiku-5-5` (under a cent a page; `claude-sonnet-5-5` reads dotted rhythms better at 20 times the price) |
 | `DATABASE_URL` | **Needed for saved data.** A Postgres connection string, e.g. from a free Neon project. Without it the app uses SQLite on the instance disk, which Render wipes on every deploy and every spin-down, so accounts, pieces and sessions vanish |
+
+### homr on Azure
+
+homr peaks at about 1.7 GB on a 300 DPI page, so it gets its own box and the site sends it one page at a time. `homr_service/` is that box: a small Flask app that takes a page image and sends back homr's MusicXML. On Azure Container Apps it sleeps when nobody is uploading. The first 180,000 vCPU-seconds a month are free, which at 2 vCPUs is about 25 hours awake; the registry Azure builds it in costs about $5 a month of credit.
+
+One-time setup. Run it in Cloud Shell (the `>_` button at the top of portal.azure.com, Bash, nothing to install) with `homr_service/` uploaded next to you, or from the repo root after `brew install azure-cli` and `az login`:
+
+```bash
+az provider register --namespace Microsoft.ContainerRegistry --wait
+TOKEN=$(openssl rand -hex 32)
+az containerapp up --name nice-plates-homr --resource-group nice-plates --location eastus \
+  --source homr_service --ingress external --target-port 8000 --env-vars HOMR_TOKEN=$TOKEN
+az containerapp update --name nice-plates-homr --resource-group nice-plates \
+  --cpu 2.0 --memory 4.0Gi --min-replicas 0 --max-replicas 1
+echo "HOMR_URL=https://$(az containerapp show --name nice-plates-homr --resource-group nice-plates \
+  --query properties.configuration.ingress.fqdn -o tsv)"
+echo "HOMR_TOKEN=$TOKEN"
+```
+
+`up` builds the image in Azure (no Docker needed) and takes 5–10 minutes. Then in the Render dashboard set the two printed values, keep `PHOTO_UPLOADS=off`, and press Manual Deploy. Opening the `HOMR_URL` address should say `homr is up`. After changing `homr_service/`, run `az containerapp up --name nice-plates-homr --resource-group nice-plates --source homr_service`; without `--env-vars` it keeps the token, and the size settings stay too.
+
+Couple things to know:
+- The first upload after a quiet spell waits up to a minute while the box wakes up, then up to about a minute per page. For a demo, `--min-replicas 1` keeps it awake, but that bills by the hour, so set it back to 0 afterwards.
+- If the box is unreachable, has a different token, or homr can't read the page, Claude reads the upload instead (when `ANTHROPIC_API_KEY` is set). The Render log says `homr read <file>` or `homr could not read <file> (why); Claude will` for every upload.
+- The box's own log: `az containerapp logs show --name nice-plates-homr --resource-group nice-plates --follow`.
+- If Azure refuses `eastus`, try another region; student subscriptions only allow some.
+- `az group delete --name nice-plates` removes all of it and stops it using credit.
 
 ## Where stuff lives
 
@@ -78,6 +108,7 @@ The free box has 512 MB, which is not enough for homr, so photos go to Claude in
 | `ml/api.py` | The `/api` routes for pieces, MIDI conversion, and transcription |
 | `ml/text.py` | Pulls tempo, key, and time signature out of transcribed speech |
 | `fileConversion/pdfToMidi.py` | The sheet music → MusicXML/MIDI converter (also works as a CLI) |
+| `homr_service/` | homr as a small web service with its Dockerfile, for a box with the memory homr needs. The site uses it when `HOMR_URL` is set |
 | `music-app-home/` | Static files (`styles.css`, scripts, images). `player.js` plays the score; `Tone.js` (MIT) and `samples/piano/` (Salamander Grand, CC BY 3.0) are vendored for it |
 | `render.yaml` | Render deploy config |
 
@@ -125,10 +156,11 @@ If you're setting up Google sign-in, add `http://localhost:8001/auth/google` (an
 
 ## Dependencies
 
-There are three requirements files:
+There are four requirements files:
 - `requirements.txt` is the web app, versions pinned (Flask 3.1.3, Flask-Login 0.6.3, Authlib 1.8.0, python-dotenv, requests).
 - `ml/requirements.txt` has flask, openai, python-dotenv, gunicorn, and pulls in everything from `fileConversion/requirements.txt`. Not pinned.
-- `fileConversion/requirements.txt` has pymupdf, music21, `homr[cpu]`, and opencv-python-headless. Also not pinned.
+- `fileConversion/requirements.txt` has pymupdf, music21, `homr[cpu]`, opencv-python-headless, and requests. Also not pinned.
+- `homr_service/requirements.txt` is the homr box on Azure: homr 0.7.0, Flask, and gunicorn, pinned.
 
 ## Deploying
 

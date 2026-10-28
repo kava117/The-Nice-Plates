@@ -3,3 +3,4 @@ pymupdf
 music21
 homr[cpu]
 opencv-python-headless
+requests

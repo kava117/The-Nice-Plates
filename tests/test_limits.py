@@ -1,8 +1,8 @@
 """Limit tests: every route pushed past normal use.
 
-Each test asserts what SHOULD happen. Known defects are marked xfail(strict=True) with their
-ISSUES.md entry; when a fix lands the test passes, strict turns that into a failure, and the
-marker should be deleted.
+Each test asserts what SHOULD happen. Known defects are marked xfail(strict=True) with a short
+reason; when a fix lands the test passes, strict turns that into a failure, and the marker
+should be deleted.
 """
 import glob, io, json, os, subprocess, sys, tempfile, time
 from pathlib import Path

@@ -229,7 +229,6 @@ If you change the schema, add it to the end of the `MIGRATIONS` list in `databas
 - `/api/transcribe` without an `OPENAI_API_KEY` gives a 500 instead of a clear error.
 - Signing in with Google crashes if another account already has that email.
 - `.mxl` uploads are stored zipped, so the practice page can't draw them.
-- `SCORE.PDF` (uppercase) fails on the Claude path; `score.pdf` works.
 - Recordings are always played back as `audio/webm`, whatever the browser recorded.
 - `ml/api.py` doesn't run on its own anymore (`python ml/api.py`), since it has no LoginManager.
 - `ml/text.py` misses "two two time" and spelled-out tempos like "one hundred twenty".

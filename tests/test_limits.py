@@ -185,7 +185,7 @@ def tiny_pdf(tmp_path):
     doc = pymupdf.open(); doc.new_page().insert_text((72, 72), "score"); p = tmp_path / "x.pdf"; doc.save(p)
     return p.read_bytes()
 
-@pytest.mark.parametrize("name", ["score.pdf", pytest.param("SCORE.PDF", marks=known("Broken features: uppercase .PDF on the Claude path")), "photo.png", "PHOTO.JPG", "Photo.Jpeg"])
+@pytest.mark.parametrize("name", ["score.pdf", "SCORE.PDF", "photo.png", "PHOTO.JPG", "Photo.Jpeg"])
 def test_photo_uploads_via_claude(user, name, monkeypatch, tmp_path):
     monkeypatch.setenv("PHOTO_UPLOADS", "off")
     monkeypatch.setenv("ANTHROPIC_API_KEY", " sk-test\n")

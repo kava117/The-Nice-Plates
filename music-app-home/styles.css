@@ -188,6 +188,67 @@ p {
   border-bottom: 1px solid var(--line);
 }
 
+/* While the next page loads (nav.js): a thin bar along the top edge. It slows as it goes, so a
+   slow server never makes it look finished. */
+.is-leaving {
+  cursor: progress;
+}
+
+.is-leaving body::after {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: leaving 12s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes leaving {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(0.92); }
+}
+
+/* After five seconds of that: the server is probably waking up, and says so. */
+.leaving-note {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  z-index: 100;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  transform: translateX(-50%);
+  animation: leaving-note 0.3s ease-out;
+  pointer-events: none;   /* every link under it still works */
+}
+
+@keyframes leaving-note {
+  from { opacity: 0; transform: translate(-50%, -4px); }
+}
+
+@media (max-width: 900px) {   /* the nav sits at the top here: keep it clear */
+  .leaving-note {
+    top: auto;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaving-note {
+    animation: none;
+  }
+}
+
 /* 6. Sidebar ------------------------------------------------------------- */
 
 .sidebar {
@@ -1099,8 +1160,8 @@ main {
   display: flex;
   flex-direction: column;   /* rows: moving and listening, passages, reps (practice.html) */
   gap: 10px;
-  margin-bottom: 12px;
-  padding: 8px 0 12px;
+  margin: 0 -32px 12px;     /* out through main's side padding: pinned, it's one flat bar edge to edge, not a card over the score */
+  padding: 8px 32px 12px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
@@ -1108,6 +1169,8 @@ main {
 @media (max-width: 900px) {
   #controls {
     top: 0;                 /* here the window scrolls, not main */
+    margin-inline: -16px;
+    padding-inline: 16px;
   }
 }
 
@@ -1556,6 +1619,42 @@ kbd {
   letter-spacing: normal;
 }
 
+/* Listen (listen.js): lit while the microphone is on. The ring round its dot follows the
+   sound coming in, so it's plain the playing is being heard. Yes and Not yet step aside. */
+.listen svg {
+  flex: none;
+}
+
+.listen.is-starting {
+  color: var(--ink-muted);
+  cursor: progress;
+}
+
+.listen.is-on {
+  --edge: var(--accent-edge);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.listen.is-on svg {
+  display: none;
+}
+
+.listen.is-on::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin: 0 3px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 calc(var(--level, 0) * 6px) color-mix(in srgb, currentColor 25%, transparent);
+  transition: box-shadow 90ms linear;
+}
+
+.rep-row.is-listening .rep-button {
+  display: none;
+}
+
 .link-button {
   padding: 4px 2px;
   border: 0;
@@ -1603,6 +1702,8 @@ kbd {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  -webkit-user-select: none;   /* dragging bars or a handle would select text, and scroll the page at its edge */
+  user-select: none;
 }
 
 .score-bar {
@@ -1621,8 +1722,38 @@ kbd {
   background: rgba(255, 253, 245, 0.72);
 }
 
+/* Bars the coach names, while the pointer is on its words (passages.js point) */
+.score-bar.pointed,
+.has-passage .score-bar.pointed {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
 .has-passage .score-bar:not(.in):hover {
   background: rgba(255, 253, 245, 0.5);
+}
+
+/* Where the last go heard slipped (listen.js): a pencil mark over the bar; what happened shows on hover. */
+.score-bar.slip,
+.has-passage .score-bar.slip {
+  background: color-mix(in srgb, #C27A00 7%, transparent);
+}
+
+.score-bar.slip::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 20%;
+  right: 20%;
+  height: 3px;
+  border-radius: 2px;
+  background: #C27A00;
+  opacity: 0.85;
+  transform-origin: left;
+  animation: slip-in 0.45s var(--ease-out) both;
+}
+
+@keyframes slip-in {
+  from { transform: scaleX(0); }
 }
 
 .passage-frame {
@@ -1733,7 +1864,384 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tool.is-recording::before {
+  .tool.is-recording::before,
+  .score-bar.slip::after {
+    animation: none;
+  }
+
+  .listen.is-on::before {
+    transition: none;
+  }
+}
+
+/* 25. Coach panel (coach.js) --------------------------------------------- */
+
+/* A column beside the score, under the top bar. The score moves over instead of
+   hiding underneath, so the bars the coach names stay readable. */
+:root {
+  --coach-w: 368px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.coach {
+  --depth: 2px;
+  position: fixed;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: var(--coach-w);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  animation: coach-in 0.45s var(--ease-out);
+}
+
+.coach[hidden] {
+  display: none;
+}
+
+body.coach-open main {
+  padding-right: calc(var(--coach-w) + 32px);
+}
+
+/* The Coach button while the panel is open: marked like the current page in the sidebar. */
+.tool.is-on {
+  --edge: var(--accent-edge);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.coach-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.coach-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+}
+
+/* What it's looking at: the piece and the picked bars. */
+.coach-sub {
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.coach-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.coach-close:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.coach-thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;   /* scrolling the thread to its end doesn't scroll the score */
+}
+
+/* Before the first question: sits low, next to where you type. */
+.coach-empty {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+}
+
+.coach-empty[hidden] {
+  display: none;
+}
+
+.coach-lead {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.coach-knows {
+  margin: 8px 0 20px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+/* Questions to start with: plain lines, each asked exactly as written. */
+.coach-asks {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.coach-ask {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coach-ask::after {
+  content: "→";
+  color: var(--ink-muted);
+  transition: transform 0.2s var(--ease-out), color 0.15s;
+}
+
+.coach-ask:hover::after,
+.coach-ask:focus-visible::after {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+/* A notebook, not a chat: the question is a quiet line, the answer prose with a margin rule. */
+.coach-turn p + p {
+  margin-top: 0.75em;
+}
+
+.coach-q {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.coach-q + .coach-a,
+.coach-q + .coach-wait {
+  margin-top: -10px;
+}
+
+.coach-a,
+.coach-wait {
+  position: relative;
+  padding-left: 14px;
+  color: var(--ink-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.coach-a::before,
+.coach-wait::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform-origin: top;
+}
+
+/* While it reads, the rule draws down like a pen, again and again; the answer's draws once. */
+.coach-wait::before {
+  animation: coach-pen 1.6s var(--ease-out) infinite;
+}
+
+.coach-a.is-new {
+  animation: coach-arrive 0.4s ease-out;
+}
+
+.coach-a.is-new::before {
+  animation: coach-draw 0.6s var(--ease-out);
+}
+
+/* The first line is the next step: the part read from the music stand between goes. */
+.coach-a p:first-child {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+  font-variant-numeric: lining-nums;   /* bar numbers read at a glance */
+  line-height: 1.4;
+}
+
+/* Bar numbers in an answer: the same tint as the bars they light up on the score. */
+.coach-bars {
+  padding: 0 2px;
+  margin: 0 -2px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted var(--accent) 1.5px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.coach-bars:hover,
+.coach-bars:focus-visible {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  text-decoration-style: solid;
+}
+
+/* Under an answer: its next step in one press. */
+.coach-setup {
+  --edge: var(--accent-edge);
+  height: 32px;
+  margin-top: 14px;
+  padding: 0 12px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.coach-setup:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+
+.coach-slow {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.coach-error {
+  color: var(--rec);
+  font-size: 0.875rem;
+}
+
+/* The same field and button as the rest of the page, not a chat app's. */
+.coach-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.coach-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 22px;
+  resize: none;
+}
+
+.coach-input:focus-visible {
+  outline-offset: 1px;
+}
+
+.coach-input::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.8;
+}
+
+.coach-send {
+  --edge: var(--accent-edge);
+  flex: none;
+  height: 38px;   /* one line of the box beside it */
+  padding: 0 16px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.coach-send:disabled {
+  box-shadow: none;
+  border-color: var(--line);
+  background: none;
+  color: var(--ink-muted);
+  cursor: default;
+}
+
+@keyframes coach-in {
+  from { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes coach-up {
+  from { opacity: 0; transform: translateY(16px); }
+}
+
+@keyframes coach-draw {
+  from { transform: scaleY(0); }
+}
+
+@keyframes coach-pen {
+  0% { transform: scaleY(0); }
+  70% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+@keyframes coach-arrive {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* Below 900px there's no room for a column: the panel is a sheet from the bottom. */
+@media (max-width: 900px) {
+  .coach {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: min(72dvh, 560px);
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-radius: var(--radius-tile) var(--radius-tile) 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.12);
+    animation-name: coach-up;
+  }
+
+  body.coach-open main {
+    padding-right: 16px;
+    padding-bottom: calc(min(72dvh, 560px) + 32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach,
+  .coach-a.is-new,
+  .coach-a.is-new::before,
+  .coach-wait::before {
     animation: none;
   }
 }

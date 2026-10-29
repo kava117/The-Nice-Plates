@@ -25,6 +25,10 @@ SCORES = {".musicxml", ".xml", ".mxl"}
 PHOTOS = {".pdf", ".png", ".jpg", ".jpeg"}
 
 
+def homr_ok():  # homr runs in this process, or on its own box at HOMR_URL (homr_service/)
+    return bool(os.environ.get("HOMR_URL", "").strip()) or os.environ.get("PHOTO_UPLOADS") != "off"
+
+
 def upload_problem(filename, claude_ok):
     """None if this upload can be read here, else a message for the user."""
     if not filename:
@@ -32,7 +36,7 @@ def upload_problem(filename, claude_ok):
     suffix = Path(filename).suffix.lower()
     if suffix not in SCORES | PHOTOS:
         return "Upload a PDF, PNG, JPG or MusicXML file."
-    if suffix in PHOTOS and os.environ.get("PHOTO_UPLOADS") == "off" and not claude_ok:  # homr would need ~1 GB on a 512 MB box
+    if suffix in PHOTOS and not homr_ok() and not claude_ok:  # homr would need ~1 GB on a 512 MB box
         return "Reading photos and PDFs needs about 1 GB of memory, more than this free server has. Upload a MusicXML file here, or run the site on a laptop."
     return None
 
@@ -98,19 +102,35 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
     converter.parse(xml)  # unreadable output raises, and the upload form says so
     return xml
 
+def read_sheet(src, work, claude_ok):  # homr first wherever it can run; Claude when it can't, or when it fails
+    from music21 import converter
+    from pdfToMidi import _to_musicxml
+    if src.suffix.lower() not in PHOTOS:
+        return _to_musicxml(src, work)
+    if homr_ok():
+        try:
+            xml = _to_musicxml(src, work)
+            converter.parse(xml)  # unreadable output is a failure too, so Claude gets its turn
+            logging.warning("homr read %s", src.name)
+            return xml
+        except Exception as e:
+            if not claude_ok:
+                raise
+            logging.warning("homr could not read %s (%s); Claude will", src.name, e)
+    return claude_reads(src)
+
 @api.post("/pieces")  # the library's upload form: sheet music in, saved to Pieces as MusicXML + MIDI
 def add_piece():
     from easyParts import musicxml_to_midi
-    from pdfToMidi import _to_musicxml
-    problem = upload_problem(request.files["file"].filename, claude_ok=bool(os.environ.get("ANTHROPIC_API_KEY")))
+    claude_ok = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    problem = upload_problem(request.files["file"].filename, claude_ok)
     if problem:
         return library_error(problem)
     with saved_upload() as src:
-        photo = src.suffix.lower() in PHOTOS
         try:
             with CONVERT:
                 work = src.parent / "work"; work.mkdir()
-                xml = claude_reads(src) if photo and os.environ.get("PHOTO_UPLOADS") == "off" else _to_musicxml(src, work)
+                xml = read_sheet(src, work, claude_ok)
                 mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
         except Exception:
             logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause

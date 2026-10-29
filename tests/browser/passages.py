@@ -117,6 +117,7 @@ with sync_playwright() as p:
         page.mouse.move(grip["x"] + grip["width"] / 2, grip["y"] + grip["height"] / 2); page.mouse.down()
         page.mouse.move(bar["x"] + bar["width"] / 2, bar["y"] + bar["height"] / 2, steps=10); page.mouse.up()
         page.wait_for_timeout(300)
+        assert page.evaluate("getSelection().type") != "Range", "dragging selected text (and can scroll the page under the pointer)"
         return title.inner_text()
     assert page.locator(".passage-handle").count() == 2
     assert pull("end", 13) == "Bars 10-14" and pull("start", 11) == "Bars 12-14"

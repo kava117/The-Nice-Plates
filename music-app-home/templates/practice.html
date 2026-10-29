@@ -24,6 +24,9 @@
     <div class="tool-group" role="group" aria-label="Record">
       <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
     </div>
+    <div class="tool-group" role="group" aria-label="Coach">
+      <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
+    </div>
     <div class="tool-group tool-group-end" role="group" aria-label="Zoom">
       <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
       <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
@@ -47,7 +50,9 @@
         <dt>Mouse</dt><dd>Drag across bars to pick a passage; drag its handles to move either end</dd>
         <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Mark a passage: [ on its first bar, ] on its last</dd>
         <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That went clean, or not yet</dd>
+        <dt><kbd>L</kbd></dt><dd>Listen, and mark each go for you</dd>
         <dt><kbd>Esc</kbd></dt><dd>Back to the whole piece</dd>
+        <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
       </dl>
     </details>
@@ -55,7 +60,11 @@
 
   <div class="controls-row rep-row" id="rep" hidden>
     <strong class="rep-title" id="rep-title"></strong>
-    <span class="rep-ask">Was that clean?</span>
+    <button type="button" class="tool press listen" id="listen" aria-pressed="false" title="Hears each go and marks it for you. Nothing is recorded. (L)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      <span class="listen-word">Listen</span>
+    </button>
+    <span class="rep-ask" id="rep-ask">Was that clean?</span>
     <button type="button" class="btn btn-solid press rep-button" id="rep-yes">Yes <kbd>Y</kbd></button>
     <button type="button" class="btn btn-ghost press rep-button" id="rep-no">Not yet <kbd>N</kbd></button>
     <span class="dots dots-large" id="rep-dots" aria-hidden="true"></span>
@@ -68,9 +77,36 @@
 <p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to your library</a></p>
 <div id="score"></div>
 
+<aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
+  <header class="coach-head">
+    <div class="coach-heading">
+      <h2 class="coach-title" id="coach-title">Coach</h2>
+      <p class="coach-sub" id="coach-sub" hidden></p>
+    </div>
+    <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
+    <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <p class="visually-hidden" id="coach-said" aria-live="polite"></p>
+  <div class="coach-thread" id="coach-thread">
+    <div class="coach-empty" id="coach-empty">
+      <p class="coach-lead" id="coach-lead">How’s practice going?</p>
+      <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
+      <div class="coach-asks" id="coach-asks"></div>
+    </div>
+  </div>
+  <form class="coach-form" id="coach-form">
+    <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
+    <button type="submit" class="coach-send press" id="coach-send" disabled>Ask</button>
+  </form>
+</aside>
+
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
 <script src="/passages.js"></script>
+<script src="/listen.js"></script>
+<script src="/coach.js"></script>
 <script>
   // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
   const piece = new URLSearchParams(location.search).get("piece") || {{ latest_piece | tojson }};
@@ -95,7 +131,7 @@
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
-    onPick: () => player.stop(),
+    onPick: () => { player.stop(); coach.refresh(); listening.picked(); },   // the coach's suggestions name the picked bars
     onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
@@ -103,6 +139,19 @@
     tempoLabel.textContent = bpm ? `${Math.round(bpm * tempo.value / 100)} bpm` : `${tempo.value} %`;
   };
   tempo.addEventListener("input", showTempo);
+
+  // ---- Listen (listen.js): hears each go at the passage and marks the rep, on this device ----
+  const listening = addListening(osmd, { button: $("listen"), status: $("rep-ask") }, { passages, player, tempo });
+
+  // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
+  const coach = addCoach({
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"), said: $("coach-said"),
+    thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
+    form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
+  }, {
+    pieceId: piece && +piece, passage: () => passages.bars, score: passages,
+    title: () => {{ piece_title | tojson }} || ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // else as printed on the score
+  });
 
   async function loadSong(url) {
     try {
@@ -115,6 +164,7 @@
       document.getElementById("score-loading").hidden = true;
       play.disabled = false;
       showTempo();
+      coach.refresh();   // the piece's title, under the coach's name
       passages.ready((await firstState).section_id);   // back on the passage the last visit left on
     } catch (err) {
       console.error("Couldn't load song:", err);
@@ -170,9 +220,11 @@
     "]": () => passages.markEnd(),
     "y": () => passages.rep(true),
     "n": () => passages.rep(false),
+    "l": () => listening.toggle(),
     "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },
+    "c": () => coach.toggle(),
   };
   document.addEventListener("keydown", e => {
     const act = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];

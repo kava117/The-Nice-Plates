@@ -13,7 +13,14 @@ POSTGRES = DATABASE_URL.startswith(("postgres://", "postgresql://"))
 if POSTGRES:
     import psycopg
     from psycopg.rows import dict_row
+    from psycopg_pool import ConnectionPool
     IntegrityError = (sqlite3.IntegrityError, psycopg.IntegrityError)
+    # A new connection to Neon costs about half a second and a page asks for up to eight, so they're
+    # kept open and reused. check= replaces one Neon dropped while idle; no prepared statements,
+    # which Neon's pooler may not keep between uses.
+    POOL = ConnectionPool(DATABASE_URL, min_size=1, max_size=8, max_idle=240, open=True,
+                          kwargs={"row_factory": dict_row, "prepare_threshold": None},
+                          check=ConnectionPool.check_connection)
 else:
     IntegrityError = sqlite3.IntegrityError
 
@@ -55,9 +62,9 @@ class Result:
         return [Row({k: plain(v) for k, v in row.items()}) for row in self.cursor.fetchall()] if self.cursor.description else []
 
 class PostgresDB:
-    """the slice of sqlite3.Connection this file uses, on a Postgres connection"""
+    """the slice of sqlite3.Connection this file uses, on a Postgres connection from the pool"""
     def __init__(self):
-        self.conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+        self.conn = POOL.getconn()
     def execute(self, sql, params=()):
         if sql.strip().upper() == "BEGIN IMMEDIATE":
             return Result(self.conn.cursor())   # Postgres opens the transaction by itself
@@ -77,7 +84,7 @@ class PostgresDB:
                 self.conn.execute(translate(statement))
     def commit(self): self.conn.commit()
     def rollback(self): self.conn.rollback()
-    def close(self): self.conn.close()
+    def close(self): POOL.putconn(self.conn)   # back to the pool, not closed
 
 #helper to get the database and enable references (foreign keys) properly
 def connect():
@@ -429,8 +436,44 @@ def deleteLastRep(section_id):
             database.execute("UPDATE Sections SET times_practiced = CASE WHEN times_practiced > 0 THEN times_practiced - 1 ELSE 0 END WHERE id = ?", (section_id,))
         return bool(gone)
 
+def getPracticeRecord(user_id, sessions=20):
+    """what the coach reads, in one connection: recent sessions with their pieces, and every piece with its passages"""
+    with get_db() as database:
+        recent = []
+        for s in database.execute(
+            "SELECT id, time_spent, date, session_notes FROM Sessions WHERE user_id = ? ORDER BY date DESC LIMIT ?",
+            (user_id, sessions),
+        ).fetchall():
+            titles = database.execute(
+                "SELECT p.title FROM Session_Pieces sp JOIN Pieces p ON p.id = sp.piece_id WHERE sp.session_id = ?",
+                (s["id"],),
+            ).fetchall()
+            recent.append({"date": s["date"], "seconds": s["time_spent"], "notes": s["session_notes"],
+                           "pieces": [t["title"] for t in titles]})
+        seconds = {row["piece_id"]: row["seconds"] for row in database.execute(
+            "SELECT sp.piece_id, SUM(s.time_spent) AS seconds FROM Session_Pieces sp JOIN Sessions s ON s.id = sp.session_id WHERE s.user_id = ? GROUP BY sp.piece_id",
+            (user_id,),
+        ).fetchall()}
+        pieces = []
+        for p in database.execute(
+            "SELECT id, title, composer, bpm FROM Pieces WHERE user_id = ? ORDER BY COALESCE(last_viewed, date_created) DESC, id DESC",
+            (user_id,),
+        ).fetchall():
+            rows = database.execute(
+                "SELECT id, piece_id, start_measure, end_measure FROM Sections WHERE piece_id = ? ORDER BY start_measure, end_measure",
+                (p["id"],),
+            ).fetchall()
+            pieces.append({**dict(p), "seconds": seconds.get(p["id"], 0),
+                           "passages": [sectionRecord(database, row) for row in rows]})
+        return {"sessions": recent, "pieces": pieces}
+
+_demo_ids = {}   # per database; a guest's page asked three or four times, each a trip to the database
+
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""
-    with get_db() as database:
-        database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
-        return database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]
+    where = DATABASE_URL or DB_NAME
+    if where not in _demo_ids:
+        with get_db() as database:
+            database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
+            _demo_ids[where] = database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]
+    return _demo_ids[where]

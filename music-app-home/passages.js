@@ -15,6 +15,7 @@
 
 const STREAK = 3;   // clean reps in a row at one tempo before offering a faster one
 const SLIPS = 2;    // misses in a row before offering a slower one
+const DOTS = 5;     // most reps shown as dots for a passage, the same last few "next up" ranks by
 
 // els: the elements in practice.html's #controls; tempo: the player's tempo slider (percent).
 // onRep runs after each saved rep; onPick when the passage changes or a click moves the cursor;
@@ -28,6 +29,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   let boxes = [];        // one box per bar, in px from the top left of #score
   let undoable = false;  // the last rep can be taken back
   let offers = [];       // [text, action] buttons offered after a rep: a tempo change, the next passage
+  let slips = new Map(); // bars the last go heard (listen.js) went wrong in: index -> what happened
   let busy = false;
 
   const layer = Object.assign(document.createElement("div"), { className: "score-bars" });
@@ -124,6 +126,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     active = match ? asBars(match) : chosen && { ...chosen, id: null };
     undoable = false;
     offers = [];
+    slips = new Map();
     marking = preview = null;
     note.textContent = "";
     if (active) toStart();   // back to the whole piece leaves the cursor where it is
@@ -134,6 +137,24 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   function clear() {
     if (marking !== null) { marking = preview = null; return render(); }   // Esc between [ and ] only drops the mark
     if (active) pick(null);
+  }
+  // The coach (coach.js) names bars in its answers: they light up under the pointer, and a click picks them.
+  function point(text) {   // "bars 17-20" lights those bars; null turns them off
+    const shown = text && parse(text);
+    for (const el of layer.querySelectorAll(".score-bar")) {
+      const i = +el.dataset.index;
+      el.classList.toggle("pointed", !!shown && i >= shown.first && i <= shown.last);
+    }
+  }
+  function choose(text) {   // false: this piece has no such bars
+    const chosen = parse(text);
+    if (chosen) pick(chosen);
+    return !!chosen;
+  }
+  // [{bar, text}]: where a go slipped, marked on the score until the next one
+  function mark(list) {
+    slips = new Map(list.map(s => [s.bar, s.text]));
+    paint();
   }
   // [ marks the first bar; moving the cursor stretches the passage; ] picks it.
   // ] on its own ends the picked passage (or a one-bar passage) at the cursor.
@@ -188,6 +209,9 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     for (const el of layer.querySelectorAll(".score-bar")) {
       const i = +el.dataset.index;
       el.classList.toggle("in", !!shown && i >= shown.first && i <= shown.last);
+      el.classList.toggle("slip", slips.has(i));
+      if (slips.has(i)) el.title = slips.get(i);
+      else el.removeAttribute("title");
     }
     if (!shown) return;
     const lines = new Map();   // one frame per line of music the passage touches
@@ -280,14 +304,14 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     for (const r of [...p.recent].reverse()) { if (!r.clean || r.tempo !== +tempo.value) break; n++; }
     return n;
   }
-  function slips(p) {
+  function misses(p) {
     let n = 0;
     for (const r of [...p.recent].reverse()) { if (r.clean) break; n++; }
     return n;
   }
   function nextUp() {   // the saved passage with the fewest clean reps lately; never practiced beats long ago
     if (saved.length < 2) return null;
-    const rank = p => [p.recent.slice(-5).filter(r => r.clean).length, p.last_practiced || ""];
+    const rank = p => [p.recent.slice(-DOTS).filter(r => r.clean).length, p.last_practiced || ""];
     return saved.reduce((a, b) => {
       const [x, y] = [rank(a), rank(b)];
       return x[0] < y[0] || (x[0] === y[0] && x[1] <= y[1]) ? a : b;
@@ -308,7 +332,8 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     return made;
   }
 
-  async function addRep(clean) {
+  // why: what went wrong, when listen.js heard the go; it leads the line under the dots
+  async function addRep(clean, why = "") {
     if (!active || busy) return;
     if (!pieceId) { note.textContent = "Open a piece from your library to count reps."; return; }
     busy = true;
@@ -317,7 +342,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       keep(await api(`/api/sections/${active.id}/reps`, "POST", { clean, tempo: +tempo.value }));
       undoable = true;
       onRep();
-      feedback(clean);
+      feedback(clean, why);
       if (!playing()) toStart();   // ready for the next time through
     } catch (err) {
       console.error(err);
@@ -328,24 +353,26 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     }
   }
 
-  function feedback(clean) {
+  function feedback(clean, why) {
     const p = record(), n = streak(p), t = +tempo.value;
+    let said = "";
     offers = [];
     if (clean && n >= STREAK && t < 100) {
-      note.textContent = `${n} clean in a row at ${speedName(t)}.`;
+      said = `${n} clean in a row at ${speedName(t)}.`;
       offers.push([`Try ${speedName(t + 10)}`, () => setTempo(t + 10)]);
     } else if (clean && n >= STREAK) {
       const up = nextUp();
-      note.textContent = `${n} clean in a row at full speed.`;
+      said = `${n} clean in a row at full speed.`;
       if (up && up.id !== p.id) offers.push([`Next up: ${label(asBars(up))}`, () => pick(asBars(up))]);
     } else if (clean) {
-      note.textContent = `Clean: ${n} of ${STREAK} in a row.`;
-    } else if (slips(p) >= SLIPS && t > +tempo.min) {
-      note.textContent = `${slips(p)} misses in a row.`;
+      said = `Clean: ${n} of ${STREAK} in a row.`;
+    } else if (misses(p) >= SLIPS && t > +tempo.min) {
+      said = `${misses(p)} misses in a row.`;
       offers.push([`Slow to ${speedName(t - 10)}`, () => setTempo(t - 10)]);
-    } else {
-      note.textContent = "Not yet.";
+    } else if (!why) {
+      said = "Not yet.";
     }
+    note.textContent = [why, said].filter(Boolean).join(" ");
   }
 
   function showActions() {
@@ -384,9 +411,9 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   }
 
   // ---- the passage row and the rep row ----
-  function dotsFor(p, count) {
+  function dotsFor(p) {
     const box = Object.assign(document.createElement("span"), { className: "dots" });
-    for (const r of p ? p.recent.slice(-count) : []) {
+    for (const r of p ? p.recent.slice(-DOTS) : []) {
       const dot = Object.assign(document.createElement("span"), { className: r.clean ? "dot is-clean" : "dot" });
       dot.title = `${r.clean ? "Clean" : "Not yet"}${r.tempo ? ` at ${speedName(r.tempo)}` : ""}`;
       box.append(dot);
@@ -411,7 +438,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       const r = p.id && saved.find(s => s.id === p.id);
       const c = chip(span(p), on, () => on || pick(p), p.id ? "" : " is-draft");
       c.setAttribute("aria-label", `${label(p)}${r ? `, ${r.reps} reps, ${r.clean} clean` : ", not saved"}`);
-      if (r) c.append(dotsFor(r, 5));
+      if (r && !on) c.append(dotsFor(r));   // the picked passage's dots are in the rep row below
       if (up && r && up.id === r.id && !on) c.append(Object.assign(document.createElement("span"), { className: "chip-tag", textContent: "next up" }));
       list.push(c);
     }
@@ -425,7 +452,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     if (!active) return;
     title.textContent = label(active);
     yes.disabled = no.disabled = busy;
-    dots.replaceChildren(...dotsFor(record(), 8).childNodes);
+    dots.replaceChildren(...dotsFor(record()).childNodes);
     if (!note.textContent && !record()) note.textContent = pieceId ? "Play it through, then say how it went." : "Open a piece from your library to count reps.";
     showActions();
   }
@@ -463,7 +490,8 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
   }
 
   return {
-    ready, next, previous, toStart, markStart, markEnd, clear, moved,
+    ready, next, previous, toStart, markStart, markEnd, clear, moved, point, choose, setTempo, mark, number, label,
+    tell: text => { note.textContent = text; },
     nextBar: () => bar(1), previousBar: () => bar(-1),
     rep: addRep,
     get bars() { return active && { first: active.first, last: active.last }; },

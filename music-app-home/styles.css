@@ -2399,8 +2399,19 @@ body.coach-open main {
 }
 
 .tour-help[hidden],
-.tour [hidden] {
+.tour [hidden],
+.tour-offer [hidden] {
   display: none;
+}
+
+/* After "Not now": two soft rings, so it's plain where help lives. */
+.tour-help.is-hinting {
+  animation: tour-hint 1.1s var(--ease-out) 2;
+}
+
+@keyframes tour-hint {
+  from { box-shadow: 0 var(--depth) 0 var(--edge), 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  to { box-shadow: 0 var(--depth) 0 var(--edge), 0 0 0 12px transparent; }
 }
 
 /* The page dims; one box stays lit and glides from step to step. Clicks outside do nothing. */
@@ -2472,14 +2483,16 @@ body.coach-open main {
   background: var(--accent);
 }
 
-.tour-title {
+.tour-title,
+.tour-offer-title {
   margin: 0 0 4px;
   font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 400;
 }
 
-.tour-text {
+.tour-text,
+.tour-offer-text {
   margin: 0;
   color: var(--ink-muted);
   font-size: 0.875rem;
@@ -2501,6 +2514,22 @@ body.coach-open main {
   padding: 6px 14px;
 }
 
+/* The first visit: a small card in the corner, not a wall in front of the page. */
+.tour-offer {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 150;
+  width: min(300px, calc(100vw - 40px));
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.16);
+  color: var(--ink);
+  animation: tour-card-in 0.45s var(--ease-out);
+}
+
 @keyframes tour-fade {
   from { opacity: 0; }
 }
@@ -2518,11 +2547,20 @@ body.coach-open main {
     left: 16px !important;
     width: auto;
   }
+
+  .tour-offer {
+    right: 16px;
+    bottom: 16px;
+    left: 16px;
+    width: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tour,
-  .tour-card.is-in {
+  .tour-card.is-in,
+  .tour-offer,
+  .tour-help.is-hinting {
     animation: none;
   }
 

@@ -1,6 +1,7 @@
-/* A short look around the page, shared by every page. The ? in the top bar starts it. Each step
-   dims the page, lights one thing and says what it's for in a sentence. Steps whose thing isn't
-   on screen are skipped, so a renamed id only drops a step. */
+/* A short look around the page, shared by every page. The ? in the top bar starts it; the first
+   visit to Home and Practice offers it once. Each step dims the page, lights one thing and says
+   what it's for in a sentence. Steps whose thing isn't on screen are skipped, so a renamed id
+   only drops a step. */
 (function () {
   var TOURS = {
     "/home": [
@@ -28,6 +29,7 @@
       { el: "#settings-account", title: "You and your level", text: "Your account, and the playing levels you picked. Update them any time." },
     ],
   };
+  var OFFER = ["/home", "/practice"];   // the first pages people land on; others have just the ?
 
   var tour = TOURS[location.pathname];
   var help = document.querySelector("[data-tour-help]");
@@ -37,6 +39,10 @@
   var reduced = matchMedia("(prefers-reduced-motion: reduce)");
   var narrow = matchMedia("(max-width: 600px)");
   var shade, hole, card, steps, at, before;
+
+  function remember(key) { try { localStorage.setItem(key, "1"); } catch (e) {} }
+  function seen(key) { try { return localStorage.getItem(key) === "1"; } catch (e) { return true; } }
+  var KEY = "tour-seen:" + location.pathname;
 
   function find(step) {   // around: light the group the thing sits in, like Play with its tempo
     var el = document.querySelector(step.el);
@@ -61,6 +67,8 @@
     if (shade) return;
     steps = tour.filter(shown);
     if (!steps.length) return;
+    remember(KEY);
+    dismissOffer();
     before = document.activeElement;
 
     shade = make("div", "tour");
@@ -166,6 +174,38 @@
     gone.classList.add("is-out");
     setTimeout(function () { gone.remove(); }, reduced.matches ? 0 : 200);
     if (before && before.focus) before.focus({ preventScroll: true });
+  }
+
+  // ---- the first visit: offered once, never forced ----
+  var offer;
+  function dismissOffer(hint) {
+    if (!offer) return;
+    offer.remove();
+    offer = null;
+    if (hint) {   // show where help lives from now on
+      help.classList.remove("is-hinting");
+      void help.offsetWidth;
+      help.classList.add("is-hinting");
+    }
+  }
+
+  if (OFFER.indexOf(location.pathname) >= 0 && !seen(KEY)) {
+    setTimeout(function () {
+      if (shade || !tour.some(shown)) return;
+      remember(KEY);
+      offer = make("section", "tour-offer");
+      offer.setAttribute("aria-label", "A quick look around");
+      offer.innerHTML =
+        '<p class="tour-offer-title">New here?</p>' +
+        '<p class="tour-offer-text">A quick look around this page takes under a minute.</p>' +
+        '<div class="tour-actions">' +
+        '<button type="button" class="link-button tour-later">Not now</button>' +
+        '<button type="button" class="btn btn-solid press tour-go">Show me</button>' +
+        "</div>";
+      offer.querySelector(".tour-go").onclick = start;
+      offer.querySelector(".tour-later").onclick = function () { dismissOffer(true); };
+      document.body.appendChild(offer);
+    }, location.pathname === "/practice" ? 1500 : 700);   // after the page, and the score, settle
   }
 
   help.addEventListener("click", start);

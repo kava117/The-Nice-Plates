@@ -207,10 +207,17 @@
     POINTER.forEach(function (type) { removeEventListener(type, guard, true); });
     removeEventListener("resize", follow);
     document.removeEventListener("scroll", follow, true);
-    var gone = shade;
+    var gone = shade, to = help.getBoundingClientRect();
     shade = null;
+    if (to.width) {   // the box folds into the ?, so it's plain where the tour lives
+      Object.assign(hole.style, {
+        top: to.top + "px", left: to.left + "px", width: to.width + "px", height: to.height + "px",
+        borderRadius: getComputedStyle(help).borderTopLeftRadius,
+      });
+    }
+    gone.classList.remove("is-first", "is-following");
     gone.classList.add("is-out");
-    setTimeout(function () { gone.remove(); }, reduced.matches ? 0 : 200);
+    setTimeout(function () { gone.remove(); }, reduced.matches ? 0 : 520);
     if (before && before.focus) before.focus({ preventScroll: true });
   }
 

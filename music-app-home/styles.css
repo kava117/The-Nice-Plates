@@ -2428,9 +2428,17 @@ body.coach-open main {
   --tour-shade: rgba(0, 0, 0, 0.62);
 }
 
+/* Closing: the card goes first, the box folds into the ?, then the page brightens. */
 .tour.is-out {
   opacity: 0;
-  transition: opacity 0.2s ease-out;
+  transition: opacity 0.25s ease-out 0.25s;
+}
+
+.tour.is-out .tour-card {
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
 }
 
 .tour-hole {

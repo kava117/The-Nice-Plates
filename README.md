@@ -2,6 +2,8 @@
 
 Flask web app for practicing music. You upload your sheet music, it gets turned into a score you can practice in the browser, and it keeps track of how much time you put in.
 
+**Live:** [https://the-nice-plates-gmgx.onrender.com/](https://the-nice-plates-gmgx.onrender.com/)
+
 Signing in with Google, uploading, the practice page (score, playback, passages, Listen, the coach, timer, recordings), Home and Progress all work. Settings is the one page that's still mostly a mock-up. There's a full rundown below.
 
 ## What works and what doesn't 

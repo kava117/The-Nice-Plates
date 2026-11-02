@@ -7,10 +7,17 @@
 
 <div class="content">
 
+  <section class="panel unsaved just-saved" id="just-saved" hidden aria-live="polite">
+    <div>
+      <p class="unsaved-lead">Nice — that one's on the chart</p>
+      <p class="unsaved-hint" id="just-saved-hint"></p>
+    </div>
+  </section>
+
   {% if unsaved >= 60 %}
   <section class="panel unsaved" aria-live="polite">
     <p><strong>{{ unsaved // 60 }} min</strong> on the practice timer, not saved yet.</p>
-    <button class="btn btn-solid" id="save-timer">Save it</button>
+    <button class="btn btn-solid press" id="save-timer">Save it</button>
   </section>
   {% elif not saved %}
   <section class="panel unsaved" aria-live="polite">
@@ -83,6 +90,17 @@
     await fetch("/api/timer/stop", {method: "POST"});
     location.reload();
   });
+  // Practice left a note after Stop and save; show it once, then clear it.
+  try {
+    const sec = sessionStorage.getItem("progress-just-saved");
+    if (sec != null) {
+      sessionStorage.removeItem("progress-just-saved");
+      const n = +sec;
+      document.getElementById("just-saved-hint").textContent =
+        (n < 60 ? n + " seconds" : Math.round(n / 60) + " min") + " from the timer you just stopped.";
+      document.getElementById("just-saved").hidden = false;
+    }
+  } catch (e) {}
 </script>
 
 {% include "footer.html" %}

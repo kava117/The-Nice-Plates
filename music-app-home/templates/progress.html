@@ -87,7 +87,11 @@
 <script>
   document.getElementById("save-timer")?.addEventListener("click", async e => {
     e.target.disabled = true;
-    await fetch("/api/timer/stop", {method: "POST"});
+    const r = await fetch("/api/timer/stop", {method: "POST"});
+    try {
+      const state = await r.json();
+      if (state.saved_session_id) sessionStorage.setItem("progress-just-saved", String(state.time_spent));
+    } catch (err) {}
     location.reload();
   });
   // Practice left a note after Stop and save; show it once, then clear it.

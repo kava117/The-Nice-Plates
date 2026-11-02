@@ -59,7 +59,7 @@ Render runs a single sync gunicorn worker. Reading one page with homr took 35 s,
 ### 5. "Log out" in the top bar doesn't log out
 **Fixed** on `bug-fixes` (289d0b5). Logout is still a link, not a POST.
 
-`header.html:38` links to `/index`, so the user stays signed in. Guests also see "Log out".
+`header.html:38` links to `/landing`, so the user stays signed in. Guests also see "Log out".
 
 **Fix**
 - Point the link to `/logout`.

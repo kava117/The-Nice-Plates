@@ -69,7 +69,7 @@ def load_user(user_id):
 def unauthorized():
     if request.path.startswith("/api/"):
         return jsonify(error="login required"), 401
-    return redirect(url_for("index"))
+    return redirect(url_for("landing"))
 
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
@@ -308,9 +308,13 @@ def api_coach():
 # ================================================================== 
 
 @app.route("/")
+@app.route("/landing")
+def landing():
+    return render_template("landing.html")
+
 @app.route("/index")
-def index():
-    return render_template("index.html")
+def old_index():   # the landing page used to live here; keep old links working
+    return redirect(url_for("landing"))
 
 def utc_today():  # SQLite stamps sessions in UTC
     return datetime.now(timezone.utc).date()
@@ -393,7 +397,7 @@ def auth_google():
 def logout():
     logout_user()
     clear_practice_state()
-    return redirect(url_for("index"))
+    return redirect(url_for("landing"))
 
 
 if __name__ == "__main__":

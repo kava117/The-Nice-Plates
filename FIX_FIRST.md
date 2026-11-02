@@ -86,7 +86,7 @@ Known limit: two photo uploads at the same time will still run two homr jobs in 
 
 ## 4. Log out link
 
-The top bar should show the right action for whoever's viewing, and "Log out" should actually log you out. Right now `header.html:38` links to `/index`, and guests see "Log out" too.
+The top bar should show the right action for whoever's viewing, and "Log out" should actually log you out. Right now `header.html:38` links to `/landing`, and guests see "Log out" too.
 
 **Changes** (`header.html`)
 

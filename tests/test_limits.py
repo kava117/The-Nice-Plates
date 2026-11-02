@@ -23,7 +23,7 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 
 # ---------------------------------------------------------------- boot & pages
-PAGES = ["/", "/index", "/dashboard", "/library", "/progress", "/settings", "/practice"]
+PAGES = ["/", "/landing", "/dashboard", "/library", "/progress", "/settings", "/practice"]
 
 @pytest.mark.parametrize("path", PAGES)
 def test_page_loads_as_guest(guest, path):

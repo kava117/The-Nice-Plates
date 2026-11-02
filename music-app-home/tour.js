@@ -281,6 +281,10 @@
       offer.querySelector(".tour-go").onclick = start;
       offer.querySelector(".tour-later").onclick = function () { dismissOffer(true); };
       document.body.appendChild(offer);
+      addEventListener("keydown", function away(e) {   // Esc means Not now too
+        if (!offer) removeEventListener("keydown", away);
+        else if (e.key === "Escape") dismissOffer(true);
+      });
     }, location.pathname === "/practice" ? 1500 : 700);   // after the page, and the score, settle
   }
 

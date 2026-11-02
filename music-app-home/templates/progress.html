@@ -13,9 +13,12 @@
     <button class="btn btn-solid" id="save-timer">Save it</button>
   </section>
   {% elif not saved %}
-  <section class="panel unsaved">
-    <p>No practice saved yet. On Practice, press <strong>Start practice</strong>, then <strong>Stop and save</strong>.</p>
-    <a class="btn btn-solid" href="/practice">Practice</a>
+  <section class="panel unsaved" aria-live="polite">
+    <div>
+      <p class="unsaved-lead">No practice logged yet</p>
+      <p class="unsaved-hint">On Practice, press <strong>Start practice</strong> when you sit down, then <strong>Stop and save</strong>. That minute shows up here.</p>
+    </div>
+    <a class="btn btn-solid press" href="/practice">Start practicing</a>
   </section>
   {% endif %}
 

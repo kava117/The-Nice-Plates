@@ -79,8 +79,7 @@
     card.setAttribute("aria-labelledby", "tour-title");
     card.innerHTML =
       '<div class="tour-meta"><div class="tour-dots" aria-hidden="true"></div><span class="tour-count" id="tour-count"></span></div>' +
-      '<h2 class="tour-title" id="tour-title"></h2>' +
-      '<p class="tour-text"></p>' +
+      '<div class="tour-body"><h2 class="tour-title" id="tour-title"></h2><p class="tour-text"></p></div>' +
       '<div class="tour-actions">' +
       '<button type="button" class="link-button tour-skip">Skip</button>' +
       '<button type="button" class="btn btn-ghost press tour-back">Back</button>' +
@@ -101,8 +100,9 @@
 
   function go(i, first) {
     if (i < 0 || i >= steps.length) return;
+    var way = first ? "" : i > at ? "is-next" : "is-back";
     at = i;
-    var step = steps[i], el = find(step);
+    var step = steps[i], el = find(step), body = card.querySelector(".tour-body");
     card.querySelector(".tour-title").textContent = step.title;
     card.querySelector(".tour-text").textContent = step.text;
     card.querySelector("#tour-count").textContent = i + 1 + " of " + steps.length;
@@ -112,9 +112,11 @@
 
     el.scrollIntoView({ block: "nearest", behavior: reduced.matches ? "auto" : "smooth" });
     shade.classList.toggle("is-first", !!first);
-    card.classList.remove("is-in");
-    void card.offsetWidth;   // restarts the card's entrance for each step
-    card.classList.add("is-in");
+    // The card rises in once; after that only the words move, from the side the step lies on.
+    card.classList.toggle("is-in", !!first);
+    body.classList.remove("is-next", "is-back");
+    void body.offsetWidth;   // restarts the slide
+    if (way) body.classList.add(way);
     place(el);
     setTimeout(function () { if (shade && at === i) place(el); }, 350);   // after a smooth scroll lands
     card.querySelector(".tour-next").focus({ preventScroll: true });

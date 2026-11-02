@@ -2481,6 +2481,22 @@ body.coach-open main {
   animation: tour-card-in 0.35s var(--ease-out);
 }
 
+.tour-body.is-next {
+  animation: tour-from-right 0.35s var(--ease-out);
+}
+
+.tour-body.is-back {
+  animation: tour-from-left 0.35s var(--ease-out);
+}
+
+@keyframes tour-from-right {
+  from { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes tour-from-left {
+  from { opacity: 0; transform: translateX(-12px); }
+}
+
 .tour-meta {
   display: flex;
   align-items: center;
@@ -2588,6 +2604,8 @@ body.coach-open main {
 @media (prefers-reduced-motion: reduce) {
   .tour,
   .tour-card.is-in,
+  .tour-body.is-next,
+  .tour-body.is-back,
   .tour-offer,
   .tour-help.is-hinting {
     animation: none;

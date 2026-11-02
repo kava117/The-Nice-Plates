@@ -2451,11 +2451,11 @@ body.coach-open main {
 .tour-card {
   position: fixed;
   width: min(320px, calc(100vw - 32px));
-  padding: 16px 18px 14px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  padding: 16px 18px 16px;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius-tile);
   background: var(--surface);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 0 var(--edge-neutral);   /* the same hard edge as the buttons, lifted off the page */
   color: var(--ink);
   transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out);
 }

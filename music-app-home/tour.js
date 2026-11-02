@@ -132,8 +132,13 @@
     hole.classList.add("is-landing");
     place(el);
     setTimeout(function () { if (shade && at === i) place(el); }, 350);   // after a smooth scroll lands
-    card.querySelector(".tour-next").focus({ preventScroll: true });
+    card.querySelector(".tour-next").focus({ preventScroll: true, focusVisible: byKeys });
   }
+
+  // Focus moves to Next each step; its ring shows only for people using the keyboard.
+  var byKeys = false;
+  addEventListener("keydown", function () { byKeys = true; }, true);
+  addEventListener("pointerdown", function () { byKeys = false; }, true);
 
   // The lit box around the step's thing, kept inside the window, and the card beside it.
   function place(el) {

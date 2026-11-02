@@ -2460,6 +2460,23 @@ body.coach-open main {
   transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out);
 }
 
+/* Below the lit thing, a notch on top points up at it. */
+.tour-card.is-below::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: var(--notch);
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--edge-neutral);
+  border-right: 0;
+  border-bottom: 0;
+  border-top-left-radius: 3px;
+  background: var(--surface);
+  transform: translateX(-50%) rotate(45deg);
+  transition: left 0.45s var(--ease-out);
+}
+
 .tour-card.is-in {
   animation: tour-card-in 0.35s var(--ease-out);
 }

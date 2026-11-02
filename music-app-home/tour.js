@@ -132,14 +132,16 @@
       borderRadius: Math.min(round + pad, (bottom - top) / 2) + "px",
     });
 
+    card.classList.remove("is-below");
     if (narrow.matches) { card.style.top = card.style.left = ""; return; }   // docked to the bottom by the CSS
     var gap = 14, w = card.offsetWidth, h = card.offsetHeight, y;
-    if (bottom + gap + h <= innerHeight - 8) y = bottom + gap;
+    if (bottom + gap + h <= innerHeight - 8) { y = bottom + gap; card.classList.add("is-below"); }
     else if (top - gap - h >= 8) y = top - gap - h;
     else y = innerHeight - h - 16;
     var x = Math.min(Math.max(left, 16), innerWidth - w - 16);
     card.style.top = y + "px";
     card.style.left = x + "px";
+    card.style.setProperty("--notch", Math.min(Math.max((left + right) / 2 - x, 24), w - 24) + "px");   // under the middle of the lit thing
   }
 
   var frame;

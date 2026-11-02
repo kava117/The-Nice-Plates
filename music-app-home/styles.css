@@ -775,6 +775,18 @@ main {
   min-width: 0;
 }
 
+.chart-empty {
+  margin: 0 0 12px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.panel.is-empty .bars,
+.panel.is-empty .overall-chart {
+  opacity: 0.35;
+}
+
 .bars {
   display: flex;
   align-items: flex-end;

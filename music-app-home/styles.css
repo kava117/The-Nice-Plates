@@ -2588,6 +2588,17 @@ body.coach-open main {
   font-weight: 400;
 }
 
+.tour-offer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tour-offer-title svg {
+  flex: none;
+  color: var(--accent);
+}
+
 .tour-text,
 .tour-offer-text {
   margin: 0;

@@ -2420,6 +2420,7 @@ body.coach-open main {
   position: fixed;
   inset: 0;
   z-index: 200;
+  pointer-events: none;   /* tour.js keeps clicks off the page itself */
   animation: tour-fade 0.25s ease-out;
 }
 
@@ -2474,6 +2475,7 @@ body.coach-open main {
   background: var(--surface);
   box-shadow: 0 4px 0 var(--edge-neutral);   /* the same hard edge as the buttons, lifted off the page */
   color: var(--ink);
+  pointer-events: auto;
   transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out);
 }
 
@@ -2496,6 +2498,16 @@ body.coach-open main {
 
 .tour-card.is-in {
   animation: tour-card-in 0.35s var(--ease-out);
+}
+
+.tour-card.is-nudged {
+  animation: tour-nudge 0.4s var(--ease-out);
+}
+
+@keyframes tour-nudge {
+  20% { transform: translateX(-5px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
 }
 
 .tour-body.is-next {
@@ -2621,6 +2633,7 @@ body.coach-open main {
 @media (prefers-reduced-motion: reduce) {
   .tour,
   .tour-card.is-in,
+  .tour-card.is-nudged,
   .tour-body.is-next,
   .tour-body.is-back,
   .tour-hole.is-landing::after,

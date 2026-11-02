@@ -93,6 +93,7 @@
     card.querySelector(".tour-back").onclick = function () { go(at - 1); };
     card.querySelector(".tour-next").onclick = function () { at === steps.length - 1 ? stop() : go(at + 1); };
     addEventListener("keydown", keys, true);
+    POINTER.forEach(function (type) { addEventListener(type, guard, true); });
     addEventListener("resize", follow);
     document.addEventListener("scroll", follow, true);
     go(0, true);
@@ -174,9 +175,22 @@
     }
   }
 
+  // A click on the dimmed page does nothing there; the card gives a small shake to say it's waiting.
+  var POINTER = ["pointerdown", "mousedown", "click"];
+  function guard(e) {
+    if (card.contains(e.target)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (e.type !== "click") return;
+    card.classList.remove("is-nudged");
+    void card.offsetWidth;
+    card.classList.add("is-nudged");
+  }
+
   function stop() {
     if (!shade) return;
     removeEventListener("keydown", keys, true);
+    POINTER.forEach(function (type) { removeEventListener(type, guard, true); });
     removeEventListener("resize", follow);
     document.removeEventListener("scroll", follow, true);
     var gone = shade;

@@ -2596,6 +2596,17 @@ body.coach-open main {
   line-height: 1.5;
 }
 
+/* "Try it": the lit thing works during this step. Marked with the coach's green rule. */
+.tour-try {
+  margin: 10px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .tour-actions {
   display: flex;
   align-items: center;

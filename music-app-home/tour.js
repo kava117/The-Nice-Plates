@@ -15,7 +15,8 @@
       { el: ".library-grid .card", title: "Open a piece", text: "Click a piece to practise it." },
     ],
     "/practice": [
-      { el: ".passage-row", title: "Pick a passage", text: "Drag across bars on the score, or type bars like 12-16. Play then loops just those bars." },
+      { el: ".passage-row", title: "Pick a passage", text: "Drag across bars on the score, or type bars like 12-16. Play then loops just those bars.",
+        tryIt: "Try it: type 1-4 in Bars and press Enter." },
       { el: "#play", around: ".tool-group", title: "Hear it", text: "Play follows the cursor. Slide the tempo down to learn it slowly." },
       { el: "#rep", title: "Count each go", text: "Say if it went clean, or press Listen and it marks each go for you." },
       { el: "#timer", title: "Time your practice", text: "Start when you sit down. Stop and save adds the time to Progress." },
@@ -79,19 +80,13 @@
     card.setAttribute("aria-labelledby", "tour-title");
     card.innerHTML =
       '<div class="tour-meta"><div class="tour-dots"></div><span class="tour-count" id="tour-count"></span></div>' +
-      '<div class="tour-body"><h2 class="tour-title" id="tour-title"></h2><p class="tour-text"></p></div>' +
+      '<div class="tour-body"><h2 class="tour-title" id="tour-title"></h2><p class="tour-text"></p><p class="tour-try" hidden></p></div>' +
       '<div class="tour-actions">' +
       '<button type="button" class="link-button tour-skip">Skip</button>' +
       '<button type="button" class="btn btn-ghost press tour-back">Back</button>' +
       '<button type="button" class="btn btn-solid press tour-next">Next</button>' +
       "</div>";
-    steps.forEach(function (step, k) {   // a dot jumps straight to its step
-      var dot = make("button", "tour-dot");
-      dot.type = "button";
-      dot.setAttribute("aria-label", "Step " + (k + 1) + ": " + step.title);
-      dot.onclick = function () { go(k); };
-      card.querySelector(".tour-dots").appendChild(dot);
-    });
+    dots();
     shade.append(hole, card);
     document.body.appendChild(shade);
 
@@ -102,8 +97,34 @@
     POINTER.forEach(function (type) { addEventListener(type, guard, true); });
     addEventListener("resize", follow);
     document.addEventListener("scroll", follow, true);
+    watch.observe(document.body, { attributes: true, attributeFilter: ["hidden"], subtree: true });
     go(0, true);
   }
+
+  function dots() {   // a dot jumps straight to its step
+    var row = card.querySelector(".tour-dots");
+    row.textContent = "";
+    steps.forEach(function (step, k) {
+      var dot = make("button", "tour-dot");
+      dot.type = "button";
+      dot.setAttribute("aria-label", "Step " + (k + 1) + ": " + step.title);
+      dot.onclick = function () { go(k); };
+      row.appendChild(dot);
+    });
+  }
+
+  // Something on the page appeared or went, like the rep row once a passage is picked. A step
+  // that just appeared after a "try it" step is where the tour goes next.
+  var watch = new MutationObserver(function () {
+    var fresh = tour.filter(shown);
+    if (!shade || fresh.length === steps.length) return;
+    var was = steps[at], k = fresh.indexOf(was);
+    var then = fresh.findIndex(function (step) { return steps.indexOf(step) < 0; });
+    steps = fresh;
+    dots();
+    at = -1;
+    go(was.tryIt && then >= 0 ? then : Math.max(k, 0));
+  });
 
   function go(i, first) {
     if (i < 0 || i >= steps.length || (i === at && !first)) return;
@@ -112,6 +133,8 @@
     var step = steps[i], el = find(step), body = card.querySelector(".tour-body");
     card.querySelector(".tour-title").textContent = step.title;
     card.querySelector(".tour-text").textContent = step.text;
+    card.querySelector(".tour-try").textContent = step.tryIt || "";
+    card.querySelector(".tour-try").hidden = !step.tryIt;
     card.querySelector("#tour-count").textContent = i + 1 + " of " + steps.length;
     card.querySelectorAll(".tour-dot").forEach(function (dot, k) {
       dot.classList.toggle("is-on", k === i);
@@ -176,7 +199,13 @@
     });
   }
 
+  function trying(e) {   // a "try it" step leaves its lit thing working
+    var step = steps[at];
+    return step.tryIt && find(step).contains(e.target);
+  }
+
   function keys(e) {
+    if (e.key !== "Escape" && trying(e)) return;
     e.stopImmediatePropagation();   // the page's own shortcuts (Space plays, arrows move) wait
     if (e.key === "Escape") { e.preventDefault(); stop(); }
     else if (e.key === "ArrowRight") { e.preventDefault(); at === steps.length - 1 ? stop() : go(at + 1); }
@@ -192,7 +221,7 @@
   // A click on the dimmed page does nothing there; the card gives a small shake to say it's waiting.
   var POINTER = ["pointerdown", "mousedown", "click"];
   function guard(e) {
-    if (card.contains(e.target)) return;
+    if (card.contains(e.target) || trying(e)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.type !== "click") return;
@@ -205,6 +234,7 @@
     if (!shade) return;
     removeEventListener("keydown", keys, true);
     POINTER.forEach(function (type) { removeEventListener(type, guard, true); });
+    watch.disconnect();
     removeEventListener("resize", follow);
     document.removeEventListener("scroll", follow, true);
     var gone = shade, to = help.getBoundingClientRect();

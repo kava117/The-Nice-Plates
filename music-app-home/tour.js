@@ -117,6 +117,9 @@
     body.classList.remove("is-next", "is-back");
     void body.offsetWidth;   // restarts the slide
     if (way) body.classList.add(way);
+    hole.classList.remove("is-landing");
+    void hole.offsetWidth;
+    hole.classList.add("is-landing");
     place(el);
     setTimeout(function () { if (shade && at === i) place(el); }, 350);   // after a smooth scroll lands
     card.querySelector(".tour-next").focus({ preventScroll: true });

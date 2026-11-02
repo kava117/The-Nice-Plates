@@ -2442,6 +2442,23 @@ body.coach-open main {
   transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out), width 0.45s var(--ease-out), height 0.45s var(--ease-out), border-radius 0.45s var(--ease-out);
 }
 
+/* Once it lands, one ring spreads from the box and fades, to draw the eye there. */
+.tour-hole::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.tour-hole.is-landing::after {
+  animation: tour-ring 0.9s var(--ease-out) 0.3s;
+}
+
+@keyframes tour-ring {
+  from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent); }
+  to { box-shadow: 0 0 0 12px transparent; }
+}
+
 .tour.is-first .tour-hole,
 .tour.is-following .tour-hole,
 .tour.is-following .tour-card {
@@ -2606,6 +2623,7 @@ body.coach-open main {
   .tour-card.is-in,
   .tour-body.is-next,
   .tour-body.is-back,
+  .tour-hole.is-landing::after,
   .tour-offer,
   .tour-help.is-hinting {
     animation: none;

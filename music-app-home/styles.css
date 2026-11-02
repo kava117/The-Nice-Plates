@@ -1034,6 +1034,10 @@ main {
   margin-top: 14px;
 }
 
+.playing-level {
+  max-width: none;
+}
+
 .field label {
   font-size: 0.8125rem;
   font-weight: 600;

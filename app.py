@@ -75,11 +75,12 @@ def unauthorized():
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
 
-# Sends users to the onboarding page until they have completed it.
+# Signed-in users go to onboarding until they finish it. Guests share the demo
+# account, so they are left alone.
 def onboarding_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if database.getUserProficiency(user_id())["onboarded_at"] is None:
+        if current_user.is_authenticated and database.getUserProficiency(current_user.id)["onboarded_at"] is None:
             return redirect(url_for("onboarding"))
         return view(*args, **kwargs)
     return wrapped
@@ -153,13 +154,18 @@ def remember_piece(piece_id):
         session["session_piece_ids"] = sorted(set(session.get("session_piece_ids", []) + [piece_id]))
 
 
-# Users columns set by onboarding. Must match the question fields in onboarding.html.
-PROFICIENCY_FIELDS = ("rhythm_level", "intonation_level", "dynamics_level", "range_level")
+# Short names for each score, index 0 = 1. Wording matches onboarding.html.
+PLAYING = (
+    ("rhythm_level", "Rhythm", ("Steady basics", "Mixed note values", "Syncopation", "Complex rhythms")),
+    ("intonation_level", "Intonation", ("Finding the notes", "Familiar keys", "Most keys", "Any key")),
+    ("dynamics_level", "Dynamics", ("One volume", "Loud and soft", "Shaping phrases", "Full expression")),
+    ("range_level", "Note range", ("Within the staff", "Just outside", "Far outside", "Full range")),
+)
 
 # returns the valid onboarding answers from a submitted form, keyed by Users column
 def read_levels(form):
     levels = {}
-    for field in PROFICIENCY_FIELDS:
+    for field in database.PROFICIENCY_FIELDS:
         level = read_id(form, field)
         if level is not None and 1 <= level <= 4:
             levels[field] = level
@@ -337,16 +343,17 @@ def index():
 
 @app.route("/onboarding", methods=["GET", "POST"])
 def onboarding():
+    if not current_user.is_authenticated:
+        return redirect(url_for("home"))
+    current = database.getUserProficiency(current_user.id)
     if request.method == "POST":
         levels = read_levels(request.form)
-        if len(levels) == len(PROFICIENCY_FIELDS):
-            database.setUserProficiency(user_id(), **levels)
-            return redirect(url_for("home"))
+        if len(levels) == len(database.PROFICIENCY_FIELDS):
+            database.setUserProficiency(current_user.id, **levels)
+            return redirect(url_for("home") if current["onboarded_at"] is None else url_for("settings"))
         return render_template("onboarding.html", selected=levels), 400
-
-    if database.getUserProficiency(user_id())["onboarded_at"] is not None:
-        return redirect(url_for("home"))
-    return render_template("onboarding.html", selected={})
+    selected = {k: current[k] for k in database.PROFICIENCY_FIELDS if current[k]}
+    return render_template("onboarding.html", selected=selected)
 
 def utc_today():  # SQLite stamps sessions in UTC
     return datetime.now(timezone.utc).date()
@@ -382,7 +389,7 @@ def progress():
 @app.route("/settings")
 @onboarding_required
 def settings():
-    return render_template("settings.html")
+    return render_template("settings.html", levels=database.getUserProficiency(user_id()), playing=PLAYING)
 
 @app.route("/practice")
 @onboarding_required

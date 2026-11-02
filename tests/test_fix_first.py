@@ -1,4 +1,5 @@
-"""One test per "Done when" box in FIX_FIRST.md."""
+"""The first five fixes: a real SECRET_KEY, upload guards, gunicorn threads, the log out link,
+and a practice timer that can be trusted."""
 import pytest
 from flask.sessions import SecureCookieSessionInterface
 

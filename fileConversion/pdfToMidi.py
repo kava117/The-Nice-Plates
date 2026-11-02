@@ -24,8 +24,10 @@ def _to_musicxml(src: Path, work: Path) -> Path:
         images = pdf_to_pngs(src, work)
         if not images:
             raise ValueError(f"no pages in {src}")
-    else:
+    elif suffix in IMAGES:
         images = [Path(shutil.copy(src, work))]
+    else:  # never hand homr a type it can't read, even if a route forgot to check
+        raise ValueError(f"unsupported file {src.name}")
     return run_homr(images)
 
 

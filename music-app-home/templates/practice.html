@@ -1,4 +1,6 @@
-{# Practice page: renders one piece from the library, or the demo score. #}
+{# Practice page: renders one piece from the library, or the demo score.
+   Three rows stay pinned over the score: moving and listening, the passages, and the rep
+   count for the picked passage. passages.js explains how picking a passage works. #}
 {% set title = "Practice" %}
 {% set active = "practice" %}
 {% set auth = "signed-in" %}
@@ -6,18 +8,109 @@
 
 
 <div id="controls">
-  <button id="cursor-prev">&#9664; Prev</button>
-  <button id="cursor-next">Next &#9654;</button>
-  <button id="cursor-reset">Reset</button>
-  <button id="zoom-in">+</button>
-  <button id="zoom-out">-</button>
+  <div class="controls-row">
+    <div class="tool-group" role="group" aria-label="Cursor">
+      <button id="cursor-prev" class="tool press" title="Previous note (Left arrow). Previous bar: Shift + Left" aria-label="Previous note">&#9664;</button>
+      <button id="cursor-next" class="tool press" title="Next note (Right arrow). Next bar: Shift + Right" aria-label="Next note">&#9654;</button>
+      <button id="cursor-reset" class="tool press" title="Back to the start (Home)">Reset</button>
+    </div>
+    <div class="tool-group" role="group" aria-label="Listen">
+      <button id="play" class="tool tool-play press" disabled title="Play or stop (Space)">&#9654; Play</button>
+      <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
+    </div>
+    <div class="tool-group" role="group" aria-label="Practice timer">
+      <button id="timer" class="tool press">Start practice</button> <button id="stop" class="tool press" hidden>Stop and save</button> <span id="clock" class="clock"></span>
+    </div>
+    <div class="tool-group" role="group" aria-label="Record">
+      <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
+    </div>
+    <div class="tool-group" role="group" aria-label="Coach">
+      <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
+    </div>
+    <div class="tool-group tool-group-end" role="group" aria-label="Zoom">
+      <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
+      <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
+    </div>
+  </div>
+
+  <div class="controls-row passage-row">
+    <span class="row-label" id="passages-label">Passages</span>
+    <div class="chips" id="passage-chips" role="group" aria-labelledby="passages-label"></div>
+    <form class="bars-form" id="bars-form">
+      <label for="bars-input">Bars</label>
+      <input class="bars-input" id="bars-input" placeholder="12-16" autocomplete="off" enterkeyhint="go" size="6">
+    </form>
+    <details class="keys" id="keys">
+      <summary class="tool press" title="Keyboard shortcuts (?)">Keys</summary>
+      <dl class="keys-panel">
+        <dt><kbd>Space</kbd></dt><dd>Play or stop</dd>
+        <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
+        <dt><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next bar</dd>
+        <dt><kbd>Home</kbd></dt><dd>Start of the passage, or the piece</dd>
+        <dt>Mouse</dt><dd>Drag across bars to pick a passage; drag its handles to move either end</dd>
+        <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Mark a passage: [ on its first bar, ] on its last</dd>
+        <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That went clean, or not yet</dd>
+        <dt><kbd>L</kbd></dt><dd>Listen, and mark each go for you</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Back to the whole piece</dd>
+        <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
+        <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
+      </dl>
+    </details>
+  </div>
+
+  <div class="controls-row rep-row" id="rep" hidden>
+    <strong class="rep-title" id="rep-title"></strong>
+    <button type="button" class="tool press listen" id="listen" aria-pressed="false" title="Hears each go and marks it for you. Nothing is recorded. (L)">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+      <span class="listen-word">Listen</span>
+    </button>
+    <span class="rep-ask" id="rep-ask">Was that clean?</span>
+    <button type="button" class="btn btn-solid press rep-button" id="rep-yes">Yes <kbd>Y</kbd></button>
+    <button type="button" class="btn btn-ghost press rep-button" id="rep-no">Not yet <kbd>N</kbd></button>
+    <span class="dots dots-large" id="rep-dots" aria-hidden="true"></span>
+    <span class="rep-note" id="rep-note" role="status"></span>
+    <span class="rep-actions" id="rep-actions"></span>
+  </div>
 </div>
 
+<p class="score-loading" id="score-loading" role="status">Loading the score…</p>
+<p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to your library</a></p>
 <div id="score"></div>
 
+<aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
+  <header class="coach-head">
+    <div class="coach-heading">
+      <h2 class="coach-title" id="coach-title">Coach</h2>
+      <p class="coach-sub" id="coach-sub" hidden></p>
+    </div>
+    <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
+    <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <p class="visually-hidden" id="coach-said" aria-live="polite"></p>
+  <div class="coach-thread" id="coach-thread">
+    <div class="coach-empty" id="coach-empty">
+      <p class="coach-lead" id="coach-lead">How’s practice going?</p>
+      <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
+      <div class="coach-asks" id="coach-asks"></div>
+    </div>
+  </div>
+  <form class="coach-form" id="coach-form">
+    <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
+    <button type="submit" class="coach-send press" id="coach-send" disabled>Ask</button>
+  </form>
+</aside>
+
 <script src="/opensheetmusicdisplay.min.js"></script>
+<script src="/player.js"></script>
+<script src="/passages.js"></script>
+<script src="/listen.js"></script>
+<script src="/coach.js"></script>
 <script>
-  const piece = new URLSearchParams(location.search).get("piece");  // from the library; no piece = the demo score
+  // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
+  const piece = new URLSearchParams(location.search).get("piece") || {{ latest_piece | tojson }};
+  if (piece && !new URLSearchParams(location.search).has("piece")) history.replaceState(null, "", `/practice?piece=${piece}`);   // reload and share keep it
   const SONG_URL = piece ? `/api/pieces/${piece}/musicxml` : "/AirOnG.musicxml";
 
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score", {
@@ -26,45 +119,205 @@
     followCursor: true,   // scrolls the page to keep the cursor in view
   });
 
+  // ---- Play the score (player.js); with a passage picked it loops the passage ----
+  const play = document.getElementById("play"), tempo = document.getElementById("tempo"), tempoLabel = document.getElementById("tempo-label");
+  const player = addPlayer(osmd, play, tempo, { passage: () => passages.bars, toStart: () => passages.toStart() });
+
+  // ---- Passages (passages.js): pick bars, loop them, count clean reps ----
+  const $ = id => document.getElementById(id);
+  const passages = addPassages(osmd, {
+    score: $("score"), chips: $("passage-chips"), form: $("bars-form"), input: $("bars-input"),
+    rep: $("rep"), title: $("rep-title"), yes: $("rep-yes"), no: $("rep-no"), dots: $("rep-dots"), note: $("rep-note"), actions: $("rep-actions"),
+  }, {
+    pieceId: piece && +piece, tempo,
+    playing: () => player.playing,
+    onPick: () => { player.stop(); coach.refresh(); listening.picked(); },   // the coach's suggestions name the picked bars
+    onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
+  });
+  const showTempo = () => {
+    const bpm = osmd.Sheet && osmd.Sheet.DefaultStartTempoInBpm;
+    tempoLabel.textContent = bpm ? `${Math.round(bpm * tempo.value / 100)} bpm` : `${tempo.value} %`;
+  };
+  tempo.addEventListener("input", showTempo);
+
+  // ---- Listen (listen.js): hears each go at the passage and marks the rep, on this device ----
+  const listening = addListening(osmd, { button: $("listen"), status: $("rep-ask") }, { passages, player, tempo });
+
+  // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
+  const coach = addCoach({
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"), said: $("coach-said"),
+    thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
+    form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
+  }, {
+    pieceId: piece && +piece, passage: () => passages.bars, score: passages,
+    title: () => {{ piece_title | tojson }} || ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // else as printed on the score
+  });
+
   async function loadSong(url) {
     try {
-      await osmd.load(url);
+      player.stop();
+      const response = await fetch(url);   // fetched here, not by OSMD: its own request gives up after a few seconds
+      if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status}`), { status: response.status });
+      await osmd.load(await response.text());
       osmd.render();
       osmd.cursor.show();   // cursor only exists after render()
+      document.getElementById("score-loading").hidden = true;
+      play.disabled = false;
+      showTempo();
+      coach.refresh();   // the piece's title, under the coach's name
+      passages.ready((await firstState).section_id);   // back on the passage the last visit left on
     } catch (err) {
       console.error("Couldn't load song:", err);
+      const loading = document.getElementById("score-loading");
+      if (url === "/AirOnG.musicxml") { loading.textContent = "The score didn't load. Reload the page to try again."; return; }
+      if (piece && err.status === 404) {   // a removed piece says so, instead of quietly showing Bach
+        loading.hidden = true;
+        document.getElementById("score-missing").hidden = false;
+      }
+      else if (piece) loading.textContent = "The score didn't load. Reload the page to try again.";
+      else loadSong("/AirOnG.musicxml");
     }
   }
 
   // ---- Cursor controls ----
+  // moving the cursor by hand stops playback, so the sound and the cursor can't drift apart.
+  // Inside a passage, Next at its last note goes back to its first, and Reset goes to its start.
   function cursorNext() {
-    if (!osmd.cursor.Iterator.EndReached) osmd.cursor.next();
+    player.stop();
+    if (!passages.next() && !osmd.cursor.Iterator.EndReached) osmd.cursor.next();
+    passages.moved();
   }
   function cursorPrev() {
-    osmd.cursor.previous();
+    player.stop();
+    if (!passages.previous()) osmd.cursor.previous();
+    passages.moved();
   }
   function cursorReset() {
-    osmd.cursor.reset();
+    player.stop();
+    passages.toStart();
   }
 
   document.getElementById("cursor-next").addEventListener("click", cursorNext);
   document.getElementById("cursor-prev").addEventListener("click", cursorPrev);
   document.getElementById("cursor-reset").addEventListener("click", cursorReset);
 
-  document.getElementById("zoom-in").addEventListener("click", () => {
-    osmd.zoom = Math.min(osmd.zoom + 0.1, 3);
+  function zoom(by) {
+    player.stop();
+    osmd.zoom = Math.min(Math.max(osmd.zoom + by, 0.4), 3);
     osmd.render();
+  }
+  document.getElementById("zoom-in").addEventListener("click", () => zoom(0.1));
+  document.getElementById("zoom-out").addEventListener("click", () => zoom(-0.1));
+
+  // ---- Keys: a musician's hands are on the instrument, so one key does each common job ----
+  const keys = document.getElementById("keys");
+  const KEYS = {
+    "ArrowRight": e => e.shiftKey ? (player.stop(), passages.nextBar()) : cursorNext(),
+    "ArrowLeft": e => e.shiftKey ? (player.stop(), passages.previousBar()) : cursorPrev(),
+    "Home": cursorReset,
+    " ": () => play.disabled || play.click(),
+    "[": () => passages.markStart(),
+    "]": () => passages.markEnd(),
+    "y": () => passages.rep(true),
+    "n": () => passages.rep(false),
+    "l": () => listening.toggle(),
+    "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
+    "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
+    "?": () => { keys.open = !keys.open; },
+    "c": () => coach.toggle(),
+  };
+  document.addEventListener("keydown", e => {
+    const act = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (!act || e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;   // leave Cmd+R, Ctrl+arrows and the like alone
+    if (e.target.closest("textarea, select, [contenteditable], input:not([type=range])")) return;   // typing in the Bars box
+    if (e.target.matches("input[type=range]") && /^(Arrow|Home|End|Page)/.test(e.key)) return;     // the tempo slider's own keys
+    if (e.key === " " && e.target.closest("button, a, summary")) return;           // Space presses the focused button
+    e.preventDefault();
+    act(e);
   });
-  document.getElementById("zoom-out").addEventListener("click", () => {
-    osmd.zoom = Math.max(osmd.zoom - 0.1, 0.4);
-    osmd.render();
+  // A mouse click shouldn't leave focus on a toolbar button, or the next Space would press it again instead of Play.
+  document.getElementById("controls").addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.target.closest("button, summary")) e.preventDefault();
   });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight") cursorNext();
-    if (e.key === "ArrowLeft") cursorPrev();
+  // ---- Practice timer: saves a row in Sessions on stop ----
+  const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }).then(r => r.json());
+  if (piece) post("/api/practice/piece", { piece_id: +piece });   // the saved session remembers which piece it was
+  // The server's {running, elapsed} is the truth; every timer call goes through render().
+  const timer = document.getElementById("timer"), stop = document.getElementById("stop"), clock = document.getElementById("clock");
+  const minutes = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  let current = { running: false, elapsed: 0 }, shown = 0, tick;
+  function render(state) {
+    current = state;
+    clearInterval(tick);
+    const started = state.running || state.elapsed > 0;
+    timer.textContent = state.running ? "Pause" : started ? "Resume" : "Start practice";
+    stop.hidden = !started;
+    shown = state.elapsed;
+    clock.textContent = started ? minutes(shown) : "";
+    if (state.running) tick = setInterval(() => { clock.textContent = minutes(++shown); }, 1000);
+    return state;
+  }
+  const refresh = () => fetch("/api/practice/state").then(r => r.json()).then(render);
+  const firstState = refresh().catch(() => ({}));
+  firstState.then(state => {   // a reload pauses too (pagehide): pick straight back up if this tab paused it moments ago
+    let left = 0;
+    try { left = +sessionStorage.getItem("timer-left-at"); sessionStorage.removeItem("timer-left-at"); } catch {}
+    if (!state.running && state.elapsed > 0 && Date.now() - left < 5000) post("/api/timer/start").then(render);
+  });
+  timer.addEventListener("click", async () => render(await post(current.running ? "/api/timer/pause" : "/api/timer/start")));
+  stop.addEventListener("click", async () => {
+    const state = render(await post("/api/timer/stop"));
+    clock.textContent = state.too_long ? "That session ran too long to count"
+      : state.saved_session_id ? `Saved ${state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min"}` : "";
+  });
+  // Leaving the page pauses the timer, so time away isn't counted; coming back offers Resume.
+  // Mobile browsers often skip pagehide, hence visibilitychange too.
+  function away() {
+    if (!current.running) return;
+    navigator.sendBeacon("/api/timer/pause");
+    try { sessionStorage.setItem("timer-left-at", Date.now()); } catch {}
+    render({ ...current, running: false, elapsed: shown });
+  }
+  addEventListener("pagehide", away);
+  addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
+  document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
+
+  // ---- Record a take: saves the audio in Recordings, to listen back now (and, later, to check against the score) ----
+  const record = document.getElementById("record"), take = document.getElementById("take");
+  let recorder;
+  record.addEventListener("click", async () => {
+    if (!piece) { take.textContent = "Open a piece from the library to record it"; return; }
+    if (recorder) { recorder.stop(); return; }
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch { take.textContent = "Allow the microphone to record a take"; return; }
+    const chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = e => chunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      recorder = null;
+      record.textContent = "Record a take";
+      record.classList.remove("is-recording");
+      const form = new FormData();
+      form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
+      const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
+      if (!r.ok) { take.textContent = "That take was empty. Try again."; return; }
+      const saved = await r.json();
+      take.innerHTML = `Take ${saved.id} saved <audio controls src="/api/recordings/${saved.id}"></audio>`;
+    };
+    recorder.start();
+    take.textContent = "";
+    record.textContent = "Stop recording";
+    record.classList.add("is-recording");
   });
 
+  // A sleeping free server takes up to a minute to answer: say so instead of sitting silent.
+  setTimeout(() => {
+    const loading = document.getElementById("score-loading");
+    if (!loading.hidden) loading.textContent = "Still loading. The free server can take up to a minute to wake up.";
+  }, 8000);
   loadSong(SONG_URL);
 </script>
 

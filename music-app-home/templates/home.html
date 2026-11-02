@@ -6,78 +6,63 @@
       <h1 class="visually-hidden">Home</h1>
 
       <div class="content">
-        <!-- SAMPLE DATA: the three most recently practiced pieces, newest first.
-             TODO: fill from the user's real pieces. Progress values are PLACEHOLDERS;
-             they will come from the sheet-music parsing feature. -->
         <ul class="tiles">
+          {% for p in pieces %}
+          {% set m = (seconds.get(p.id, 0) / 60)|round|int %}
           <li>
-            <!-- TODO: link to the practice page for this piece. -->
-            <a class="card press" href="#">
+            <a class="card press" href="/practice?piece={{ p.id }}">
               <div class="card-art">
-                <img src="home_imgs/sheet-fur-elise.jpg" alt="">
-                <!-- STATE-SPECIFIC: progress bars are for signed-in users only. -->
-                <span class="progress" data-progress="60" style="--progress: 60%">
+                <img src="home_imgs/{{ ["sheet-fur-elise", "sheet-moonlight-sonata", "sheet-ode-to-joy"][loop.index0 % 3] }}.jpg" alt="">
+                <span class="progress" data-progress="{{ [m, 100]|min }}" style="--progress: {{ [m, 100]|min }}%">
                   <span class="progress-fill"></span>
-                  <span class="progress-label">Progress 60%</span>
-                  <span class="progress-label progress-label--fill" aria-hidden="true">Progress 60%</span>
+                  <span class="progress-label">{{ m }} min practiced</span>
+                  <span class="progress-label progress-label--fill" aria-hidden="true">{{ m }} min practiced</span>
                 </span>
               </div>
               <div class="card-caption">
-                <h2 class="card-title">Für Elise</h2>
+                <h2 class="card-title">{{ p.title }}</h2>
               </div>
             </a>
           </li>
+          {% endfor %}
           <li>
-            <!-- TODO: link to the practice page for this piece. -->
-            <a class="card press" href="#">
-              <div class="card-art">
-                <img src="home_imgs/sheet-moonlight-sonata.jpg" alt="">
-                <span class="progress" data-progress="30" style="--progress: 30%">
-                  <span class="progress-fill"></span>
-                  <span class="progress-label">Progress 30%</span>
-                  <span class="progress-label progress-label--fill" aria-hidden="true">Progress 30%</span>
-                </span>
-              </div>
-              <div class="card-caption">
-                <h2 class="card-title">Moonlight Sonata</h2>
-              </div>
-            </a>
-          </li>
-          <li>
-            <!-- TODO: link to the practice page for this piece. -->
-            <a class="card press" href="#">
-              <div class="card-art">
-                <img src="home_imgs/sheet-ode-to-joy.jpg" alt="">
-                <span class="progress" data-progress="90" style="--progress: 90%">
-                  <span class="progress-fill"></span>
-                  <span class="progress-label">Progress 90%</span>
-                  <span class="progress-label progress-label--fill" aria-hidden="true">Progress 90%</span>
-                </span>
-              </div>
-              <div class="card-caption">
-                <h2 class="card-title">Ode to Joy</h2>
-              </div>
-            </a>
-          </li>
-          <li>
+            <!-- Two different jobs: carry on with the last piece, or add a new one. The sidebar already goes to the library. -->
             <div class="actions">
-              <!-- TODO: link to the Library page. -->
-              <a class="btn btn-solid press" href="/library">View your library</a>
-              <!-- STATE-SPECIFIC: signed in goes to the upload flow. TODO: link to the upload flow. -->
-              <a class="btn btn-ghost press" href="/library#upload">Upload new sheets</a>
+              {% if pieces %}
+              <a class="btn btn-solid press btn-stack" href="/practice?piece={{ pieces[0].id }}">
+                Continue practicing
+                <span class="btn-sub">{{ pieces[0].title }}</span>
+              </a>
+              {% endif %}
+              <!-- Upload opens the file picker straight away and sends the file to the same route as the library's form. -->
+              <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data">
+                <input class="visually-hidden" id="home-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
+                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="home-upload">Upload new sheets</label>
+              </form>
+              {% if not pieces %}
+              <a class="btn btn-ghost press" href="/practice">Try the demo piece</a>
+              {% endif %}
             </div>
+            <script>
+              document.getElementById("home-upload").addEventListener("change", e => {
+                const file = e.target.files[0], label = e.target.nextElementSibling;
+                if (!file) return;
+                if (file.size > 20 * 1024 * 1024) { label.textContent = "That file is over 20 MB"; return; }   // the server's limit
+                label.textContent = "Reading your sheet…";   // a photo can take half a minute
+                e.target.form.submit();
+              });
+            </script>
           </li>
         </ul>
 
-        <!-- STATE-SPECIFIC: stat tiles are for signed-in users only. SAMPLE DATA. -->
         <ul class="stats">
           <li class="stat">
             <p class="stat-label">Time practiced</p>
-            <p class="stat-value" data-stat="time">12h 40m</p>
+            <p class="stat-value" data-stat="time">{{ total // 3600 }}h {{ total % 3600 // 60 }}m</p>
           </li>
           <li class="stat">
             <p class="stat-label">Current streak</p>
-            <p class="stat-value" data-stat="streak">5 days</p>
+            <p class="stat-value" data-stat="streak">{{ streak }} day{{ "" if streak == 1 else "s" }}</p>
           </li>
         </ul>
       </div>

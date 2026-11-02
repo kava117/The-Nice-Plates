@@ -78,8 +78,7 @@
     card.setAttribute("aria-modal", "true");
     card.setAttribute("aria-labelledby", "tour-title");
     card.innerHTML =
-      '<div class="tour-dots" aria-hidden="true"></div>' +
-      '<p class="visually-hidden" id="tour-count"></p>' +
+      '<div class="tour-meta"><div class="tour-dots" aria-hidden="true"></div><span class="tour-count" id="tour-count"></span></div>' +
       '<h2 class="tour-title" id="tour-title"></h2>' +
       '<p class="tour-text"></p>' +
       '<div class="tour-actions">' +
@@ -106,7 +105,7 @@
     var step = steps[i], el = find(step);
     card.querySelector(".tour-title").textContent = step.title;
     card.querySelector(".tour-text").textContent = step.text;
-    card.querySelector("#tour-count").textContent = "Step " + (i + 1) + " of " + steps.length;
+    card.querySelector("#tour-count").textContent = i + 1 + " of " + steps.length;
     card.querySelectorAll(".tour-dots span").forEach(function (dot, k) { dot.classList.toggle("is-on", k === i); });
     card.querySelector(".tour-back").hidden = i === 0;
     card.querySelector(".tour-next").textContent = i === steps.length - 1 ? "Done" : "Next";

@@ -2464,10 +2464,22 @@ body.coach-open main {
   animation: tour-card-in 0.35s var(--ease-out);
 }
 
+.tour-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
 .tour-dots {
   display: flex;
   gap: 5px;
-  margin-bottom: 10px;
+}
+
+.tour-count {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .tour-dots span {

@@ -758,6 +758,11 @@ main {
   line-height: 1.45;
 }
 
+.panel.just-saved {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
 .panel + .panel {
   margin-top: 20px;
 }

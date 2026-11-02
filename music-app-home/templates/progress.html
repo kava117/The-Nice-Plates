@@ -63,13 +63,14 @@
   </section>
 
   <div class="tiles donut-row">
-    <div class="donut-card">
+    <div class="donut-card{% if practiced == 0 %} is-empty{% endif %}">
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ practiced }} pieces practiced">
         <circle class="donut-track" cx="60" cy="60" r="50" />
         <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="{{ (314 * practiced / (pieces or 1))|round|int }} 314" transform="rotate(-90 60 60)" />
         <text class="donut-value" x="60" y="68" text-anchor="middle">{{ practiced }}</text>
       </svg>
       <div class="donut-label">Pieces Practiced</div>
+      {% if practiced == 0 %}<p class="chart-empty">Counts a piece once you've saved time on it.</p>{% endif %}
     </div>
     <div class="donut-card">
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ pieces }} pieces in the library">

@@ -6,25 +6,25 @@
   var TOURS = {
     "/home": [
       { el: ".nav-list", title: "Getting around", text: "Library holds your pieces, Practice is where you play, and Progress shows your time." },
-      { el: ".tiles .card", title: "Your pieces", text: "Your most recent pieces. Click one to practise it." },
-      { el: ".upload-now", title: "Add your music", text: "Upload a PDF, a photo or a MusicXML file, and it becomes a score you can play along with." },
-      { el: "[data-tour-help]", title: "Help is here", text: "Each page has its own quick tour. Press ? whenever you're stuck." },
+      { el: ".tiles .card", title: "Your pieces", text: "Click one to practice it. The bar on top shows the minutes you've put in." },
+      { el: ".upload-now", title: "Add your music", text: "Upload a PDF, a photo of the page or a MusicXML file. It becomes a score you can play along with." },
+      { el: "[data-tour-help]", title: "Help is here", text: "Every page has its own short tour. It's here whenever you need it." },
     ],
     "/library": [
-      { el: "#upload", title: "Add a piece", text: "Pick a PDF, a photo or a MusicXML file. A photo can take half a minute to read." },
-      { el: ".library-grid .card", title: "Open a piece", text: "Click a piece to practise it." },
+      { el: "#upload", title: "Add a piece", text: "A PDF, a photo of the page or a MusicXML file. A photo can take half a minute to read." },
+      { el: ".library-grid .card", title: "Open a piece", text: "Click a piece to practice it." },
     ],
     "/practice": [
-      { el: ".passage-row", title: "Pick a passage", text: "Drag across bars on the score, or type bars like 12-16. Play then loops just those bars.",
+      { el: ".passage-row", title: "Pick a passage", text: "Work on a few bars at a time. Drag across them on the score, or type them here, and Play loops just those.",
         tryIt: "Try it: type 1-4 in Bars and press Enter." },
-      { el: "#play", around: ".tool-group", title: "Hear it", text: "Play follows the cursor. Slide the tempo down to learn it slowly." },
-      { el: "#rep", title: "Count each go", text: "Say if it went clean, or press Listen and it marks each go for you." },
-      { el: "#timer", title: "Time your practice", text: "Start when you sit down. Stop and save adds the time to Progress." },
-      { el: "#coach-toggle", title: "Ask the coach", text: "Stuck on some bars? The coach reads your practice and suggests what to try next." },
+      { el: "#play", around: ".tool-group", title: "Hear it", text: "Play follows along on the score. Slow the tempo right down while you learn it." },
+      { el: "#rep", title: "Count each go", text: "Play it through, then say if it went clean. Or press Listen and it marks each go for you." },
+      { el: "#timer", title: "Time your practice", text: "Press it when you sit down to play. Stop and save adds the time to Progress." },
+      { el: "#coach-toggle", title: "Ask the coach", text: "Stuck on some bars? The coach knows what you've practiced and suggests what to try next." },
     ],
     "/progress": [
-      { el: ".practice-panel", title: "This week", text: "Minutes practised each day, from the timer on Practice." },
-      { el: ".donut-row", title: "Your pieces", text: "How many pieces you've practised, out of everything in your library." },
+      { el: ".practice-panel", title: "This week", text: "Minutes practiced each day, from the timer on Practice." },
+      { el: ".donut-row", title: "Your pieces", text: "How many pieces you've practiced, out of everything in your library." },
     ],
     "/settings": [
       { el: "#settings-account", title: "You and your level", text: "Your account, and the playing levels you picked. Update them any time." },

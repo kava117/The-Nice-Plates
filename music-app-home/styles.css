@@ -917,9 +917,17 @@ main {
   fill: var(--ink);
 }
 
+.donut-copy {
+  min-width: 0;
+}
+
 .donut-label {
   font-family: var(--font-display);
   font-size: 1rem;
+}
+
+.donut-copy .chart-empty {
+  margin: 4px 0 0;
 }
 
 /* Responsive: stack the Practice Time chart and legend on narrow screens -- */

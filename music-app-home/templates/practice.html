@@ -268,8 +268,17 @@
   timer.addEventListener("click", async () => render(await post(current.running ? "/api/timer/pause" : "/api/timer/start")));
   stop.addEventListener("click", async () => {
     const state = render(await post("/api/timer/stop"));
-    clock.textContent = state.too_long ? "That session ran too long to count"
-      : state.saved_session_id ? `Saved ${state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min"}` : "";
+    if (state.too_long) { clock.textContent = "That session ran too long to count"; return; }
+    if (!state.saved_session_id) { clock.textContent = ""; return; }
+    const label = state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min";
+    try { sessionStorage.setItem("progress-just-saved", String(state.time_spent)); } catch {}
+    clock.replaceChildren();
+    clock.append("Saved ", label, " · ");
+    const link = document.createElement("a");
+    link.href = "/progress";
+    link.className = "clock-link";
+    link.textContent = "See Progress";
+    clock.append(link);
   });
   // Leaving the page pauses the timer, so time away isn't counted; coming back offers Resume.
   // Mobile browsers often skip pagehide, hence visibilitychange too.

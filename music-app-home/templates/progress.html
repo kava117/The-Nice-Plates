@@ -22,25 +22,32 @@
   </section>
   {% endif %}
 
-  <section class="panel practice-panel" aria-label="Practice time this week">
+  <section class="panel practice-panel{% if not saved %} is-empty{% endif %}" aria-label="Practice time this week">
     <div class="practice-chart">
       <h2 class="section-title">Practice Time</h2>
-      <div class="bars">
+      {% if not saved %}
+      <p class="chart-empty">Your week will fill in here once a session is saved.</p>
+      {% endif %}
+      <div class="bars" {% if not saved %}aria-hidden="true"{% endif %}>
         {% set top = per_day|max or 1 %}
         {% for label in ["M", "T", "W", "TH", "F", "S", "SU"] %}
         <div class="bar-group"><div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
         {% endfor %}
       </div>
     </div>
+    {% if saved %}
     <div class="chart-legend">
-      <label><input type="checkbox" checked> Time spent</label>
-      <label><input type="checkbox"> Goal</label>
+      <label><input type="checkbox" checked disabled> Time spent</label>
     </div>
+    {% endif %}
   </section>
 
-  <section class="panel">
+  <section class="panel{% if not saved %} is-empty{% endif %}">
     <h2 class="section-title">Overall Time</h2>
-    <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend">
+    {% if not saved %}
+    <p class="chart-empty">Each saved session adds a point on this line.</p>
+    {% endif %}
+    <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend" {% if not saved %}aria-hidden="true"{% endif %}>
       <polyline
         class="line"
         points="{% if totals|length < 2 %}0,150 600,150{% else %}{% for t in totals %}{{ (loop.index0 * 600 / (totals|length - 1))|round(1) }},{{ (150 - t * 140 / totals[-1])|round(1) }} {% endfor %}{% endif %}" />

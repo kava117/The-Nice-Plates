@@ -276,7 +276,7 @@
         '<svg width="12" height="15" viewBox="0 0 16 20" fill="currentColor" aria-hidden="true">' +   // the sidebar's note
         '<ellipse cx="5.5" cy="16" rx="4.5" ry="3.2" transform="rotate(-20 5.5 16)"/><rect x="9" y="1" width="1.8" height="15.5"/></svg>' +
         "New here?</p>" +
-        '<p class="tour-offer-text">A quick look around this page takes under a minute.</p>' +
+        '<p class="tour-offer-text">A look around this page, in ' + tour.filter(shown).length + " quick steps.</p>" +
         '<div class="tour-actions">' +
         '<button type="button" class="link-button tour-later">Not now</button>' +
         '<button type="button" class="btn btn-solid press tour-go">Show me</button>' +

@@ -2376,3 +2376,160 @@ body.coach-open main {
     animation: none;
   }
 }
+
+/* 26. Page tour (tour.js) ------------------------------------------------ */
+
+/* The ? in the top bar: the same square as the theme switch. */
+.tour-help {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 1rem/1 var(--font-body);
+  cursor: pointer;
+}
+
+.tour-help:hover {
+  background: var(--bg);
+}
+
+.tour-help[hidden],
+.tour [hidden] {
+  display: none;
+}
+
+/* The page dims; one box stays lit and glides from step to step. Clicks outside do nothing. */
+.tour {
+  --tour-shade: rgba(28, 22, 12, 0.55);
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  animation: tour-fade 0.25s ease-out;
+}
+
+:root[data-theme="dark"] .tour {
+  --tour-shade: rgba(0, 0, 0, 0.62);
+}
+
+.tour.is-out {
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+}
+
+.tour-hole {
+  position: fixed;
+  border-radius: var(--radius);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 0 100vmax var(--tour-shade);
+  pointer-events: none;
+  transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out), width 0.45s var(--ease-out), height 0.45s var(--ease-out);
+}
+
+.tour.is-first .tour-hole,
+.tour.is-following .tour-hole,
+.tour.is-following .tour-card {
+  transition: none;
+}
+
+.tour-card {
+  position: fixed;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
+  color: var(--ink);
+  transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out);
+}
+
+.tour-card.is-in {
+  animation: tour-card-in 0.35s var(--ease-out);
+}
+
+.tour-dots {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.tour-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: width 0.3s var(--ease-out), background-color 0.3s;
+}
+
+.tour-dots span.is-on {
+  width: 16px;
+  background: var(--accent);
+}
+
+.tour-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 400;
+}
+
+.tour-text {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tour-actions .link-button {
+  margin-right: auto;
+}
+
+.tour-actions .btn {
+  padding: 6px 14px;
+}
+
+@keyframes tour-fade {
+  from { opacity: 0; }
+}
+
+@keyframes tour-card-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* A phone: the card sits along the bottom, under the thumb. */
+@media (max-width: 600px) {
+  .tour-card {
+    top: auto !important;
+    right: 16px;
+    bottom: 16px;
+    left: 16px !important;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour,
+  .tour-card.is-in {
+    animation: none;
+  }
+
+  .tour-hole,
+  .tour-card,
+  .tour-dots span,
+  .tour.is-out {
+    transition: none;
+  }
+}

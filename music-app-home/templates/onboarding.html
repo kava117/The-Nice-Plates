@@ -1,0 +1,94 @@
+{# Onboarding: new and existing users rate themselves once in each category.
+   Each "field" is a Users column and must match PROFICIENCY_FIELDS in app.py.
+   Each level's position in "levels" is the score saved for it, from 1 to 4, so
+   wording can change freely but reordering changes what the scores mean. #}
+{% set title = "Welcome" %}
+{% set auth = "signed-in" %}
+{% set focused = true %}
+{% set questions = [
+  {
+    "field": "rhythm_level",
+    "title": "Rhythm",
+    "hint": "Time signatures, note complexity",
+    "levels": [
+      ("Steady basics", "Quarter and half notes in time signatures like 4/4 and 3/4."),
+      ("Mixed note values", "Eighth notes, dotted rhythms and rests in familiar time signatures."),
+      ("Syncopation", "Off-beat rhythms, ties across the beat and compound time like 6/8."),
+      ("Complex rhythms", "Tuplets, unusual meters and time signature changes."),
+    ],
+  },
+  {
+    "field": "intonation_level",
+    "title": "Intonation",
+    "hint": "Pitch accuracy and familiarity with keys",
+    "levels": [
+      ("Finding the notes", "I'm still learning to find the right pitches, mostly in C, G or F."),
+      ("Familiar keys", "I'm mostly accurate in keys with up to two sharps or flats."),
+      ("Most keys", "I'm accurate in keys with up to four sharps or flats, including accidentals."),
+      ("Any key", "I'm comfortable in any key, even when the music changes key."),
+    ],
+  },
+  {
+    "field": "dynamics_level",
+    "title": "Dynamics",
+    "hint": "Accents, sweet vs strong, and loud vs soft",
+    "levels": [
+      ("One volume", "I mostly play at one comfortable volume."),
+      ("Loud and soft", "I can follow basic markings like piano and forte."),
+      ("Shaping phrases", "I can control accents, crescendos and decrescendos."),
+      ("Full expression", "I can choose between sweet and strong tones to shape the music."),
+    ],
+  },
+  {
+    "field": "range_level",
+    "title": "Note range",
+    "hint": "How far from the staff you're comfortable playing",
+    "levels": [
+      ("Within the staff", "I'm comfortable with notes on the staff."),
+      ("Just outside", "I'm comfortable a few notes above or below the staff."),
+      ("Far outside", "I'm comfortable far above or below the staff."),
+      ("Full range", "I'm comfortable across my instrument's full range."),
+    ],
+  },
+] %}
+{% include "header.html" %}
+      <div class="content">
+        <h1 class="welcome-title">Tell us about your playing</h1>
+        <p class="welcome-text onboarding-intro">
+          Pick the option that fits your musical experience level best. There are no wrong answers,
+          and we'll use them to tailor your practice advice.
+        </p>
+
+        {% if request.method == "POST" %}
+        {% set missing = questions | rejectattr("field", "in", selected) | map(attribute="title") %}
+        <p class="form-error" role="alert">Please choose an option for: {{ missing | join(", ") }}.</p>
+        {% endif %}
+
+        <form action="{{ url_for('onboarding') }}" method="post">
+          {% for question in questions %}
+          <section class="panel">
+            <fieldset class="level-group" aria-describedby="{{ question.field }}-hint">
+              <legend class="section-title">{{ question.title }}</legend>
+              <p class="level-group-hint" id="{{ question.field }}-hint">{{ question.hint }}</p>
+              <div class="level-options">
+                {% for name, description in question.levels %}
+                <label class="level-option">
+                  <input class="visually-hidden" type="radio" name="{{ question.field }}" value="{{ loop.index }}" required{% if selected.get(question.field) == loop.index %} checked{% endif %}>
+                  <span class="level-card press">
+                    <span class="level-name">{{ name }}</span>
+                    <span class="level-description">{{ description }}</span>
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+            </fieldset>
+          </section>
+          {% endfor %}
+
+          <div class="settings-save">
+            <button type="submit" class="btn btn-solid press">Save and continue</button>
+          </div>
+        </form>
+      </div>
+
+{% include "footer.html" %}

@@ -2,6 +2,7 @@ from flask import Flask, jsonify, redirect, url_for, render_template, request, s
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from database import database
 from datetime import date
+from functools import wraps
 import os, time
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
@@ -60,6 +61,15 @@ def unauthorized():
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
 
+# Sends users to the onboarding page until they have completed it.
+def onboarding_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if database.getUserProficiency(user_id())["onboarded_at"] is None:
+            return redirect(url_for("onboarding"))
+        return view(*args, **kwargs)
+    return wrapped
+
 # Makes {{ year }} available to every template (used by footer.html).
 @app.context_processor
 def inject_year():
@@ -114,6 +124,19 @@ def read_id(data, key):
 def remember_piece(piece_id):
     if session.get("timer_started_at") is not None or session.get("timer_elapsed"):
         session["session_piece_ids"] = sorted(set(session.get("session_piece_ids", []) + [piece_id]))
+
+
+# Users columns set by onboarding. Must match the question fields in onboarding.html.
+PROFICIENCY_FIELDS = ("rhythm_level", "intonation_level", "dynamics_level", "range_level")
+
+# returns the valid onboarding answers from a submitted form, keyed by Users column
+def read_levels(form):
+    levels = {}
+    for field in PROFICIENCY_FIELDS:
+        level = read_id(form, field)
+        if level is not None and 1 <= level <= 4:
+            levels[field] = level
+    return levels
 
 
 
@@ -196,23 +219,41 @@ def api_timer_stop():
 def index():
     return render_template("index.html")
 
+@app.route("/onboarding", methods=["GET", "POST"])
+def onboarding():
+    if request.method == "POST":
+        levels = read_levels(request.form)
+        if len(levels) == len(PROFICIENCY_FIELDS):
+            database.setUserProficiency(user_id(), **levels)
+            return redirect(url_for("home"))
+        return render_template("onboarding.html", selected=levels), 400
+
+    if database.getUserProficiency(user_id())["onboarded_at"] is not None:
+        return redirect(url_for("home"))
+    return render_template("onboarding.html", selected={})
+
 @app.route("/home")
+@onboarding_required
 def home():
     return render_template("home.html")
 
 @app.route("/library")
+@onboarding_required
 def library():
     return render_template("library.html", pieces=database.getPieces(user_id()))
 
 @app.route("/progress")
+@onboarding_required
 def progress():
     return render_template("progress.html")
 
 @app.route("/settings")
+@onboarding_required
 def settings():
     return render_template("settings.html")
 
 @app.route("/practice")
+@onboarding_required
 def practice():
     return render_template("practice.html")
 

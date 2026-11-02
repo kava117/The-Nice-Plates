@@ -3,7 +3,8 @@
    Variables a page sets before including this:
      title  - shown after "The Nice Plates | "
      active - which nav link is the current page ("home", "library", ...)
-     auth   - "signed-in" or "guest"; styles.css uses it for tile height #}
+     auth   - "signed-in" or "guest"; styles.css uses it for tile height
+     focused - optional; true hides the sidebar for single-task pages like onboarding #}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -23,7 +24,7 @@
 <body data-auth="{{ auth | default('signed-in') }}">
   <a class="skip-link press" href="#main">Skip to content</a>
 
-  <div class="frame">
+  <div class="frame{% if focused %} frame--focused{% endif %}">
     <header class="topbar">
       <button type="button" class="theme-toggle press" data-theme-toggle aria-label="Switch to dark theme">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -43,6 +44,6 @@
         {% endif %} -->
     </header>
 
-    {% include "sidebar.html" %}
+    {% if not focused %}{% include "sidebar.html" %}{% endif %}
 
     <main id="main">

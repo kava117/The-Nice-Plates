@@ -70,7 +70,7 @@ Every upload route should accept only known file types, cap the file size, and c
 
 ## 3. Gunicorn threads
 
-One slow upload shouldn't freeze the site for everyone else. In the test, a 35 s homr run made another visitor's `/home` take 34.6 s, because Render runs a single sync worker.
+One slow upload shouldn't freeze the site for everyone else. In the test, a 35 s homr run made another visitor's `/dashboard` take 34.6 s, because Render runs a single sync worker.
 
 **Change**
 
@@ -80,7 +80,7 @@ One slow upload shouldn't freeze the site for everyone else. In the test, a 35 s
 
 **Done when**
 
-- [ ] While a photo upload is converting, `/home` and `/library` still load in under 1 s.
+- [ ] While a photo upload is converting, `/dashboard` and `/library` still load in under 1 s.
 
 Known limit: two photo uploads at the same time will still run two homr jobs in the same process, which can run out of memory. The real fix is the background queue, which is out of scope here. Until then, memory is protected by the allow-list in change 2 and by keeping `PHOTO_UPLOADS` off on Render.
 
@@ -105,7 +105,7 @@ The top bar should show the right action for whoever's viewing, and "Log out" sh
 
 ## 5. Trustworthy practice timer
 
-The server's timer state should be the one source of truth, and every saved session should reflect real practice. Home and Progress now show real numbers, so bad timer data shows up right in the app.
+The server's timer state should be the one source of truth, and every saved session should reflect real practice. Dashboard and Progress now show real numbers, so bad timer data shows up right in the app.
 
 | Problem today | Fix | Where |
 | --- | --- | --- |
@@ -133,7 +133,7 @@ The server's timer state should be the one source of truth, and every saved sess
 - [ ] Start, go to Library, wait 1 min, come back: the minute away isn't counted.
 - [ ] A timer started and left for 5 h saves according to the team's cap decision.
 - [ ] Stopping the same timer from two tabs leaves exactly one `Sessions` row.
-- [ ] After these tests, the Home and Progress totals match the `Sessions` table.
+- [ ] After these tests, the Dashboard and Progress totals match the `Sessions` table.
 
 ## Before merging
 

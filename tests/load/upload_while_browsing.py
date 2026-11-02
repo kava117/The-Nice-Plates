@@ -5,7 +5,7 @@ Run from the repo root (Python 3.11 env):
     python tests/load/upload_while_browsing.py
 
 As a gunicorn app, every conversion sleeps 8 s first (standing in for a 35 s homr run).
-As a script, it starts two uploads, times /home and /library meanwhile, then prints the upload times.
+As a script, it starts two uploads, times /dashboard and /library meanwhile, then prints the upload times.
 Expect pages well under 1 s and upload times of about 8 s and 16 s.
 """
 import sys, threading, time
@@ -35,7 +35,7 @@ else:
     for u in uploads:
         u.start()
     time.sleep(1)
-    for path in ("/home", "/library", "/home"):
+    for path in ("/dashboard", "/library", "/dashboard"):
         t = time.time()
         status = requests.get(BASE + path).status_code
         print(path, status, f"{time.time() - t:.3f} s")

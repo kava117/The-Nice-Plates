@@ -322,9 +322,13 @@ def streak(sessions):  # days in a row with a saved session, counting back from 
     return n
 
 @app.route("/home")
-def home():
+def old_home():   # the dashboard used to live here; keep old bookmarks working
+    return redirect(url_for("dashboard"))
+
+@app.route("/dashboard")
+def dashboard():
     sessions = database.getSessions(user_id())
-    return render_template("home.html", pieces=database.getPieces(user_id())[:3], seconds=database.getPieceSeconds(user_id()),
+    return render_template("dashboard.html", pieces=database.getPieces(user_id())[:3], seconds=database.getPieceSeconds(user_id()),
                            total=sum(s["time_spent"] for s in sessions), streak=streak(sessions))
 
 @app.route("/library")
@@ -364,16 +368,16 @@ def give_starter_piece(uid):
 @app.route("/login/google")
 def login_google():
     try:
-        return google.authorize_redirect(url_for("auth_google", _external=True)) if google.client_id else redirect(url_for("home"))
+        return google.authorize_redirect(url_for("auth_google", _external=True)) if google.client_id else redirect(url_for("dashboard"))
     except Exception:   # no Google keys, or Google unreachable: enter as the shared demo user
-        return redirect(url_for("home"))
+        return redirect(url_for("dashboard"))
 
 @app.route("/auth/google")
 def auth_google():
     try:
         info = google.authorize_access_token()["userinfo"]
     except Exception:   # cancelled, expired or misconfigured sign-in: enter as the shared demo user
-        return redirect(url_for("home"))
+        return redirect(url_for("dashboard"))
     row = database.getOrCreateGoogleUser(
         sub=info["sub"],
         name=info.get("name") or info["email"].split("@")[0],  # Users.name is NOT NULL
@@ -383,7 +387,7 @@ def auth_google():
     give_starter_piece(row["id"])
     clear_practice_state()
     login_user(User(row))
-    return redirect(url_for("home"))
+    return redirect(url_for("dashboard"))
 
 @app.route("/logout")
 def logout():

@@ -4,7 +4,7 @@ Run from the repo root (Python 3.11 env with ml/requirements.txt, plus playwrigh
     SECRET_KEY=x gunicorn app:app --workers 1 --threads 4 --bind 127.0.0.1:8124
     python tests/browser/upload.py
 Uses a Bach chorale from music21's corpus (four voices, a pickup bar), uploaded once from the
-Library and once from Home.
+Library and once from the Dashboard.
 """
 import re, sys, tempfile
 from pathlib import Path
@@ -45,14 +45,14 @@ with sync_playwright() as p:
     assert [(s["start"], s["end"], s["reps"]) for s in saved] == [(2, 3, 1)], saved
     page.locator("#stop").click(); page.wait_for_timeout(300)
 
-    # it's in the library, and Home offers to continue it
+    # it's in the library, and the Dashboard offers to continue it
     page.goto(BASE + "/library")
     assert page.locator(".card-title", has_text="Chorale 66.6").count() == 1
-    page.goto(BASE + "/home")
+    page.goto(BASE + "/dashboard")
     assert "Chorale 66.6" in page.locator(".btn-stack").inner_text()
 
-    # from Home: one click opens the file picker and lands on the new piece
-    page.set_input_files("#home-upload", str(chorale))
+    # from the Dashboard: one click opens the file picker and lands on the new piece
+    page.set_input_files("#dashboard-upload", str(chorale))
     page.wait_for_url(re.compile(r"/practice\?piece=\d+"), timeout=60000)
     page.wait_for_function(ready)
     assert page.url.split("piece=")[1] != piece

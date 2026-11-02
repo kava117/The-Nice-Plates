@@ -1,9 +1,9 @@
-{# Signed-in home page. #}
-{% set title = "Home" %}
-{% set active = "home" %}
+{# Signed-in dashboard page. #}
+{% set title = "Dashboard" %}
+{% set active = "dashboard" %}
 {% set auth = "signed-in" %}
 {% include "header.html" %}
-      <h1 class="visually-hidden">Home</h1>
+      <h1 class="visually-hidden">Dashboard</h1>
 
       <div class="content">
         <ul class="tiles">
@@ -12,7 +12,7 @@
           <li>
             <a class="card press" href="/practice?piece={{ p.id }}">
               <div class="card-art">
-                <img src="home_imgs/{{ ["sheet-fur-elise", "sheet-moonlight-sonata", "sheet-ode-to-joy"][loop.index0 % 3] }}.jpg" alt="">
+                <img src="dashboard_imgs/{{ ["sheet-fur-elise", "sheet-moonlight-sonata", "sheet-ode-to-joy"][loop.index0 % 3] }}.jpg" alt="">
                 <span class="progress" data-progress="{{ [m, 100]|min }}" style="--progress: {{ [m, 100]|min }}%">
                   <span class="progress-fill"></span>
                   <span class="progress-label">{{ m }} min practiced</span>
@@ -36,15 +36,15 @@
               {% endif %}
               <!-- Upload opens the file picker straight away and sends the file to the same route as the library's form. -->
               <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data">
-                <input class="visually-hidden" id="home-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
-                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="home-upload">Upload new sheets</label>
+                <input class="visually-hidden" id="dashboard-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
+                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="dashboard-upload">Upload new sheets</label>
               </form>
               {% if not pieces %}
               <a class="btn btn-ghost press" href="/practice">Try the demo piece</a>
               {% endif %}
             </div>
             <script>
-              document.getElementById("home-upload").addEventListener("change", e => {
+              document.getElementById("dashboard-upload").addEventListener("change", e => {
                 const file = e.target.files[0], label = e.target.nextElementSibling;
                 if (!file) return;
                 if (file.size > 20 * 1024 * 1024) { label.textContent = "That file is over 20 MB"; return; }   // the server's limit

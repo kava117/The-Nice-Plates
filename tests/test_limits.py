@@ -23,7 +23,7 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 
 # ---------------------------------------------------------------- boot & pages
-PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice"]
+PAGES = ["/", "/index", "/dashboard", "/library", "/progress", "/settings", "/practice"]
 
 @pytest.mark.parametrize("path", PAGES)
 def test_page_loads_as_guest(guest, path):
@@ -42,7 +42,7 @@ def test_demo_piece_seeded_once_across_restarts():
 
 def test_top_bar_log_out_link_signs_you_out(user):
     client, _ = user
-    html = client.get("/home").get_data(as_text=True)
+    html = client.get("/dashboard").get_data(as_text=True)
     href = html.split('class="btn btn-ghost press" href="', 1)[1].split('"', 1)[0]   # the top-bar Log out link
     client.get(href, follow_redirects=True)
     assert "Sign in with Google" in client.get("/settings").get_data(as_text=True), f"Log out goes to {href} and you stay signed in"
@@ -281,13 +281,13 @@ def test_empty_recording_is_rejected(user):
     assert r.status_code == 400, "an empty take is saved as a recording"
 
 
-# ---------------------------------------------------------------- home & progress numbers
-def test_home_and_progress_show_saved_practice(user):
+# ---------------------------------------------------------------- dashboard & progress numbers
+def test_dashboard_and_progress_show_saved_practice(user):
     client, uid = user
     pid = db.addPiece(uid, "Counted", xml=AIR)
     db.addSession(uid, 3 * 3600 + 25 * 60, piece_ids=[pid])
-    home = client.get("/home").get_data(as_text=True)
-    assert "3h 25m" in home and "205 min practiced" in home and "1 day<" in home
+    dashboard = client.get("/dashboard").get_data(as_text=True)
+    assert "3h 25m" in dashboard and "205 min practiced" in dashboard and "1 day<" in dashboard
     prog = client.get("/progress").get_data(as_text=True)
     assert 'height: 100%' in prog
 
@@ -309,13 +309,13 @@ def test_progress_offers_to_save_time_left_on_the_timer(user):
 
 
 # ---------------------------------------------------------------- sign-in
-def test_google_login_without_keys_goes_home(guest):
+def test_google_login_without_keys_goes_to_dashboard(guest):
     r = guest.get("/login/google")
-    assert r.status_code == 302 and r.location.endswith("/home")
+    assert r.status_code == 302 and r.location.endswith("/dashboard")
 
-def test_google_callback_garbage_goes_home(guest):
+def test_google_callback_garbage_goes_to_dashboard(guest):
     r = guest.get("/auth/google?code=junk&state=junk")
-    assert r.status_code == 302 and r.location.endswith("/home")
+    assert r.status_code == 302 and r.location.endswith("/dashboard")
 
 @known("Crashes: duplicate email on sign-in")
 def test_google_sign_in_with_unverified_email_that_already_exists(guest):

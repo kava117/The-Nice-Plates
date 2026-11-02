@@ -123,7 +123,7 @@ def add_piece():
 @api.get("/pieces/<int:piece_id>/musicxml")  # what the practice page renders
 def piece_xml(piece_id):
     database.getPieceForUser(user_id(), piece_id) or abort(404)
-    database.touchPiece(piece_id)  # the home page shows the three most recently opened
+    database.touchPiece(piece_id)  # the dashboard shows the three most recently opened
     return send_file(BytesIO(database.getXML(piece_id)["xml"]), mimetype="application/xml")
 
 

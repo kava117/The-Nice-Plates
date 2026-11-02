@@ -2,7 +2,7 @@
 
 Flask web app for practicing music. You upload your sheet music, it gets turned into a score you can practice in the browser, and eventually it'll keep track of how much time you put in.
 
-Right now three things work(ish): signing in with Google, uploading a piece to your library, and opening it on the practice page. Home, Progress, and Settings are still mock-ups with fake data for now. There's a full rundown below.
+Right now three things work(ish): signing in with Google, uploading a piece to your library, and opening it on the practice page. Dashboard, Progress, and Settings are still mock-ups with fake data for now. There's a full rundown below.
 
 ## What works and what doesn't 
 
@@ -18,7 +18,7 @@ Right now three things work(ish): signing in with Google, uploading a piece to y
 | Practice timer + session logging | Start / Pause / Stop and save on the practice page writes a `Sessions` row. Leaving the page pauses it; each timer saves once, and runs over 4 h aren't saved |
 | Sheet → MIDI download (`POST /api/midi`) | API only, no UI |
 | Recording transcription (`POST /api/transcribe`) | API only, needs an OpenAI key, no UI |
-| Home tiles + stats | Your three most recently opened pieces, minutes on each, total time, day streak |
+| Dashboard tiles + stats | Your three most recently opened pieces, minutes on each, total time, day streak |
 | Progress charts | This week's minutes per day, cumulative time, pieces practiced vs in the library |
 | Settings | Shows your account and signs you out; the rest is mock-up |
 | Library density toggle | Buttons show up but don't do anything |
@@ -117,7 +117,7 @@ You don't need any secrets to run it locally. Each one just turns on a feature. 
 | Variable | What it's for | If you leave it out |
 |---|---|---|
 | `SECRET_KEY` | Signs the session cookie | Uses `"dev-only"` locally. On Render (where `RENDER` is set) the app refuses to start without it |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Demo mode, sign-in just drops you on `/home` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Demo mode, sign-in just drops you on `/dashboard` |
 | `OPENAI_API_KEY` | `/api/transcribe` | That route won't work |
 | `PORT` | Port on Render | Runs on 8001 locally |
 

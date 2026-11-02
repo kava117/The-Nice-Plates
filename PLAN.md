@@ -9,7 +9,7 @@ Checking the spec against the code turned up five things that would go wrong if 
 | # | Spec says | Problem | Plan does |
 |---|---|---|---|
 | A | Change 2a: photos allowed "only when `PHOTO_UPLOADS` is on" | That would turn off the Claude photo path on Render. On Render `PHOTO_UPLOADS=off` and photos go to Claude when `ANTHROPIC_API_KEY` is set (`ml/api.py:73`). | Photos are allowed when homr can run (`PHOTO_UPLOADS` not `off`) **or** Claude can (`off` + key). `/api/midi` has no Claude path, so it rejects photos when `off`. |
-| B | Change 4: guest "Sign in with Google" goes to `/auth/google` | `/auth/google` is the OAuth *callback*. Visiting it directly fails and drops you on `/home`. | Link to `/login/google`, as `settings.html:27` already does. |
+| B | Change 4: guest "Sign in with Google" goes to `/auth/google` | `/auth/google` is the OAuth *callback*. Visiting it directly fails and drops you on `/dashboard`. | Link to `/login/google`, as `settings.html:27` already does. |
 | C | Change 1: `generateValue: true` in `render.yaml` | Render reads `render.yaml` env vars only for Blueprint-created services. The README says vars are set in the dashboard. | Add it to `render.yaml` anyway. Also add a step: **set `SECRET_KEY` in the Render dashboard by hand** if the service wasn't made as a Blueprint. The startup check catches it either way. |
 | D | Change 1: update `.env.example` | There is no root `.env.example`, only `ml/.env.example` (OpenAI key). `app.py` loads `.env` from the project root. | Create a root `.env.example` listing `SECRET_KEY`, the Google keys, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PHOTO_UPLOADS`. |
 | E | Change 5: "button says Pause" and "offer Resume" | Today there is one button that toggles Start practice / Stop and save. There is no Pause in the UI. | Add a Pause/Resume button next to Stop and save (see 5a). |
@@ -113,7 +113,7 @@ def upload_problem(filename, claude_ok):
 3. Thread safety: every DB call opens its own connection, Flask's session is per request, and homr runs as a subprocess. No shared mutable state was found.
 4. README "Running it on Render": new start command.
 
-**Test:** re-run the load script's "upload while browsing" scenario with the new command. `/home` should load in under 1 s while homr runs. The script is `scratchpad/tests/loadtest.py`; copy it to `tests/load/`.
+**Test:** re-run the load script's "upload while browsing" scenario with the new command. `/dashboard` should load in under 1 s while homr runs. The script is `scratchpad/tests/loadtest.py`; copy it to `tests/load/`.
 
 ---
 
@@ -136,7 +136,7 @@ def upload_problem(filename, claude_ok):
 
 **Tests**
 - Signed in: the top bar links to `/logout`, and following it shows "Sign in with Google" on `/settings`.
-- Guest: no "Log out" anywhere in `/home`.
+- Guest: no "Log out" anywhere in `/dashboard`.
 
 ---
 
@@ -186,7 +186,7 @@ The beacon's pause only sticks if the browser stores the `Set-Cookie` from the b
 - Start, pagehide, wait 60 s (fake clock), come back: Resume shows, and the saved time excludes the 60 s.
 - Start, 5 h, stop: follows `OVER_CAP`.
 - Start, copy the cookie, stop, restore the cookie, stop → exactly one `Sessions` row, and both responses carry the same id.
-- Home and Progress totals equal `SUM(time_spent)` from `Sessions` afterwards.
+- Dashboard and Progress totals equal `SUM(time_spent)` from `Sessions` afterwards.
 - Migration runs on an existing DB from `main` without losing rows.
 
 ---
@@ -197,7 +197,7 @@ The beacon's pause only sticks if the browser stores the `Set-Cookie` from the b
 - [ ] Deploy to Render after changes 1–3:
   - forged cookie rejected;
   - `.gif` rejected;
-  - `/home` stays fast during a photo upload.
+  - `/dashboard` stays fast during a photo upload.
 - [ ] README: Config (`SECRET_KEY` required on Render), Render start command, remove fixed items from the status table.
 - [ ] Update `ISSUES.md`: tick off what's fixed.
 

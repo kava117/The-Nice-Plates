@@ -144,7 +144,7 @@ def test_log_out_in_the_top_bar_signs_you_out(user):
 
 
 def test_guest_never_sees_log_out(guest):
-    for path in ("/home", "/library", "/settings", "/practice"):
+    for path in ("/dashboard", "/library", "/settings", "/practice"):
         page = guest.get(path).get_data(as_text=True)
         assert ">Log out<" not in page and 'href="/logout"' not in page and 'href="/login/google"' in page
 
@@ -218,7 +218,7 @@ def test_a_new_timer_after_stopping_is_a_new_session(user):
     assert len(db.getSessions(uid)) == 2
 
 
-def test_home_and_progress_totals_match_sessions(user):
+def test_dashboard_and_progress_totals_match_sessions(user):
     client, uid = user
     for seconds in (120, 300):
         client.post("/api/timer/start")
@@ -233,7 +233,7 @@ def test_home_and_progress_totals_match_sessions(user):
         totals.append(kw.get("total", (kw.get("totals") or [None])[-1]))
         return real(name, **kw)
     with mock.patch.object(appmod, "render_template", spy):
-        client.get("/home"); client.get("/progress")
+        client.get("/dashboard"); client.get("/progress")
     assert totals == [420, 420]
 
 

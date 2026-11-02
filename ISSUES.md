@@ -26,7 +26,7 @@ Results of a full test pass on `main` at `a98b67f` (2026-10-21). It covered:
 ### 2. One photo upload freezes the whole site
 **Short-term half fixed** on `bug-fixes` (40b0515): 4 threads, and one conversion at a time. The background queue is still to do.
 
-Render runs a single sync gunicorn worker. Reading one page with homr took 35 s, and during that time another visitor's `/home` took 34.6 s. The Claude path blocks the same way. Any request over 300 s is killed and the user gets an error page.
+Render runs a single sync gunicorn worker. Reading one page with homr took 35 s, and during that time another visitor's `/dashboard` took 34.6 s. The Claude path blocks the same way. Any request over 300 s is killed and the user gets an error page.
 
 **Fix**
 - Short term: add threads to the start command, e.g. `gunicorn app:app --workers 1 --threads 4 --timeout 300`, so page views keep being served during an upload. SQLite handled 40 simultaneous writes without errors.
@@ -131,7 +131,7 @@ Also add an app-wide `@app.errorhandler(500)` that shows a friendly page instead
 - **Uploads:** MusicXML upload, conversion to MIDI, and the practice page drawing it.
 - **Practice page:** cursor and zoom work.
 - **Timer and recording:** the timer saves a session, and recording saves a take that plays back in Chrome.
-- **Home and Progress:** both show real numbers.
+- **Dashboard and Progress:** both show real numbers.
 - **Sign-in fallback:** Google sign-in falls back to the demo user without keys or on a bad callback.
 - **Look and layout:** the library density toggle, dark mode, and the phone layout all work.
 

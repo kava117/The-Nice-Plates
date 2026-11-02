@@ -7,7 +7,7 @@ The PR is titled "Free Render box: photos via Claude, sign-in that never breaks 
 
 ## Pages now use real data
 
-- **Home** (`/home`): shows the three most recently opened pieces, seconds practiced per piece, total practice time, and a day streak (days in a row with a saved session, counted in UTC).
+- **Dashboard** (`/dashboard`): shows the three most recently opened pieces, seconds practiced per piece, total practice time, and a day streak (days in a row with a saved session, counted in UTC).
 - **Progress** (`/progress`): shows minutes for each day of the current week (Monday to Sunday), a running total over all sessions, and how many pieces have been practiced out of how many are in the library.
 - **Practice**: the timer saves a Session when it stops. The new Record button saves audio to the `Recordings` table.
 - Opening a piece's MusicXML marks the piece as viewed. The library is now sorted by most recently viewed.

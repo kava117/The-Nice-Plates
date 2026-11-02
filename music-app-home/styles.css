@@ -1365,6 +1365,17 @@ body[data-auth="guest"] .welcome {
   font-weight: 600;
 }
 
+.clock-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.clock-link:hover {
+  color: var(--ink);
+}
+
 .take {
   display: inline-flex;
   align-items: center;

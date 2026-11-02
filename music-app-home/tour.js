@@ -78,14 +78,20 @@
     card.setAttribute("aria-modal", "true");
     card.setAttribute("aria-labelledby", "tour-title");
     card.innerHTML =
-      '<div class="tour-meta"><div class="tour-dots" aria-hidden="true"></div><span class="tour-count" id="tour-count"></span></div>' +
+      '<div class="tour-meta"><div class="tour-dots"></div><span class="tour-count" id="tour-count"></span></div>' +
       '<div class="tour-body"><h2 class="tour-title" id="tour-title"></h2><p class="tour-text"></p></div>' +
       '<div class="tour-actions">' +
       '<button type="button" class="link-button tour-skip">Skip</button>' +
       '<button type="button" class="btn btn-ghost press tour-back">Back</button>' +
       '<button type="button" class="btn btn-solid press tour-next">Next</button>' +
       "</div>";
-    steps.forEach(function () { card.querySelector(".tour-dots").appendChild(make("span")); });
+    steps.forEach(function (step, k) {   // a dot jumps straight to its step
+      var dot = make("button", "tour-dot");
+      dot.type = "button";
+      dot.setAttribute("aria-label", "Step " + (k + 1) + ": " + step.title);
+      dot.onclick = function () { go(k); };
+      card.querySelector(".tour-dots").appendChild(dot);
+    });
     shade.append(hole, card);
     document.body.appendChild(shade);
 
@@ -100,14 +106,17 @@
   }
 
   function go(i, first) {
-    if (i < 0 || i >= steps.length) return;
+    if (i < 0 || i >= steps.length || (i === at && !first)) return;
     var way = first ? "" : i > at ? "is-next" : "is-back";
     at = i;
     var step = steps[i], el = find(step), body = card.querySelector(".tour-body");
     card.querySelector(".tour-title").textContent = step.title;
     card.querySelector(".tour-text").textContent = step.text;
     card.querySelector("#tour-count").textContent = i + 1 + " of " + steps.length;
-    card.querySelectorAll(".tour-dots span").forEach(function (dot, k) { dot.classList.toggle("is-on", k === i); });
+    card.querySelectorAll(".tour-dot").forEach(function (dot, k) {
+      dot.classList.toggle("is-on", k === i);
+      dot.toggleAttribute("aria-current", k === i);
+    });
     card.querySelector(".tour-back").hidden = i === 0;
     card.querySelector(".tour-next").textContent = i === steps.length - 1 ? "Done" : "Next";
 

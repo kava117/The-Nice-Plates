@@ -2544,17 +2544,32 @@ body.coach-open main {
   font-variant-numeric: tabular-nums;
 }
 
-.tour-dots span {
+.tour-dot {
+  position: relative;
   width: 6px;
   height: 6px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
   background: var(--line);
+  cursor: pointer;
   transition: width 0.3s var(--ease-out), background-color 0.3s;
 }
 
-.tour-dots span.is-on {
+.tour-dot::after {   /* a bigger target than the dot itself */
+  content: "";
+  position: absolute;
+  inset: -7px -3px;
+}
+
+.tour-dot:hover {
+  background: var(--edge-neutral);
+}
+
+.tour-dot.is-on {
   width: 16px;
   background: var(--accent);
+  cursor: default;
 }
 
 .tour-title,
@@ -2644,7 +2659,7 @@ body.coach-open main {
 
   .tour-hole,
   .tour-card,
-  .tour-dots span,
+  .tour-dot,
   .tour.is-out {
     transition: none;
   }

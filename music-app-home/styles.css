@@ -1034,6 +1034,10 @@ main {
   margin-top: 14px;
 }
 
+.playing-level {
+  max-width: none;
+}
+
 .field label {
   font-size: 0.8125rem;
   font-weight: 600;
@@ -1871,6 +1875,133 @@ kbd {
 
   .listen.is-on::before {
     transition: none;
+  }
+}
+
+/* ==========================================================================
+   Additions for onboarding.html
+   ========================================================================== */
+
+/* 21. Focused page layout -------------------------------------------------- */
+
+/* No sidebar, so the main content takes the full width and sits centered. */
+.frame--focused {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.frame--focused .content,
+.frame--focused .site-footer {
+  margin-inline: auto;
+}
+
+/* 22. Onboarding form ------------------------------------------------------ */
+
+.onboarding-intro {
+  margin: 8px 0 20px;
+}
+
+.form-error {
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--accent-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.level-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.level-group legend {
+  margin-bottom: 2px;
+  padding: 0;
+}
+
+.level-group-hint {
+  margin-bottom: 14px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+/* One row reads as a scale, from the lowest level to the highest. */
+.level-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;                /* leaves room for each card's bottom edge */
+  padding-bottom: var(--depth);
+}
+
+.level-option {
+  position: relative;       /* keeps the hidden radio inside its card */
+  display: flex;
+  cursor: pointer;
+}
+
+.level-card {
+  position: relative;       /* anchors the selected checkmark */
+  flex: 1;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.level-option:hover .level-card {
+  border-color: var(--accent);
+}
+
+/* Selected: the same look as the active sidebar item, plus a checkmark so the
+   choice doesn't rely on color. Padding drops by the extra 0.5px of border so
+   the text doesn't shift. */
+.level-option input:checked + .level-card {
+  --edge: var(--accent-edge);
+  padding: 11.5px 13.5px;
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.level-option input:checked + .level-card::after {
+  content: "\2713";
+  position: absolute;
+  top: 9px;
+  right: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.level-option input:focus-visible + .level-card {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.level-name {
+  display: block;
+  padding-right: 18px;      /* keeps long names clear of the checkmark */
+  font-weight: 600;
+}
+
+.level-description {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  text-wrap: pretty;
+}
+
+@media (max-width: 900px) {
+  .level-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .level-options {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

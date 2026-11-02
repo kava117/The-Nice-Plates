@@ -3,6 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from database import database
 import coach
 from datetime import date, datetime, timedelta, timezone
+from functools import wraps
 from itertools import accumulate
 import os, secrets, time
 from urllib.parse import quote
@@ -74,6 +75,16 @@ def unauthorized():
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
 
+# Signed-in users go to onboarding until they finish it. Guests share the demo
+# account, so they are left alone.
+def onboarding_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if current_user.is_authenticated and database.getUserProficiency(current_user.id)["onboarded_at"] is None:
+            return redirect(url_for("onboarding"))
+        return view(*args, **kwargs)
+    return wrapped
+
 @app.errorhandler(413)
 def too_large(e):
     message = "File too large (max 20 MB)."
@@ -141,6 +152,24 @@ def read_id(data, key):
 def remember_piece(piece_id):
     if session.get("timer_started_at") is not None or session.get("timer_elapsed"):
         session["session_piece_ids"] = sorted(set(session.get("session_piece_ids", []) + [piece_id]))
+
+
+# Short names for each score, index 0 = 1. Wording matches onboarding.html.
+PLAYING = (
+    ("rhythm_level", "Rhythm", ("Steady basics", "Mixed note values", "Syncopation", "Complex rhythms")),
+    ("intonation_level", "Intonation", ("Finding the notes", "Familiar keys", "Most keys", "Any key")),
+    ("dynamics_level", "Dynamics", ("One volume", "Loud and soft", "Shaping phrases", "Full expression")),
+    ("range_level", "Note range", ("Within the staff", "Just outside", "Far outside", "Full range")),
+)
+
+# returns the valid onboarding answers from a submitted form, keyed by Users column
+def read_levels(form):
+    levels = {}
+    for field in database.PROFICIENCY_FIELDS:
+        level = read_id(form, field)
+        if level is not None and 1 <= level <= 4:
+            levels[field] = level
+    return levels
 
 
 
@@ -312,6 +341,20 @@ def api_coach():
 def index():
     return render_template("index.html")
 
+@app.route("/onboarding", methods=["GET", "POST"])
+def onboarding():
+    if not current_user.is_authenticated:
+        return redirect(url_for("home"))
+    current = database.getUserProficiency(current_user.id)
+    if request.method == "POST":
+        levels = read_levels(request.form)
+        if len(levels) == len(database.PROFICIENCY_FIELDS):
+            database.setUserProficiency(current_user.id, **levels)
+            return redirect(url_for("home") if current["onboarded_at"] is None else url_for("settings"))
+        return render_template("onboarding.html", selected=levels), 400
+    selected = {k: current[k] for k in database.PROFICIENCY_FIELDS if current[k]}
+    return render_template("onboarding.html", selected=selected)
+
 def utc_today():  # SQLite stamps sessions in UTC
     return datetime.now(timezone.utc).date()
 
@@ -322,16 +365,19 @@ def streak(sessions):  # days in a row with a saved session, counting back from 
     return n
 
 @app.route("/home")
+@onboarding_required
 def home():
     sessions = database.getSessions(user_id())
     return render_template("home.html", pieces=database.getPieces(user_id())[:3], seconds=database.getPieceSeconds(user_id()),
                            total=sum(s["time_spent"] for s in sessions), streak=streak(sessions))
 
 @app.route("/library")
+@onboarding_required
 def library():
     return render_template("library.html", pieces=database.getPieces(user_id()))
 
 @app.route("/progress")
+@onboarding_required
 def progress():
     sessions = database.getSessions(user_id())
     monday = utc_today() - timedelta(days=utc_today().weekday())
@@ -341,10 +387,12 @@ def progress():
                            unsaved=timer_seconds(), saved=len(sessions))
 
 @app.route("/settings")
+@onboarding_required
 def settings():
-    return render_template("settings.html")
+    return render_template("settings.html", levels=database.getUserProficiency(user_id()), playing=PLAYING)
 
 @app.route("/practice")
+@onboarding_required
 def practice():
     # The sidebar's Practice link has no ?piece=: open the piece looked at last, so passages and reps can be saved.
     asked = request.args.get("piece")

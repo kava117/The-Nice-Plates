@@ -26,10 +26,13 @@ flask_app.config["TESTING"] = False   # keep real error handling: 500s show up a
 AIR = (REPO / "music-app-home" / "AirOnG.musicxml").read_bytes()
 
 
-def make_user(n=[0]):
+def make_user(n=[0], onboarded=True):
     n[0] += 1
-    return db.getOrCreateGoogleUser(sub=f"sub-{n[0]}-{time.time()}", name=f"User {n[0]}",
-                                    email=f"user{n[0]}.{time.time()}@test.dev", email_verified=True)["id"]
+    uid = db.getOrCreateGoogleUser(sub=f"sub-{n[0]}-{time.time()}", name=f"User {n[0]}",
+                                   email=f"user{n[0]}.{time.time()}@test.dev", email_verified=True)["id"]
+    if onboarded:
+        db.setUserProficiency(uid, rhythm_level=2, intonation_level=2, dynamics_level=2, range_level=2)
+    return uid
 
 
 def login(client, uid):

@@ -23,8 +23,17 @@
               <label for="email">Email</label>
               <input class="input" id="email" type="email" value="{{ me.email }}" autocomplete="email">
             </div>
+            {% if current_user.is_authenticated and levels and levels.onboarded_at %}
+            {% for field, title, names in playing %}
+            <div class="field playing-level">
+              <span class="switch-title">{{ title }}</span>
+              <span>{{ names[levels[field] - 1] }}</span>
+            </div>
+            {% endfor %}
+            {% endif %}
             <div class="field-actions">
-              {% if current_user.is_authenticated %}<a class="btn btn-ghost press" href="/logout">Sign out</a>{% else %}<a class="btn btn-ghost press" href="/login/google">Sign in with Google</a>{% endif %}
+              {% if current_user.is_authenticated %}<a class="btn btn-ghost press" href="{{ url_for('onboarding') }}">Update playing level</a>
+              <a class="btn btn-ghost press" href="/logout">Sign out</a>{% else %}<a class="btn btn-ghost press" href="/login/google">Sign in with Google</a>{% endif %}
             </div>
           </section>
 

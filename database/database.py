@@ -112,6 +112,12 @@ def get_db():
 MIGRATIONS = [
     "ALTER TABLE Sessions ADD COLUMN timer_id TEXT",   # one practice timer saves at most one row; old rows keep NULL
     "CREATE UNIQUE INDEX IF NOT EXISTS Index_Sessions_Timer_Id ON Sessions(timer_id)",
+    # onboarding (onboarding.html): 1–4 in each category; onboarded_at is set when they finish
+    "ALTER TABLE Users ADD COLUMN rhythm_level INTEGER",
+    "ALTER TABLE Users ADD COLUMN intonation_level INTEGER",
+    "ALTER TABLE Users ADD COLUMN dynamics_level INTEGER",
+    "ALTER TABLE Users ADD COLUMN range_level INTEGER",
+    "ALTER TABLE Users ADD COLUMN onboarded_at DATETIME",
 ]
 
 def migrate():
@@ -307,6 +313,32 @@ def getSessionPieces(session_id):
         ).fetchall()
         return [dict(row) for row in rows]
 
+
+# The four scores from onboarding, plus when they finished. Missing columns read as None.
+PROFICIENCY_FIELDS = ("rhythm_level", "intonation_level", "dynamics_level", "range_level")
+
+def getUserProficiency(user_id):
+    empty = {k: None for k in (*PROFICIENCY_FIELDS, "onboarded_at")}
+    with get_db() as database:
+        row = database.execute(
+            "SELECT rhythm_level, intonation_level, dynamics_level, range_level, onboarded_at FROM Users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        return dict(row) if row else empty
+
+def setUserProficiency(user_id, **levels):
+    """Saves the four 1–4 scores and stamps onboarded_at. Raises if a score is missing or out of range."""
+    scores = []
+    for field in PROFICIENCY_FIELDS:
+        n = levels.get(field)
+        if not isinstance(n, int) or not 1 <= n <= 4:
+            raise ValueError(f"{field} must be 1 to 4")
+        scores.append(n)
+    with get_db() as database:
+        database.execute(
+            "UPDATE Users SET rhythm_level=?, intonation_level=?, dynamics_level=?, range_level=?, onboarded_at=CURRENT_TIMESTAMP WHERE id=?",
+            (*scores, user_id),
+        )
 
 def addUser(name, email):
     email = email.strip().lower()

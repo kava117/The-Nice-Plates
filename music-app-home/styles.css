@@ -2610,6 +2610,7 @@ body.coach-open main {
 .tour-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;   /* the buttons stay right when Skip is hidden */
   gap: 8px;
   margin-top: 14px;
 }
@@ -2617,7 +2618,6 @@ body.coach-open main {
 .tour-actions .link-button {
   margin-right: auto;
 }
-
 .tour-actions .btn {
   padding: 6px 14px;
 }

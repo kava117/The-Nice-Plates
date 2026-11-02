@@ -141,6 +141,7 @@
       dot.toggleAttribute("aria-current", k === i);
     });
     card.querySelector(".tour-back").hidden = i === 0;
+    card.querySelector(".tour-skip").hidden = i === steps.length - 1;   // Done does the same there
     card.querySelector(".tour-next").textContent = i === steps.length - 1 ? "Done" : "Next";
 
     el.scrollIntoView({ block: "nearest", behavior: reduced.matches ? "auto" : "smooth" });

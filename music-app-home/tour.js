@@ -126,7 +126,11 @@
     var main = el.closest("main"), edge = main ? main.getBoundingClientRect().top : 0;   // the part of the page that scrolls
     var top = Math.max(r.top - pad, edge + 4), left = Math.max(r.left - pad, 8);
     var bottom = Math.min(r.bottom + pad, innerHeight - 8), right = Math.min(r.right + pad, innerWidth - 8);
-    Object.assign(hole.style, { top: top + "px", left: left + "px", width: Math.max(right - left, 0) + "px", height: Math.max(bottom - top, 0) + "px" });
+    var round = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 6;   // the box keeps the thing's own corners
+    Object.assign(hole.style, {
+      top: top + "px", left: left + "px", width: Math.max(right - left, 0) + "px", height: Math.max(bottom - top, 0) + "px",
+      borderRadius: Math.min(round + pad, (bottom - top) / 2) + "px",
+    });
 
     if (narrow.matches) { card.style.top = card.style.left = ""; return; }   // docked to the bottom by the CSS
     var gap = 14, w = card.offsetWidth, h = card.offsetHeight, y;

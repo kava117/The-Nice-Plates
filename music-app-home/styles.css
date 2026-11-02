@@ -2439,7 +2439,7 @@ body.coach-open main {
     0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent),
     0 0 0 100vmax var(--tour-shade);
   pointer-events: none;
-  transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out), width 0.45s var(--ease-out), height 0.45s var(--ease-out);
+  transition: top 0.45s var(--ease-out), left 0.45s var(--ease-out), width 0.45s var(--ease-out), height 0.45s var(--ease-out), border-radius 0.45s var(--ease-out);
 }
 
 .tour.is-first .tour-hole,

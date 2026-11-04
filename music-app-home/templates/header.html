@@ -43,7 +43,10 @@
       {% if current_user.is_authenticated %}
         <a class="btn btn-ghost press" href="{{ url_for('logout') }}">Log out</a>
       {% else %}
-        <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
+        <div class="topbar-sign-in">
+          <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
+          {% include "sign_in_agree.html" %}
+        </div>
       {% endif %}
     </header>
 

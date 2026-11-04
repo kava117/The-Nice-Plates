@@ -361,3 +361,15 @@ def test_text_process(said, expect):
 def test_player_files_are_served(guest, path):
     r = guest.get(path)
     assert r.status_code == 200 and len(r.data) > 1000
+
+
+# ---------------------------------------------------------------- health
+def test_healthz_says_ok_when_the_database_answers(guest):
+    r = guest.get("/healthz")
+    assert r.status_code == 200 and r.get_data(as_text=True) == "ok"
+
+def test_healthz_is_503_when_the_database_is_down(guest, monkeypatch):
+    def down():
+        raise RuntimeError("no database")
+    monkeypatch.setattr(appmod.database, "ping", down)
+    assert guest.get("/healthz").status_code == 503

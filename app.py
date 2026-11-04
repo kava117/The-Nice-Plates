@@ -449,6 +449,15 @@ def logout():
     clear_practice_state()
     return redirect(url_for("index"))
 
+# Readable without signing in; kept off the onboarding gate so a new account can open them.
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
 
 if __name__ == "__main__":
     app.run(port=portNum)

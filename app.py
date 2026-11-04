@@ -364,6 +364,16 @@ def streak(sessions):  # days in a row with a saved session, counting back from 
         n, day = n + 1, day - timedelta(days=1)
     return n
 
+# Render's health check: a 503 when the database can't be reached, so a stuck instance is restarted.
+@app.route("/healthz")
+def healthz():
+    try:
+        database.ping()
+    except Exception:
+        app.logger.exception("health check: database unreachable")
+        return "database unreachable", 503
+    return "ok"
+
 @app.route("/home")
 @onboarding_required
 def home():

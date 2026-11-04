@@ -255,6 +255,15 @@ def getOrCreateGoogleUser(sub, name, email, email_verified=False):
         )
         return {"id": cur.lastrowid, "name": name, "email": email}
 
+def ping():
+    """Raises unless the database answers within a few seconds (for /healthz)."""
+    if POSTGRES:
+        with POOL.connection(timeout=5) as conn:
+            conn.execute("SELECT 1")
+    else:
+        with get_db() as database:
+            database.execute("SELECT 1")
+
 def getPieces(user_id):
     with get_db() as database:
         rows = database.execute(

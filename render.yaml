@@ -9,6 +9,7 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt -r ml/requirements.txt
     startCommand: gunicorn app:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT   # one worker: a second would double homr's memory
+    healthCheckPath: /healthz   # 503 when the database can't be reached, so Render restarts a stuck instance
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"

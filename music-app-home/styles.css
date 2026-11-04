@@ -2744,3 +2744,116 @@ body.coach-open main {
     transition: none;
   }
 }
+
+/* 27. Legal pages and sign-in agree --------------------------------------- */
+
+.legal {
+  max-width: 640px;
+}
+
+.legal-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.legal-updated {
+  margin: 0 0 20px;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+}
+
+.legal-lead {
+  margin: 0 0 24px;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.legal h2 {
+  margin: 28px 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.legal p,
+.legal li {
+  color: var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.legal ul {
+  margin: 0 0 12px;
+  padding-left: 1.25em;
+}
+
+.legal li + li {
+  margin-top: 6px;
+}
+
+.legal a {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 2px;
+}
+
+.legal-also {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+}
+
+.site-footer-links {
+  margin: 8px 0 0;
+}
+
+.site-footer-links a {
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer-links a:hover {
+  color: var(--ink);
+}
+
+.sign-in-agree {
+  margin: 10px 0 0;
+  max-width: 22rem;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.sign-in-agree a {
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sign-in-agree a:hover {
+  color: var(--ink);
+}
+
+.topbar-sign-in {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.topbar-sign-in .sign-in-agree {
+  margin-top: 6px;
+  max-width: 16rem;
+  text-align: right;
+}
+
+.welcome .sign-in-agree {
+  margin-top: 14px;
+}

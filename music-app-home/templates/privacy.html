@@ -1,0 +1,72 @@
+{# Privacy Policy. Readable without an account; focused layout like onboarding. #}
+{% set title = "Privacy Policy" %}
+{% set auth = "signed-in" if current_user.is_authenticated else "guest" %}
+{% set focused = true %}
+{% include "header.html" %}
+
+<div class="content legal">
+  <h1 class="legal-title">Privacy Policy</h1>
+  <p class="legal-updated">Last updated: 4 November 2026</p>
+  <p class="legal-lead">The Nice Plates helps you practice music from your own sheet music. This page says what we collect, why, and who else is involved. Plain language; not a substitute for legal advice.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Account.</strong> If you sign in with Google, we store your Google account id, name and email so we can recognise you next time.</li>
+    <li><strong>Your music.</strong> Pieces you upload (PDF, photo or MusicXML), and the MusicXML and MIDI we make from them so you can practise in the browser.</li>
+    <li><strong>Practice record.</strong> Timer sessions, passages you mark, Yes / Not yet reps, Listen results shown on the score, and the playing levels you set in onboarding.</li>
+    <li><strong>Recordings.</strong> Only if you press Record a take; we store that audio so you can play it back.</li>
+    <li><strong>Coach messages.</strong> Questions you type to the coach, and its replies, for that conversation in your browser. The question is also sent to the AI provider so it can answer.</li>
+    <li><strong>Technical.</strong> A signed session cookie to keep you logged in, and your theme choice in local storage on your device.</li>
+  </ul>
+
+  <h2>What stays on your device</h2>
+  <p><strong>Listen</strong> hears you through the microphone and runs a pitch model in your browser. That audio is not recorded and is not sent to our servers. Theme and tour “seen” flags also stay only on your device.</p>
+
+  <h2>How we use it</h2>
+  <ul>
+    <li>To show your library, score, Progress charts and passage reps.</li>
+    <li>To run the practice timer and save sessions you stop.</li>
+    <li>To turn photos or PDFs of sheet music into a playable score (OMR), which may use our own tools, a separate reading service, or an AI vision model when needed.</li>
+    <li>To power the coach from your own practice record and the question you just asked.</li>
+  </ul>
+  <p>We do not sell your personal information. We do not use your sheet music or practice data for advertising.</p>
+
+  <h2>Who else may see data</h2>
+  <ul>
+    <li><strong>Google</strong> — sign-in only; we receive your profile basics after you approve.</li>
+    <li><strong>Our host and database</strong> (for example Render and Neon) — store the app and the data above so the site can run.</li>
+    <li><strong>Anthropic</strong> — when you use the coach, your question and a summary of your practice record are sent so Claude can answer. Do not put secrets in coach messages.</li>
+    <li><strong>OpenAI</strong> — only if a recording-transcription feature is switched on with an API key; otherwise unused.</li>
+    <li><strong>Sheet-reading service</strong> — if configured, photo or PDF pages may be sent there to be read into MusicXML.</li>
+  </ul>
+
+  <h2>Guests</h2>
+  <p>Without signing in, everyone shares one demo account. Anything a guest uploads or practices can be seen by other guests. Sign in with Google for a private library and practice record.</p>
+
+  <h2>How long we keep it</h2>
+  <p>We keep account and practice data while your account exists and the project is running. Free hosting may wipe a local database on restart if no external database is configured; with a configured database, data persists across deploys. You can sign out at any time. To delete an account and its data, contact us (see below).</p>
+
+  <h2>Children</h2>
+  <p>The site is aimed at people learning an instrument, including students. If you are under the age where you can agree to online services in your country, ask a parent or guardian before signing in. We do not knowingly collect more than needed to run practice features.</p>
+
+  <h2>Security</h2>
+  <p>We use HTTPS on the live site, signed session cookies, and access controls so one signed-in user’s pieces are not served as another’s. No method of transmission or storage is perfectly secure.</p>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li>Sign out from Settings.</li>
+    <li>Skip the coach; it is optional and needs an API key on the server.</li>
+    <li>Do not use Record a take if you do not want audio stored.</li>
+    <li>Use Listen knowing processing stays in the browser.</li>
+  </ul>
+
+  <h2>Changes</h2>
+  <p>We may update this policy. The “Last updated” date at the top will change. Continued use after a change means you accept the updated policy.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about privacy: use the contact details for the course or team running this project, or open an issue on the project’s GitHub repository.</p>
+
+  <p class="legal-also">Also see our <a href="{{ url_for('terms') }}">Terms of Use</a>.</p>
+</div>
+
+{% include "footer.html" %}

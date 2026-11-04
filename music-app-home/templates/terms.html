@@ -1,0 +1,54 @@
+{# Terms of Use. Readable without an account; focused layout like onboarding. #}
+{% set title = "Terms of Use" %}
+{% set auth = "signed-in" if current_user.is_authenticated else "guest" %}
+{% set focused = true %}
+{% include "header.html" %}
+
+<div class="content legal">
+  <h1 class="legal-title">Terms of Use</h1>
+  <p class="legal-updated">Last updated: 4 November 2026</p>
+  <p class="legal-lead">By using The Nice Plates, including signing in with Google or using the shared guest demo, you agree to these terms and to our <a href="{{ url_for('privacy') }}">Privacy Policy</a>.</p>
+
+  <h2>What this is</h2>
+  <p>The Nice Plates is a helper for practising music from sheet music you provide. It is a student / course project tool, not a substitute for a teacher, and not a commercial music school.</p>
+
+  <h2>Accounts</h2>
+  <ul>
+    <li>Signing in with Google creates or opens your account. You must be allowed to use that Google account.</li>
+    <li>Without signing in, you use a shared guest account. Other guests can see and change what is on that account.</li>
+    <li>You are responsible for activity under your signed-in account.</li>
+  </ul>
+
+  <h2>Your content</h2>
+  <ul>
+    <li>You keep whatever rights you already have in the sheet music and recordings you upload.</li>
+    <li>You confirm you have the right to upload them (for example your own work, public domain, or a licence that allows this use).</li>
+    <li>You give us permission to store and process that material only to run the practice features: display, playback, passage tracking, Listen marking, coach context, and conversion of PDF or photos into MusicXML when needed.</li>
+  </ul>
+
+  <h2>Acceptable use</h2>
+  <ul>
+    <li>Do not upload unlawful material, or sheet music you are not allowed to copy.</li>
+    <li>Do not try to break into other users’ accounts or overload the service.</li>
+    <li>Do not use the coach or uploads to send malware or personal data about other people without permission.</li>
+  </ul>
+
+  <h2>Practice tools</h2>
+  <p>Playback, Listen, the timer, Progress charts and the coach are aids. Listen’s note detection and the coach’s suggestions can be wrong. Use your own judgement when practising.</p>
+
+  <h2>Availability</h2>
+  <p>The live site may sleep on free hosting, take a minute to wake, or go down for deploys and maintenance. Features that need API keys (coach, some photo reading) only work when those keys are configured.</p>
+
+  <h2>Disclaimer</h2>
+  <p>The service is provided “as is”, without warranties of any kind. We are not liable for lost practice data, inaccurate Listen or coach feedback, or decisions you make based on the app. Nothing here limits rights you cannot waive under local law.</p>
+
+  <h2>Changes</h2>
+  <p>We may change these terms or the service. The “Last updated” date will change when we do. If you keep using the site after that, you accept the new terms.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about these terms: contact the course or team running this project, or open an issue on the project’s GitHub repository.</p>
+
+  <p class="legal-also">Also see our <a href="{{ url_for('privacy') }}">Privacy Policy</a>.</p>
+</div>
+
+{% include "footer.html" %}

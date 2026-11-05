@@ -122,6 +122,7 @@ MIGRATIONS = [
     "ALTER TABLE Users ADD COLUMN dynamics_level INTEGER",
     "ALTER TABLE Users ADD COLUMN range_level INTEGER",
     "ALTER TABLE Users ADD COLUMN onboarded_at DATETIME",
+    "ALTER TABLE Recordings ADD COLUMN name TEXT",   # what the musician called the take; old takes keep NULL
 ]
 
 def migrate():
@@ -403,9 +404,18 @@ def getPieceSeconds(user_id):
         ).fetchall()
         return {row["piece_id"]: row["seconds"] for row in rows}
 
-def addRecording(piece_id, audio):
+def addRecording(piece_id, audio, name=None):
     with get_db() as database:
-        return database.execute("INSERT INTO Recordings (piece_id, audio) VALUES (?, ?)", (piece_id, audio)).lastrowid
+        return database.execute("INSERT INTO Recordings (piece_id, audio, name) VALUES (?, ?, ?)", (piece_id, audio, name)).lastrowid
+
+def getRecordings(user_id, piece_id):
+    """A piece's takes, newest first, without the audio."""
+    with get_db() as database:
+        rows = database.execute(
+            "SELECT r.id, r.name, r.date_created FROM Recordings r JOIN Pieces p ON p.id = r.piece_id WHERE r.piece_id = ? AND p.user_id = ? ORDER BY r.id DESC",
+            (piece_id, user_id),
+        ).fetchall()
+        return [{**dict(row), "date_created": str(row["date_created"])} for row in rows]
 
 def getRecording(user_id, recording_id):
     with get_db() as database:

@@ -132,10 +132,12 @@ def read_sheet(src, work, claude_ok):  # homr first wherever it can run; Claude 
     from music21 import converter
     from pdfToMidi import _to_musicxml
     if src.suffix.lower() not in PHOTOS:
-        return _to_musicxml(src, work)
+        with CONVERT:
+            return _to_musicxml(src, work)
     if homr_ok():
         try:
-            xml = _to_musicxml(src, work)
+            with CONVERT:   # only homr needs the memory; Claude reads in parallel
+                xml = _to_musicxml(src, work)
             converter.parse(xml)  # unreadable output is a failure too, so Claude gets its turn
             logging.warning("homr read %s", src.name)
             return xml
@@ -154,10 +156,9 @@ def add_piece():
         return library_error(problem)
     with saved_upload() as src:
         try:
-            with CONVERT:
-                work = src.parent / "work"; work.mkdir()
-                xml = read_sheet(src, work, claude_ok)
-                mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+            work = src.parent / "work"; work.mkdir()
+            xml = read_sheet(src, work, claude_ok)
+            mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
         except NoMusic:
             return library_error(f"Couldn't find sheet music in {src.name}. Try a sharper photo, straight on, in good light.")
         except Exception:

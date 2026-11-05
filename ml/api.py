@@ -109,24 +109,31 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
     images = [{"type": "image", "source": {"type": "base64", "media_type": kind, "data": base64.standard_b64encode(data).decode()}}
               for kind, data in claude_images(src)]
     key, workspace = (os.environ.get(k, "").strip() for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"))  # pasted values often end in a newline
-    with anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {}).beta.messages.stream(
-        model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
-        messages=[{"role": "user", "content": [*images,
-                  {"type": "text", "text": "Transcribe this sheet music, every page in order, as one complete MusicXML score (score-partwise, every note and rest, correct key and time signature). "
-                                           "The photo may be blurred, tilted or dim: read what you can and make your best guess at the rest. "
-                                           "Reply with only the XML, or with only NO_MUSIC if there is no sheet music in it at all."}]}],
-    ) as stream:
-        reply = stream.get_final_message()
-    text = reply.content[-1].text
-    used = getattr(reply, "usage", None)
-    logging.warning("Claude read %s with %s: %s tokens in, %s out", src.name, getattr(reply, "model", "?"),
-                    getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # the Render log shows what each upload cost
-    if "<" not in text:   # NO_MUSIC: a blank page, a selfie, a photo too blurred to see staves
-        raise NoMusic(text)
-    xml = src.with_suffix(".musicxml")
-    xml.write_text(text[text.index("<"):text.rindex(">") + 1])
-    converter.parse(xml)  # unreadable output raises, and the upload form says so
-    return xml
+    client = anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {})
+    for attempt in (1, 2):   # now and then Claude answers in prose, or its XML won't parse: one more go usually fixes it
+        with client.beta.messages.stream(
+            model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
+            messages=[{"role": "user", "content": [*images,
+                      {"type": "text", "text": "Transcribe this sheet music, every page in order, as one complete MusicXML score (score-partwise, every note and rest, correct key and time signature). "
+                                               "The photo may be blurred, tilted or dim: read what you can and make your best guess at the rest. "
+                                               "Reply with only the XML, or with only NO_MUSIC if there is no sheet music in it at all."}]}],
+        ) as stream:
+            reply = stream.get_final_message()
+        text = reply.content[-1].text
+        used = getattr(reply, "usage", None)
+        logging.warning("Claude read %s with %s: %s tokens in, %s out", src.name, getattr(reply, "model", "?"),
+                        getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # the Render log shows what each upload cost
+        if "NO_MUSIC" in text and "<" not in text:   # a blank page, a selfie, a photo too blurred to see staves
+            raise NoMusic(text)
+        try:
+            xml = src.with_suffix(".musicxml")
+            xml.write_text(text[text.index("<"):text.rindex(">") + 1])
+            converter.parse(xml)  # unreadable output raises, and the upload form says so
+            return xml
+        except Exception:
+            if attempt == 2:
+                raise
+            logging.warning("Claude's reply for %s wasn't MusicXML, asking again: %.200r", src.name, text)
 
 def read_sheet(src, work, claude_ok):  # homr first wherever it can run; Claude when it can't, or when it fails
     from music21 import converter

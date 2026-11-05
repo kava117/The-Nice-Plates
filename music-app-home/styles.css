@@ -1401,6 +1401,33 @@ body[data-auth="guest"] .welcome {
   height: 32px;
 }
 
+.take-name {
+  width: 11em;
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.takes {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.takes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.takes audio {
+  height: 32px;
+}
+
 /* Recording: a red dot that pulses, so it's plain the microphone is on. */
 .tool.is-recording {
   border-color: var(--rec);

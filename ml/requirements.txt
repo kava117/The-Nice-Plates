@@ -4,3 +4,4 @@ openai
 python-dotenv
 gunicorn
 anthropic
+pillow

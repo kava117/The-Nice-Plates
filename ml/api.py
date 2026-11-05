@@ -78,19 +78,39 @@ def pieces():
     return jsonify(database.getPieces(user_id()))
 
 
+MAX_SIDE = 2000   # Claude shrinks bigger images anyway, and rejects any over 5 MB (a phone photo often is)
+MAX_PAGES = 8     # one Claude reply holds about this many pages of MusicXML
+
+
+def claude_images(src):
+    """The upload as (media type, bytes) images Claude takes: each PDF page, or the photo upright, shrunk and evened out."""
+    if src.suffix.lower() == ".pdf":
+        import fitz
+        pages = list(fitz.open(src))[:MAX_PAGES]
+        zoom = lambda page: min(200 / 72, MAX_SIDE / max(page.rect.width, page.rect.height))
+        return [("image/png", page.get_pixmap(matrix=fitz.Matrix(zoom(page), zoom(page))).tobytes("png")) for page in pages]
+    try:
+        from PIL import Image, ImageOps
+        image = ImageOps.autocontrast(ImageOps.exif_transpose(Image.open(src)).convert("L"), cutoff=1)  # grey paper and faint ink come out black on white
+        image.thumbnail((MAX_SIDE, MAX_SIDE))
+        out = BytesIO(); image.save(out, "JPEG", quality=90)
+        return [("image/jpeg", out.getvalue())]
+    except Exception:   # not a picture Pillow knows; Claude gets it as it came
+        return [("image/png" if src.suffix.lower() == ".png" else "image/jpeg", src.read_bytes())]
+
+
 def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KEY a vision model writes the MusicXML instead
     import base64, anthropic
     from music21 import converter
-    if src.suffix.lower() == ".pdf":
-        import fitz
-        src = src.with_suffix(".png"); src.write_bytes(fitz.open(src.with_suffix(".pdf"))[0].get_pixmap(dpi=200).tobytes("png"))
-    image = {"type": "base64", "media_type": "image/png" if src.suffix.lower() == ".png" else "image/jpeg",
-             "data": base64.standard_b64encode(src.read_bytes()).decode()}
+    images = [{"type": "image", "source": {"type": "base64", "media_type": kind, "data": base64.standard_b64encode(data).decode()}}
+              for kind, data in claude_images(src)]
     key, workspace = (os.environ.get(k, "").strip() for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"))  # pasted values often end in a newline
     with anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {}).beta.messages.stream(
         model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
-        messages=[{"role": "user", "content": [{"type": "image", "source": image},
-                  {"type": "text", "text": "Transcribe this sheet music as complete MusicXML (score-partwise, every note and rest, correct key and time signature). Reply with only the XML."}]}],
+        messages=[{"role": "user", "content": [*images,
+                  {"type": "text", "text": "Transcribe this sheet music, every page in order, as one complete MusicXML score (score-partwise, every note and rest, correct key and time signature). "
+                                           "The photo may be blurred, tilted or dim: read what you can and make your best guess at the rest. "
+                                           "Reply with only the XML, or with only NO_MUSIC if there is no sheet music in it at all."}]}],
     ) as stream:
         reply = stream.get_final_message()
     text = reply.content[-1].text

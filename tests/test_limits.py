@@ -201,6 +201,25 @@ def test_photos_use_the_cheap_model_and_never_fall_back(user, monkeypatch):
     sent = made.return_value.beta.messages.stream.call_args.kwargs
     assert sent["model"] == "claude-haiku-5-5" and "fallbacks" not in sent
 
+def test_no_music_in_the_photo_says_so(user, monkeypatch):
+    monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude("NO_MUSIC"):
+        r = upload(user[0], "selfie.jpg", b"\xff\xd8 fake")
+    assert "sharper%20photo" in r.location, r.location
+
+def test_big_phone_photo_is_shrunk_and_turned_upright(tmp_path):
+    from PIL import Image
+    import api
+    photo = tmp_path / "phone.jpg"; exif = Image.Exif(); exif[0x0112] = 6   # stored sideways, as phones do
+    Image.new("RGB", (6000, 4000), "white").save(photo, exif=exif, quality=95)
+    [(kind, data)] = api.claude_images(photo)
+    assert kind == "image/jpeg" and Image.open(io.BytesIO(data)).size == (1333, 2000) and len(data) < 5_000_000
+
+def test_every_pdf_page_goes_to_claude(tmp_path):
+    import pymupdf, api
+    doc = pymupdf.open(); [doc.new_page() for _ in range(3)]; pdf = tmp_path / "three.pdf"; doc.save(pdf)
+    assert [kind for kind, _ in api.claude_images(pdf)] == ["image/png"] * 3
+
 def test_claude_truncated_reply_shows_error(user, monkeypatch):
     monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     with fake_claude(AIR.decode()[:3000]):
@@ -252,6 +271,20 @@ def test_record_and_play_back(user):
     rid = upload(client, "take.webm", b"WEBMDATA", url=f"/api/pieces/{pid}/recordings").get_json()["id"]
     r = client.get(f"/api/recordings/{rid}")
     assert r.status_code == 200 and r.data == b"WEBMDATA"
+
+def test_takes_keep_their_names(user):
+    client, uid = user
+    pid = db.addPiece(uid, "Rec", xml=AIR)
+    r = client.post(f"/api/pieces/{pid}/recordings", data={"file": (io.BytesIO(b"A"), "take.webm"), "name": " Slow run "},
+                    content_type="multipart/form-data")
+    assert r.get_json()["name"] == "Slow run"
+    assert upload(client, "take.webm", b"B", url=f"/api/pieces/{pid}/recordings").get_json()["name"] == "Rec, take 2"
+    assert [t["name"] for t in client.get(f"/api/pieces/{pid}/recordings").get_json()] == ["Rec, take 2", "Slow run"]
+
+def test_cannot_list_others_takes(user):
+    client, _ = user
+    other = make_user(); pid = db.addPiece(other, "x", xml=AIR); db.addRecording(pid, b"private", "mine")
+    assert client.get(f"/api/pieces/{pid}/recordings").status_code == 404
 
 def test_cannot_record_on_or_play_others_pieces(user):
     client, _ = user

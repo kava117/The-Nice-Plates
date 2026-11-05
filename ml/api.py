@@ -99,6 +99,10 @@ def claude_images(src):
         return [("image/png" if src.suffix.lower() == ".png" else "image/jpeg", src.read_bytes())]
 
 
+class NoMusic(Exception):
+    pass
+
+
 def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KEY a vision model writes the MusicXML instead
     import base64, anthropic
     from music21 import converter
@@ -117,6 +121,8 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
     used = getattr(reply, "usage", None)
     logging.warning("Claude read %s with %s: %s tokens in, %s out", src.name, getattr(reply, "model", "?"),
                     getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # the Render log shows what each upload cost
+    if "<" not in text:   # NO_MUSIC: a blank page, a selfie, a photo too blurred to see staves
+        raise NoMusic(text)
     xml = src.with_suffix(".musicxml")
     xml.write_text(text[text.index("<"):text.rindex(">") + 1])
     converter.parse(xml)  # unreadable output raises, and the upload form says so
@@ -152,6 +158,8 @@ def add_piece():
                 work = src.parent / "work"; work.mkdir()
                 xml = read_sheet(src, work, claude_ok)
                 mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+        except NoMusic:
+            return library_error(f"Couldn't find sheet music in {src.name}. Try a sharper photo, straight on, in good light.")
         except Exception:
             logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
             return library_error(f"Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")

@@ -207,6 +207,14 @@ def test_no_music_in_the_photo_says_so(user, monkeypatch):
         r = upload(user[0], "selfie.jpg", b"\xff\xd8 fake")
     assert "sharper%20photo" in r.location, r.location
 
+def test_a_prose_reply_gets_one_more_go(user, monkeypatch):
+    monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude("I can't be sure of the notes.") as made:
+        made.return_value.beta.messages.stream.return_value.__enter__.return_value.get_final_message.side_effect = [
+            mock.Mock(content=[mock.Mock(text="I can't be sure of the notes.")]), mock.Mock(content=[mock.Mock(text=AIR.decode())])]
+        r = upload(user[0], "photo.png", b"\x89PNG")
+    assert "/practice?piece=" in r.location, r.location
+
 def test_big_phone_photo_is_shrunk_and_turned_upright(tmp_path):
     from PIL import Image
     import api

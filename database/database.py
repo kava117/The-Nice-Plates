@@ -122,6 +122,7 @@ MIGRATIONS = [
     "ALTER TABLE Users ADD COLUMN dynamics_level INTEGER",
     "ALTER TABLE Users ADD COLUMN range_level INTEGER",
     "ALTER TABLE Users ADD COLUMN onboarded_at DATETIME",
+    "ALTER TABLE Recordings ADD COLUMN name TEXT",   # what the musician called the take; old takes keep NULL
 ]
 
 def migrate():
@@ -403,9 +404,18 @@ def getPieceSeconds(user_id):
         ).fetchall()
         return {row["piece_id"]: row["seconds"] for row in rows}
 
-def addRecording(piece_id, audio):
+def addRecording(piece_id, audio, name=None):
     with get_db() as database:
-        return database.execute("INSERT INTO Recordings (piece_id, audio) VALUES (?, ?)", (piece_id, audio)).lastrowid
+        return database.execute("INSERT INTO Recordings (piece_id, audio, name) VALUES (?, ?, ?)", (piece_id, audio, name)).lastrowid
+
+def getRecordings(user_id, piece_id):
+    """A piece's takes, newest first, without the audio."""
+    with get_db() as database:
+        rows = database.execute(
+            "SELECT r.id, r.name, r.date_created FROM Recordings r JOIN Pieces p ON p.id = r.piece_id WHERE r.piece_id = ? AND p.user_id = ? ORDER BY r.id DESC",
+            (piece_id, user_id),
+        ).fetchall()
+        return [{**dict(row), "date_created": str(row["date_created"])} for row in rows]
 
 def getRecording(user_id, recording_id):
     with get_db() as database:
@@ -514,11 +524,22 @@ def getPracticeRecord(user_id, sessions=20):
 
 _demo_ids = {}   # per database; a guest's page asked three or four times, each a trip to the database
 
+DEMO_EMAIL = "sample.user@example.com"
+
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""
     where = DATABASE_URL or DB_NAME
     if where not in _demo_ids:
         with get_db() as database:
-            database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
-            _demo_ids[where] = database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]
+            database.execute(
+                "INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', ?)",
+                (DEMO_EMAIL,),
+            )
+            _demo_ids[where] = database.execute(
+                "SELECT id FROM Users WHERE email = ?", (DEMO_EMAIL,)
+            ).fetchone()[0]
     return _demo_ids[where]
+
+def isDemoUser(user_id):
+    """True for the shared guest account (Continue as guest logs in as this user)."""
+    return user_id == demoUser()

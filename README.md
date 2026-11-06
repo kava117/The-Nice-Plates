@@ -30,7 +30,7 @@ Signing in with Google, uploading, the practice page (score, playback, passages,
 
 ![](docs/system.svg)
 
-It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: the database, the sheet music converter, Google sign-in, Claude, and OpenAI. The one exception is homr on Render: it needs more memory than the free box has, so it runs on Azure (`homr_service/`) and Flask sends it each page. There's no background worker, so if a conversion takes a while, the upload page just sits there loading until it's done. Gunicorn runs 4 threads, so other visitors' pages keep loading meanwhile, and only one conversion runs at a time (a second upload waits its turn) so two homr runs can't share the 512 MB box.
+It's all one Flask app. The browser only talks to Flask, and Flask handles everything else: the database, the sheet music converter, Google sign-in, Claude, and OpenAI. The one exception is homr on Render: it needs more memory than the free box has, so it runs on Azure (`homr_service/`) and Flask sends it each page. There's no background worker, so if a conversion takes a while, the upload page just sits there loading until it's done. Gunicorn runs 16 threads, so other visitors' pages keep loading meanwhile. Only one homr conversion runs at a time (a second upload waits its turn) so two homr runs can't share the 512 MB box; photos Claude reads don't wait.
 
 - **Front end:** plain Jinja templates, no framework, no build step. Scores are drawn with [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) (it's checked in as `opensheetmusicdisplay.min.js`) and played with [Tone.js](https://tonejs.github.io/). There's light/dark mode, keyboard support, and reduced-motion handling.
 - **Accounts:** Google sign-in through Authlib, with Flask-Login keeping you logged in. Anyone not signed in uses one shared demo account (`Sample User`).
@@ -136,7 +136,7 @@ There are five requirements files:
 `render.yaml` sets up one free Render web service on Python 3.11.9. It installs the app + ML requirements and starts with:
 
 ```bash
-gunicorn app:app --workers 1 --threads 4 --timeout 300 --bind 0.0.0.0:$PORT
+gunicorn app:app --workers 1 --threads 16 --timeout 300 --bind 0.0.0.0:$PORT
 ```
 
 Keep it at one worker: a second worker is a second process, which would double homr's memory.

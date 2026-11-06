@@ -25,7 +25,7 @@
         <span class="avatar" aria-hidden="true"><span data-user-initials>{% for w in me.name.split()[:2] %}{{ w[0] }}{% endfor %}</span></span>
         <span class="account-text">
           <span class="account-name" data-user-name>{{ me.name }}</span>
-          <span class="account-role">Account</span>
+          <span class="account-role">{% if guest_account or not current_user.is_authenticated %}Guest{% else %}Account{% endif %}</span>
         </span>
       </a>
     </div>

@@ -1401,6 +1401,33 @@ body[data-auth="guest"] .welcome {
   height: 32px;
 }
 
+.take-name {
+  width: 11em;
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.takes {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.takes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.takes audio {
+  height: 32px;
+}
+
 /* Recording: a red dot that pulses, so it's plain the microphone is on. */
 .tool.is-recording {
   border-color: var(--rec);
@@ -2848,12 +2875,33 @@ body.coach-open main {
   gap: 0;
 }
 
+.topbar-sign-in-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .topbar-sign-in .sign-in-agree {
   margin-top: 6px;
   max-width: 16rem;
   text-align: right;
 }
 
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.welcome-guest-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
 .welcome .sign-in-agree {
-  margin-top: 14px;
+  margin-top: 4px;
 }

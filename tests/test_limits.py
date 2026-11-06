@@ -24,14 +24,20 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 # ---------------------------------------------------------------- boot & pages
 PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/privacy", "/terms"]
+APP_PAGES = [p for p in PAGES if p not in ("/", "/index")]   # welcome sends signed-in people to Home
 
 @pytest.mark.parametrize("path", PAGES)
 def test_page_loads_as_guest(guest, path):
     assert guest.get(path).status_code == 200
 
-@pytest.mark.parametrize("path", PAGES)
+@pytest.mark.parametrize("path", APP_PAGES)
 def test_page_loads_signed_in(user, path):
     assert user[0].get(path).status_code == 200
+
+@pytest.mark.parametrize("path", ["/", "/index"])
+def test_welcome_sends_a_signed_in_user_home(user, path):
+    r = user[0].get(path)
+    assert r.status_code == 302 and r.headers["Location"].endswith("/home")
 
 def test_demo_piece_seeded_once_across_restarts():
     for _ in range(2):   # two more cold boots in the same folder
@@ -201,6 +207,33 @@ def test_photos_use_the_cheap_model_and_never_fall_back(user, monkeypatch):
     sent = made.return_value.beta.messages.stream.call_args.kwargs
     assert sent["model"] == "claude-haiku-5-5" and "fallbacks" not in sent
 
+def test_no_music_in_the_photo_says_so(user, monkeypatch):
+    monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude("NO_MUSIC"):
+        r = upload(user[0], "selfie.jpg", b"\xff\xd8 fake")
+    assert "sharper%20photo" in r.location, r.location
+
+def test_a_prose_reply_gets_one_more_go(user, monkeypatch):
+    monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with fake_claude("I can't be sure of the notes.") as made:
+        made.return_value.beta.messages.stream.return_value.__enter__.return_value.get_final_message.side_effect = [
+            mock.Mock(content=[mock.Mock(text="I can't be sure of the notes.")]), mock.Mock(content=[mock.Mock(text=AIR.decode())])]
+        r = upload(user[0], "photo.png", b"\x89PNG")
+    assert "/practice?piece=" in r.location, r.location
+
+def test_big_phone_photo_is_shrunk_and_turned_upright(tmp_path):
+    from PIL import Image
+    import api
+    photo = tmp_path / "phone.jpg"; exif = Image.Exif(); exif[0x0112] = 6   # stored sideways, as phones do
+    Image.new("RGB", (6000, 4000), "white").save(photo, exif=exif, quality=95)
+    [(kind, data)] = api.claude_images(photo)
+    assert kind == "image/jpeg" and Image.open(io.BytesIO(data)).size == (1333, 2000) and len(data) < 5_000_000
+
+def test_every_pdf_page_goes_to_claude(tmp_path):
+    import pymupdf, api
+    doc = pymupdf.open(); [doc.new_page() for _ in range(3)]; pdf = tmp_path / "three.pdf"; doc.save(pdf)
+    assert [kind for kind, _ in api.claude_images(pdf)] == ["image/png"] * 3
+
 def test_claude_truncated_reply_shows_error(user, monkeypatch):
     monkeypatch.setenv("PHOTO_UPLOADS", "off"); monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     with fake_claude(AIR.decode()[:3000]):
@@ -252,6 +285,20 @@ def test_record_and_play_back(user):
     rid = upload(client, "take.webm", b"WEBMDATA", url=f"/api/pieces/{pid}/recordings").get_json()["id"]
     r = client.get(f"/api/recordings/{rid}")
     assert r.status_code == 200 and r.data == b"WEBMDATA"
+
+def test_takes_keep_their_names(user):
+    client, uid = user
+    pid = db.addPiece(uid, "Rec", xml=AIR)
+    r = client.post(f"/api/pieces/{pid}/recordings", data={"file": (io.BytesIO(b"A"), "take.webm"), "name": " Slow run "},
+                    content_type="multipart/form-data")
+    assert r.get_json()["name"] == "Slow run"
+    assert upload(client, "take.webm", b"B", url=f"/api/pieces/{pid}/recordings").get_json()["name"] == "Rec, take 2"
+    assert [t["name"] for t in client.get(f"/api/pieces/{pid}/recordings").get_json()] == ["Rec, take 2", "Slow run"]
+
+def test_cannot_list_others_takes(user):
+    client, _ = user
+    other = make_user(); pid = db.addPiece(other, "x", xml=AIR); db.addRecording(pid, b"private", "mine")
+    assert client.get(f"/api/pieces/{pid}/recordings").status_code == 404
 
 def test_cannot_record_on_or_play_others_pieces(user):
     client, _ = user
@@ -377,10 +424,11 @@ def test_healthz_is_503_when_the_database_is_down(guest, monkeypatch):
 
 def test_sign_in_pages_link_terms_and_privacy(guest):
     welcome = guest.get("/").get_data(as_text=True)
-    assert "By signing in, you agree" in welcome
+    assert "By continuing, you agree" in welcome
     assert 'href="/terms"' in welcome and 'href="/privacy"' in welcome
+    assert 'href="/login/guest"' in welcome and "Continue as guest" in welcome
     home = guest.get("/home").get_data(as_text=True)
-    assert "By signing in, you agree" in home
+    assert "By continuing, you agree" in home
     assert ">Privacy<" in home and ">Terms<" in home
 
 def test_privacy_and_terms_name_listen_and_google(guest):
@@ -388,3 +436,29 @@ def test_privacy_and_terms_name_listen_and_google(guest):
     assert "Privacy Policy" in privacy and "Listen" in privacy and "Google" in privacy
     terms = guest.get("/terms").get_data(as_text=True)
     assert "Terms of Use" in terms and 'href="/privacy"' in terms
+
+
+def test_continue_as_guest_signs_in_and_opens_home(guest):
+    r = guest.get("/login/guest")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/home")
+    home = guest.get("/home")
+    assert home.status_code == 200
+    html = home.get_data(as_text=True)
+    assert 'href="/logout">Log out' in html
+    assert ">Guest<" in html
+    assert guest.get("/").status_code == 302
+
+
+def test_a_guest_login_skips_onboarding(guest):
+    guest.get("/login/guest")
+    assert guest.get("/home").status_code == 200
+    assert guest.get("/onboarding").status_code == 200
+
+
+def test_guest_practice_and_timer_after_sign_in(guest):
+    guest.get("/login/guest")
+    assert guest.get("/practice").status_code == 200
+    assert guest.post("/api/timer/start").status_code == 200
+    stop = guest.post("/api/timer/stop").get_json()
+    assert "time_spent" in stop
+    assert guest.get("/progress").status_code == 200

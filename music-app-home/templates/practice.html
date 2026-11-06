@@ -22,7 +22,8 @@
       <button id="timer" class="tool press" title="Start or pause the practice timer">Start practice</button> <button id="stop" class="tool press" hidden title="Save this session to Progress">Stop and save</button> <span id="clock" class="clock" role="status"></span>
     </div>
     <div class="tool-group" role="group" aria-label="Record">
-      <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
+      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this take" aria-label="Name this take"> <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
+      <details id="takes" class="takes" hidden><summary>Saved takes</summary><ol></ol></details>
     </div>
     <div class="tool-group" role="group" aria-label="Coach">
       <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
@@ -294,7 +295,23 @@
 
   // ---- Record a take: saves the audio in Recordings, to listen back now (and, later, to check against the score) ----
   const record = document.getElementById("record"), take = document.getElementById("take");
+  const takeName = document.getElementById("take-name"), takes = document.getElementById("takes");
   let recorder;
+  async function loadTakes() {   // this piece's saved takes, from the database
+    if (!piece) return;
+    const r = await fetch(`/api/pieces/${piece}/recordings`);
+    if (!r.ok) return;
+    const list = await r.json();
+    takes.hidden = !list.length;
+    takes.querySelector("ol").replaceChildren(...list.map(t => {
+      const li = document.createElement("li"), audio = document.createElement("audio");
+      li.textContent = (t.name || `Take ${t.id}`) + " ";
+      audio.controls = true; audio.preload = "none"; audio.src = `/api/recordings/${t.id}`;
+      li.append(audio);
+      return li;
+    }));
+  }
+  loadTakes();
   record.addEventListener("click", async () => {
     if (!piece) { take.textContent = "Open a piece from the library to record it"; return; }
     if (recorder) { recorder.stop(); return; }
@@ -311,10 +328,13 @@
       record.classList.remove("is-recording");
       const form = new FormData();
       form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
+      form.append("name", takeName.value);
       const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
       if (!r.ok) { take.textContent = "That take was empty. Try again."; return; }
       const saved = await r.json();
-      take.innerHTML = `Take ${saved.id} saved <audio controls src="/api/recordings/${saved.id}"></audio>`;
+      take.textContent = `Saved “${saved.name}”`;
+      takeName.value = "";
+      loadTakes();
     };
     recorder.start();
     take.textContent = "";

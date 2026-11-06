@@ -78,38 +78,73 @@ def pieces():
     return jsonify(database.getPieces(user_id()))
 
 
+MAX_SIDE = 2000   # Claude shrinks bigger images anyway, and rejects any over 5 MB (a phone photo often is)
+MAX_PAGES = 8     # one Claude reply holds about this many pages of MusicXML
+
+
+def claude_images(src):
+    """The upload as (media type, bytes) images Claude takes: each PDF page, or the photo upright, shrunk and evened out."""
+    if src.suffix.lower() == ".pdf":
+        import fitz
+        pages = list(fitz.open(src))[:MAX_PAGES]
+        zoom = lambda page: min(200 / 72, MAX_SIDE / max(page.rect.width, page.rect.height))
+        return [("image/png", page.get_pixmap(matrix=fitz.Matrix(zoom(page), zoom(page))).tobytes("png")) for page in pages]
+    try:
+        from PIL import Image, ImageOps
+        image = ImageOps.autocontrast(ImageOps.exif_transpose(Image.open(src)).convert("L"), cutoff=1)  # grey paper and faint ink come out black on white
+        image.thumbnail((MAX_SIDE, MAX_SIDE))
+        out = BytesIO(); image.save(out, "JPEG", quality=90)
+        return [("image/jpeg", out.getvalue())]
+    except Exception:   # not a picture Pillow knows; Claude gets it as it came
+        return [("image/png" if src.suffix.lower() == ".png" else "image/jpeg", src.read_bytes())]
+
+
+class NoMusic(Exception):
+    pass
+
+
 def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KEY a vision model writes the MusicXML instead
     import base64, anthropic
     from music21 import converter
-    if src.suffix.lower() == ".pdf":
-        import fitz
-        src = src.with_suffix(".png"); src.write_bytes(fitz.open(src.with_suffix(".pdf"))[0].get_pixmap(dpi=200).tobytes("png"))
-    image = {"type": "base64", "media_type": "image/png" if src.suffix.lower() == ".png" else "image/jpeg",
-             "data": base64.standard_b64encode(src.read_bytes()).decode()}
+    images = [{"type": "image", "source": {"type": "base64", "media_type": kind, "data": base64.standard_b64encode(data).decode()}}
+              for kind, data in claude_images(src)]
     key, workspace = (os.environ.get(k, "").strip() for k in ("ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"))  # pasted values often end in a newline
-    with anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {}).beta.messages.stream(
-        model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
-        messages=[{"role": "user", "content": [{"type": "image", "source": image},
-                  {"type": "text", "text": "Transcribe this sheet music as complete MusicXML (score-partwise, every note and rest, correct key and time signature). Reply with only the XML."}]}],
-    ) as stream:
-        reply = stream.get_final_message()
-    text = reply.content[-1].text
-    used = getattr(reply, "usage", None)
-    logging.warning("Claude read %s with %s: %s tokens in, %s out", src.name, getattr(reply, "model", "?"),
-                    getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # the Render log shows what each upload cost
-    xml = src.with_suffix(".musicxml")
-    xml.write_text(text[text.index("<"):text.rindex(">") + 1])
-    converter.parse(xml)  # unreadable output raises, and the upload form says so
-    return xml
+    client = anthropic.Anthropic(api_key=key, default_headers={"anthropic-workspace-id": workspace} if workspace else {})
+    for attempt in (1, 2):   # now and then Claude answers in prose, or its XML won't parse: one more go usually fixes it
+        with client.beta.messages.stream(
+            model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
+            messages=[{"role": "user", "content": [*images,
+                      {"type": "text", "text": "Transcribe this sheet music, every page in order, as one complete MusicXML score (score-partwise, every note and rest, correct key and time signature). "
+                                               "The photo may be blurred, tilted or dim: read what you can and make your best guess at the rest. "
+                                               "Reply with only the XML, or with only NO_MUSIC if there is no sheet music in it at all."}]}],
+        ) as stream:
+            reply = stream.get_final_message()
+        text = reply.content[-1].text
+        used = getattr(reply, "usage", None)
+        logging.warning("Claude read %s with %s: %s tokens in, %s out", src.name, getattr(reply, "model", "?"),
+                        getattr(used, "input_tokens", "?"), getattr(used, "output_tokens", "?"))   # the Render log shows what each upload cost
+        if "NO_MUSIC" in text and "<" not in text:   # a blank page, a selfie, a photo too blurred to see staves
+            raise NoMusic(text)
+        try:
+            xml = src.with_suffix(".musicxml")
+            xml.write_text(text[text.index("<"):text.rindex(">") + 1])
+            converter.parse(xml)  # unreadable output raises, and the upload form says so
+            return xml
+        except Exception:
+            if attempt == 2:
+                raise
+            logging.warning("Claude's reply for %s wasn't MusicXML, asking again: %.200r", src.name, text)
 
 def read_sheet(src, work, claude_ok):  # homr first wherever it can run; Claude when it can't, or when it fails
     from music21 import converter
     from pdfToMidi import _to_musicxml
     if src.suffix.lower() not in PHOTOS:
-        return _to_musicxml(src, work)
+        with CONVERT:
+            return _to_musicxml(src, work)
     if homr_ok():
         try:
-            xml = _to_musicxml(src, work)
+            with CONVERT:   # only homr needs the memory; Claude reads in parallel
+                xml = _to_musicxml(src, work)
             converter.parse(xml)  # unreadable output is a failure too, so Claude gets its turn
             logging.warning("homr read %s", src.name)
             return xml
@@ -128,10 +163,11 @@ def add_piece():
         return library_error(problem)
     with saved_upload() as src:
         try:
-            with CONVERT:
-                work = src.parent / "work"; work.mkdir()
-                xml = read_sheet(src, work, claude_ok)
-                mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+            work = src.parent / "work"; work.mkdir()
+            xml = read_sheet(src, work, claude_ok)
+            mid = musicxml_to_midi(xml, src.with_suffix(".mid"))
+        except NoMusic:
+            return library_error(f"Couldn't find sheet music in {src.name}. Try a sharper photo, straight on, in good light.")
         except Exception:
             logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
             return library_error(f"Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")
@@ -149,11 +185,18 @@ def piece_xml(piece_id):
 
 @api.post("/pieces/<int:piece_id>/recordings")  # the practice page's Record button
 def add_recording(piece_id):
-    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    piece = database.getPieceForUser(user_id(), piece_id) or abort(404)
     audio = request.files["file"].read()
     if not audio:   # the microphone gave nothing (denied mid-take, or stopped at once)
         return jsonify(error="the recording is empty"), 400
-    return jsonify(id=database.addRecording(piece_id, audio))
+    name = (request.form.get("name") or "").strip()[:100] or f"{piece['title']}, take {len(database.getRecordings(user_id(), piece_id)) + 1}"
+    return jsonify(id=database.addRecording(piece_id, audio, name), name=name)
+
+
+@api.get("/pieces/<int:piece_id>/recordings")  # the takes listed under the Record button
+def list_recordings(piece_id):
+    database.getPieceForUser(user_id(), piece_id) or abort(404)
+    return jsonify(database.getRecordings(user_id(), piece_id))
 
 
 @api.get("/recordings/<int:recording_id>")

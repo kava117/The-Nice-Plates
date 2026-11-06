@@ -75,12 +75,14 @@ def unauthorized():
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
 
-# Signed-in users go to onboarding until they finish it. Guests share the demo
-# account, so they are left alone.
+# Signed-in Google users go to onboarding until they finish it. The shared guest
+# account (Continue as guest) skips it so people can try the app at once.
 def onboarding_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if current_user.is_authenticated and database.getUserProficiency(current_user.id)["onboarded_at"] is None:
+        if (current_user.is_authenticated
+                and not database.isDemoUser(current_user.id)
+                and database.getUserProficiency(current_user.id)["onboarded_at"] is None):
             return redirect(url_for("onboarding"))
         return view(*args, **kwargs)
     return wrapped
@@ -93,10 +95,12 @@ def too_large(e):
     return jsonify(error=message), 413
 
 # Makes {{ year }} available to every template (used by footer.html).
+# guest_account: signed in as the shared Sample User via Continue as guest.
 @app.context_processor
 def inject_year():
     me = current_user if current_user.is_authenticated else database.getUserById(database.demoUser())
-    return {"year": date.today().year, "me": me}
+    guest_account = current_user.is_authenticated and database.isDemoUser(current_user.id)
+    return {"year": date.today().year, "me": me, "guest_account": guest_account}
 
 
 # 
@@ -339,6 +343,8 @@ def api_coach():
 @app.route("/")
 @app.route("/index")
 def index():
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
     return render_template("index.html")
 
 @app.route("/onboarding", methods=["GET", "POST"])
@@ -425,6 +431,14 @@ def login_google():
         return google.authorize_redirect(url_for("auth_google", _external=True)) if google.client_id else redirect(url_for("home"))
     except Exception:   # no Google keys, or Google unreachable: enter as the shared demo user
         return redirect(url_for("home"))
+
+@app.route("/login/guest")
+def login_guest():
+    """Sign in as the shared Sample User so guests get a real session and Log out."""
+    row = database.getUserById(database.demoUser())
+    clear_practice_state()
+    login_user(User(row))
+    return redirect(url_for("home"))
 
 @app.route("/auth/google")
 def auth_google():

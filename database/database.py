@@ -524,11 +524,22 @@ def getPracticeRecord(user_id, sessions=20):
 
 _demo_ids = {}   # per database; a guest's page asked three or four times, each a trip to the database
 
+DEMO_EMAIL = "sample.user@example.com"
+
 def demoUser():
     """One shared user until Google login lands; then use the signed-in user's id instead."""
     where = DATABASE_URL or DB_NAME
     if where not in _demo_ids:
         with get_db() as database:
-            database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', 'sample.user@example.com')")
-            _demo_ids[where] = database.execute("SELECT id FROM Users WHERE email = 'sample.user@example.com'").fetchone()[0]
+            database.execute(
+                "INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', ?)",
+                (DEMO_EMAIL,),
+            )
+            _demo_ids[where] = database.execute(
+                "SELECT id FROM Users WHERE email = ?", (DEMO_EMAIL,)
+            ).fetchone()[0]
     return _demo_ids[where]
+
+def isDemoUser(user_id):
+    """True for the shared guest account (Continue as guest logs in as this user)."""
+    return user_id == demoUser()

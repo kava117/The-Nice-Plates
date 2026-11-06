@@ -18,8 +18,12 @@ if POSTGRES:
     # A new connection to Neon costs about half a second and a page asks for up to eight, so they're
     # kept open and reused. check= replaces one Neon dropped while idle; no prepared statements,
     # which Neon's pooler may not keep between uses.
-    POOL = ConnectionPool(DATABASE_URL, min_size=1, max_size=8, max_idle=240, open=True,
-                          kwargs={"row_factory": dict_row, "prepare_threshold": None},
+    # A connection the network dropped silently would make the next query wait forever, so every
+    # socket has a connect timeout and TCP keepalives, and gives up after 10 s without an answer.
+    POOL = ConnectionPool(DATABASE_URL, min_size=1, max_size=8, max_idle=60, open=True,
+                          kwargs={"row_factory": dict_row, "prepare_threshold": None,
+                                  "connect_timeout": 5, "keepalives": 1, "keepalives_idle": 20,
+                                  "keepalives_interval": 5, "keepalives_count": 3, "tcp_user_timeout": 10000},
                           check=ConnectionPool.check_connection)
 else:
     IntegrityError = sqlite3.IntegrityError
@@ -254,6 +258,15 @@ def getOrCreateGoogleUser(sub, name, email, email_verified=False):
             (sub, name, email),
         )
         return {"id": cur.lastrowid, "name": name, "email": email}
+
+def ping():
+    """Raises unless the database answers within a few seconds (for /healthz)."""
+    if POSTGRES:
+        with POOL.connection(timeout=5) as conn:
+            conn.execute("SELECT 1")
+    else:
+        with get_db() as database:
+            database.execute("SELECT 1")
 
 def getPieces(user_id):
     with get_db() as database:

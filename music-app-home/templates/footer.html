@@ -1,13 +1,18 @@
 {# Shared page closing: footer bar at the bottom of the main content,
    then closes the <main>, .frame, <body> and <html> opened by header.html. #}
-      <!-- TODO: replace the filler blurb with real footer content (links, contact, credits). -->
       <footer class="site-footer">
-        <p>&copy; {{ year }} The Nice Plates &middot; A helper site for intro musicians to practice their pieces. More footer content coming soon.</p>
+        <p>&copy; {{ year }} The Nice Plates &middot; A helper site for intro musicians to practice their pieces.</p>
+        <p class="site-footer-links">
+          <a href="{{ url_for('privacy') }}">Privacy</a>
+          <span aria-hidden="true">&middot;</span>
+          <a href="{{ url_for('terms') }}">Terms</a>
+        </p>
       </footer>
     </main>
   </div>
 
   <script src="press.js"></script>
   <script src="nav.js"></script>
+  <script src="tour.js"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 
 # ---------------------------------------------------------------- boot & pages
-PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice"]
+PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/privacy", "/terms"]
 
 @pytest.mark.parametrize("path", PAGES)
 def test_page_loads_as_guest(guest, path):
@@ -294,7 +294,7 @@ def test_home_and_progress_show_saved_practice(user):
 def test_progress_with_no_sessions(user):
     prog = user[0].get("/progress").get_data(as_text=True)
     assert "0,150 600,150" in prog
-    assert "No practice saved yet" in prog
+    assert "No practice logged yet" in prog
 
 def test_progress_offers_to_save_time_left_on_the_timer(user):
     client, uid = user
@@ -304,7 +304,7 @@ def test_progress_offers_to_save_time_left_on_the_timer(user):
     assert "25 min</strong> on the practice timer" in prog and 'id="save-timer"' in prog
     client.post("/api/timer/stop")
     prog = client.get("/progress").get_data(as_text=True)
-    assert 'id="save-timer"' not in prog and "No practice saved yet" not in prog
+    assert 'id="save-timer"' not in prog and "No practice logged yet" not in prog
     assert [s["time_spent"] for s in db.getSessions(uid)] == [25 * 60]
 
 
@@ -361,3 +361,30 @@ def test_text_process(said, expect):
 def test_player_files_are_served(guest, path):
     r = guest.get(path)
     assert r.status_code == 200 and len(r.data) > 1000
+
+
+# ---------------------------------------------------------------- health
+def test_healthz_says_ok_when_the_database_answers(guest):
+    r = guest.get("/healthz")
+    assert r.status_code == 200 and r.get_data(as_text=True) == "ok"
+
+def test_healthz_is_503_when_the_database_is_down(guest, monkeypatch):
+    def down():
+        raise RuntimeError("no database")
+    monkeypatch.setattr(appmod.database, "ping", down)
+    assert guest.get("/healthz").status_code == 503
+
+
+def test_sign_in_pages_link_terms_and_privacy(guest):
+    welcome = guest.get("/").get_data(as_text=True)
+    assert "By signing in, you agree" in welcome
+    assert 'href="/terms"' in welcome and 'href="/privacy"' in welcome
+    home = guest.get("/home").get_data(as_text=True)
+    assert "By signing in, you agree" in home
+    assert ">Privacy<" in home and ">Terms<" in home
+
+def test_privacy_and_terms_name_listen_and_google(guest):
+    privacy = guest.get("/privacy").get_data(as_text=True)
+    assert "Privacy Policy" in privacy and "Listen" in privacy and "Google" in privacy
+    terms = guest.get("/terms").get_data(as_text=True)
+    assert "Terms of Use" in terms and 'href="/privacy"' in terms

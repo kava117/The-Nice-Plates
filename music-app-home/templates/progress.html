@@ -7,37 +7,54 @@
 
 <div class="content">
 
+  <section class="panel unsaved just-saved" id="just-saved" hidden aria-live="polite">
+    <div>
+      <p class="unsaved-lead">Nice — that one's on the chart</p>
+      <p class="unsaved-hint" id="just-saved-hint"></p>
+    </div>
+  </section>
+
   {% if unsaved >= 60 %}
   <section class="panel unsaved" aria-live="polite">
     <p><strong>{{ unsaved // 60 }} min</strong> on the practice timer, not saved yet.</p>
-    <button class="btn btn-solid" id="save-timer">Save it</button>
+    <button class="btn btn-solid press" id="save-timer">Save it</button>
   </section>
   {% elif not saved %}
-  <section class="panel unsaved">
-    <p>No practice saved yet. On Practice, press <strong>Start practice</strong>, then <strong>Stop and save</strong>.</p>
-    <a class="btn btn-solid" href="/practice">Practice</a>
+  <section class="panel unsaved" aria-live="polite">
+    <div>
+      <p class="unsaved-lead">No practice logged yet</p>
+      <p class="unsaved-hint">On Practice, press <strong>Start practice</strong> when you sit down, then <strong>Stop and save</strong>. That minute shows up here.</p>
+    </div>
+    <a class="btn btn-solid press" href="/practice">Start practicing</a>
   </section>
   {% endif %}
 
-  <section class="panel practice-panel" aria-label="Practice time this week">
+  <section class="panel practice-panel{% if not saved %} is-empty{% endif %}" aria-label="Practice time this week">
     <div class="practice-chart">
       <h2 class="section-title">Practice Time</h2>
-      <div class="bars">
+      {% if not saved %}
+      <p class="chart-empty">Your week will fill in here once a session is saved.</p>
+      {% endif %}
+      <div class="bars" {% if not saved %}aria-hidden="true"{% endif %}>
         {% set top = per_day|max or 1 %}
         {% for label in ["M", "T", "W", "TH", "F", "S", "SU"] %}
         <div class="bar-group"><div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
         {% endfor %}
       </div>
     </div>
+    {% if saved %}
     <div class="chart-legend">
-      <label><input type="checkbox" checked> Time spent</label>
-      <label><input type="checkbox"> Goal</label>
+      <label><input type="checkbox" checked disabled> Time spent</label>
     </div>
+    {% endif %}
   </section>
 
-  <section class="panel">
+  <section class="panel{% if not saved %} is-empty{% endif %}">
     <h2 class="section-title">Overall Time</h2>
-    <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend">
+    {% if not saved %}
+    <p class="chart-empty">Each saved session adds a point on this line.</p>
+    {% endif %}
+    <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend" {% if not saved %}aria-hidden="true"{% endif %}>
       <polyline
         class="line"
         points="{% if totals|length < 2 %}0,150 600,150{% else %}{% for t in totals %}{{ (loop.index0 * 600 / (totals|length - 1))|round(1) }},{{ (150 - t * 140 / totals[-1])|round(1) }} {% endfor %}{% endif %}" />
@@ -46,13 +63,16 @@
   </section>
 
   <div class="tiles donut-row">
-    <div class="donut-card">
+    <div class="donut-card{% if practiced == 0 %} is-empty{% endif %}">
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ practiced }} pieces practiced">
         <circle class="donut-track" cx="60" cy="60" r="50" />
         <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="{{ (314 * practiced / (pieces or 1))|round|int }} 314" transform="rotate(-90 60 60)" />
         <text class="donut-value" x="60" y="68" text-anchor="middle">{{ practiced }}</text>
       </svg>
-      <div class="donut-label">Pieces Practiced</div>
+      <div class="donut-copy">
+        <div class="donut-label">Pieces Practiced</div>
+        {% if practiced == 0 %}<p class="chart-empty">Counts a piece once you've saved time on it.</p>{% endif %}
+      </div>
     </div>
     <div class="donut-card">
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ pieces }} pieces in the library">
@@ -70,9 +90,24 @@
 <script>
   document.getElementById("save-timer")?.addEventListener("click", async e => {
     e.target.disabled = true;
-    await fetch("/api/timer/stop", {method: "POST"});
+    const r = await fetch("/api/timer/stop", {method: "POST"});
+    try {
+      const state = await r.json();
+      if (state.saved_session_id) sessionStorage.setItem("progress-just-saved", String(state.time_spent));
+    } catch (err) {}
     location.reload();
   });
+  // Practice left a note after Stop and save; show it once, then clear it.
+  try {
+    const sec = sessionStorage.getItem("progress-just-saved");
+    if (sec != null) {
+      sessionStorage.removeItem("progress-just-saved");
+      const n = +sec;
+      document.getElementById("just-saved-hint").textContent =
+        (n < 60 ? n + " seconds" : Math.round(n / 60) + " min") + " from the timer you just stopped.";
+      document.getElementById("just-saved").hidden = false;
+    }
+  } catch (e) {}
 </script>
 
 {% include "footer.html" %}

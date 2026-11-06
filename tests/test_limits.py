@@ -24,14 +24,20 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 # ---------------------------------------------------------------- boot & pages
 PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/privacy", "/terms"]
+APP_PAGES = [p for p in PAGES if p not in ("/", "/index")]   # welcome sends signed-in people to Home
 
 @pytest.mark.parametrize("path", PAGES)
 def test_page_loads_as_guest(guest, path):
     assert guest.get(path).status_code == 200
 
-@pytest.mark.parametrize("path", PAGES)
+@pytest.mark.parametrize("path", APP_PAGES)
 def test_page_loads_signed_in(user, path):
     assert user[0].get(path).status_code == 200
+
+@pytest.mark.parametrize("path", ["/", "/index"])
+def test_welcome_sends_a_signed_in_user_home(user, path):
+    r = user[0].get(path)
+    assert r.status_code == 302 and r.headers["Location"].endswith("/home")
 
 def test_demo_piece_seeded_once_across_restarts():
     for _ in range(2):   # two more cold boots in the same folder
@@ -418,10 +424,11 @@ def test_healthz_is_503_when_the_database_is_down(guest, monkeypatch):
 
 def test_sign_in_pages_link_terms_and_privacy(guest):
     welcome = guest.get("/").get_data(as_text=True)
-    assert "By signing in, you agree" in welcome
+    assert "By continuing, you agree" in welcome
     assert 'href="/terms"' in welcome and 'href="/privacy"' in welcome
+    assert 'href="/login/guest"' in welcome and "Continue as guest" in welcome
     home = guest.get("/home").get_data(as_text=True)
-    assert "By signing in, you agree" in home
+    assert "By continuing, you agree" in home
     assert ">Privacy<" in home and ">Terms<" in home
 
 def test_privacy_and_terms_name_listen_and_google(guest):
@@ -429,3 +436,29 @@ def test_privacy_and_terms_name_listen_and_google(guest):
     assert "Privacy Policy" in privacy and "Listen" in privacy and "Google" in privacy
     terms = guest.get("/terms").get_data(as_text=True)
     assert "Terms of Use" in terms and 'href="/privacy"' in terms
+
+
+def test_continue_as_guest_signs_in_and_opens_home(guest):
+    r = guest.get("/login/guest")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/home")
+    home = guest.get("/home")
+    assert home.status_code == 200
+    html = home.get_data(as_text=True)
+    assert 'href="/logout">Log out' in html
+    assert ">Guest<" in html
+    assert guest.get("/").status_code == 302
+
+
+def test_a_guest_login_skips_onboarding(guest):
+    guest.get("/login/guest")
+    assert guest.get("/home").status_code == 200
+    assert guest.get("/onboarding").status_code == 200
+
+
+def test_guest_practice_and_timer_after_sign_in(guest):
+    guest.get("/login/guest")
+    assert guest.get("/practice").status_code == 200
+    assert guest.post("/api/timer/start").status_code == 200
+    stop = guest.post("/api/timer/stop").get_json()
+    assert "time_spent" in stop
+    assert guest.get("/progress").status_code == 200

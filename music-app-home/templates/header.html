@@ -41,10 +41,16 @@
         </svg>
       </button>
       {% if current_user.is_authenticated %}
+        {% if guest_account %}
+        <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
+        {% endif %}
         <a class="btn btn-ghost press" href="{{ url_for('logout') }}">Log out</a>
       {% else %}
         <div class="topbar-sign-in">
-          <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
+          <div class="topbar-sign-in-row">
+            <a class="btn btn-ghost press" href="{{ url_for('login_guest') }}">Continue as guest</a>
+            <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
+          </div>
           {% include "sign_in_agree.html" %}
         </div>
       {% endif %}

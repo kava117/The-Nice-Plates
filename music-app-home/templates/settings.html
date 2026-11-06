@@ -32,8 +32,15 @@
             {% endfor %}
             {% endif %}
             <div class="field-actions">
-              {% if current_user.is_authenticated %}<a class="btn btn-ghost press" href="{{ url_for('onboarding') }}">Update playing level</a>
-              <a class="btn btn-ghost press" href="/logout">Sign out</a>{% else %}
+              {% if current_user.is_authenticated and not guest_account %}
+              <a class="btn btn-ghost press" href="{{ url_for('onboarding') }}">Update playing level</a>
+              <a class="btn btn-ghost press" href="{{ url_for('logout') }}">Sign out</a>
+              {% elif guest_account %}
+              <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
+              <a class="btn btn-ghost press" href="{{ url_for('logout') }}">Leave guest</a>
+              {% include "sign_in_agree.html" %}
+              {% else %}
+              <a class="btn btn-ghost press" href="{{ url_for('login_guest') }}">Continue as guest</a>
               <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in with Google</a>
               {% include "sign_in_agree.html" %}
               {% endif %}

@@ -2875,12 +2875,33 @@ body.coach-open main {
   gap: 0;
 }
 
+.topbar-sign-in-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .topbar-sign-in .sign-in-agree {
   margin-top: 6px;
   max-width: 16rem;
   text-align: right;
 }
 
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.welcome-guest-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
 .welcome .sign-in-agree {
-  margin-top: 14px;
+  margin-top: 4px;
 }

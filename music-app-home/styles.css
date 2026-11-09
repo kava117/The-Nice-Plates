@@ -1430,6 +1430,23 @@ body[data-auth="guest"] .welcome {
   gap: 12px;
 }
 
+/* Record a take keeps one width as it reads Record a take, Cancel, Stop recording: the toolbar doesn't jump. */
+#record {
+  min-width: 10.5em;
+  justify-content: center;
+}
+
+/* During a take the passage row steps aside for the lane. */
+.passage-row .tool-group {
+  flex: none;
+  flex-wrap: nowrap;        /* the zoom pair stays side by side */
+}
+
+#controls.is-taking .passage-row,
+#controls.is-taking .rep-row {
+  display: none;
+}
+
 .takes audio {
   height: 32px;
 }

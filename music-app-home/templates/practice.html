@@ -319,7 +319,9 @@
     }));
   }
   loadTakes();
+  const controls = $("controls");
   function endTake() {   // Stop, or the music ran out; during the count-in, nothing was recorded
+    controls.classList.remove("is-taking");
     if (live) live.stop();
     live = null;
     if (recorder.state !== "inactive") return recorder.stop();
@@ -341,7 +343,8 @@
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-        if (live) live.stop();
+      controls.classList.remove("is-taking");
+      if (live) live.stop();
       [recorder, live] = [null, null];
       record.textContent = "Record a take";
       record.classList.remove("is-recording");
@@ -371,6 +374,7 @@
     const time = from.CurrentMeasure && from.CurrentMeasure.ActiveTimeSignature;   // count in one bar of its beats
     const beats = (time && time.Numerator) || 4, beat = 4 / ((time && time.Denominator) || 4) * 60 / bpm / speed;
     lane.hidden = false;
+    controls.classList.add("is-taking");   // passages can't change mid-take: their row gives the lane its room
     takes.open = false;
     record.textContent = "Cancel";
     try {

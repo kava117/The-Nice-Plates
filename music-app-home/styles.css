@@ -1478,6 +1478,22 @@ body[data-auth="guest"] .welcome {
   display: block;
   width: 100%;
   height: 100%;
+  border-radius: inherit;
+}
+
+/* After a take the lane scrolls sideways; up and down stays the page's, on touch too. */
+.live-lane.is-review canvas {
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.live-lane.is-review canvas:active {
+  cursor: grabbing;
+}
+
+.live-lane canvas:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .live-lane-close {

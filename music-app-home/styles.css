@@ -1449,10 +1449,61 @@ body[data-auth="guest"] .welcome {
 
 :root {
   --rec: #B3261E;
+  --lane-note: #3B6EA8;     /* the score's notes in the live lane (live.js) */
+  --lane-on: #2F7D4A;       /* played, in tune */
+  --lane-off: #C27A00;      /* played, off the note: the same amber as a slip */
 }
 
 :root[data-theme="dark"] {
   --rec: #F2867E;
+  --lane-note: #6FA3DB;
+  --lane-on: #5FD39A;
+  --lane-off: #F0A63A;
+}
+
+/* The live lane: shown for a take, pinned with the controls so it stays in view as the score scrolls. */
+.live-lane {
+  position: relative;
+  height: 132px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.live-lane[hidden] {
+  display: none;
+}
+
+.live-lane canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.live-lane-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.live-lane-close:hover {
+  background: var(--band);
+  color: var(--ink);
+}
+
+@media (max-width: 600px) {
+  .live-lane {
+    height: 104px;
+  }
 }
 
 /* Keyboard shortcuts: a details element, so it opens without script too. */

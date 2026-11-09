@@ -2935,11 +2935,12 @@ body.coach-open main {
   color: var(--ink);
 }
 
+/* The Terms line sits beside the sign-in buttons, so the pair fits the 48px top bar. */
 .topbar-sign-in {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 12px;
 }
 
 .topbar-sign-in-row {
@@ -2950,9 +2951,45 @@ body.coach-open main {
 }
 
 .topbar-sign-in .sign-in-agree {
-  margin-top: 6px;
-  max-width: 16rem;
+  margin: 0;
+  max-width: 15rem;
+  font-size: 0.6875rem;
+  line-height: 1.3;
   text-align: right;
+}
+
+.topbar-sign-in-row {
+  flex-wrap: nowrap;
+}
+
+/* Phones: the sign-in pair takes its own line under ? and the theme switch, Terms line beneath it. */
+@media (max-width: 600px) {
+  .frame {
+    grid-template-rows: auto auto auto;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    padding-block: 8px;
+  }
+
+  .topbar-sign-in {
+    flex-basis: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .topbar-sign-in-row .btn {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .topbar-sign-in .sign-in-agree {
+    max-width: none;
+    text-align: center;
+  }
 }
 
 .welcome-actions {

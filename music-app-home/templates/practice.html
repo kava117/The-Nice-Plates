@@ -23,14 +23,7 @@
     </div>
     <div class="tool-group" role="group" aria-label="Record">
       <input id="take-name" class="take-name" maxlength="100" placeholder="Name this take" aria-label="Name this take"> <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
-      <details id="takes" class="takes" hidden><summary>Saved takes</summary><ol></ol></details>
-    </div>
-    <div class="tool-group" role="group" aria-label="Coach">
-      <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
-    </div>
-    <div class="tool-group tool-group-end" role="group" aria-label="Zoom">
-      <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
-      <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <details id="takes" class="keys takes" hidden><summary class="tool press" title="Takes you've saved for this piece">Takes</summary><ol class="keys-panel takes-panel"></ol></details>
     </div>
   </div>
 
@@ -57,6 +50,11 @@
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
       </dl>
     </details>
+    <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
+    <div class="tool-group" role="group" aria-label="Zoom">
+      <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
+      <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
+    </div>
   </div>
 
   <div class="controls-row rep-row" id="rep" hidden>
@@ -228,7 +226,7 @@
     "y": () => passages.rep(true),
     "n": () => passages.rep(false),
     "l": () => listening.toggle(),
-    "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
+    "Escape": () => keys.open ? (keys.open = false) : $("takes").open ? ($("takes").open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },
     "c": () => coach.toggle(),
@@ -311,6 +309,7 @@
     if (!r.ok) return;
     const list = await r.json();
     takes.hidden = !list.length;
+    takes.querySelector("summary").textContent = `Takes (${list.length})`;
     takes.querySelector("ol").replaceChildren(...list.map(t => {
       const li = document.createElement("li"), audio = document.createElement("audio");
       li.textContent = (t.name || `Take ${t.id}`) + " ";
@@ -342,7 +341,7 @@
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      if (live) live.stop();
+        if (live) live.stop();
       [recorder, live] = [null, null];
       record.textContent = "Record a take";
       record.classList.remove("is-recording");
@@ -372,6 +371,7 @@
     const time = from.CurrentMeasure && from.CurrentMeasure.ActiveTimeSignature;   // count in one bar of its beats
     const beats = (time && time.Numerator) || 4, beat = 4 / ((time && time.Denominator) || 4) * 60 / bpm / speed;
     lane.hidden = false;
+    takes.open = false;
     record.textContent = "Cancel";
     try {
       const started = await liveTake({ stream, osmd, lane: $("live-canvas"), events: scoreEvents(from, inside), speed, beats, beat,

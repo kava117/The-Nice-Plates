@@ -72,6 +72,11 @@
     <span class="rep-note" id="rep-note" role="status"></span>
     <span class="rep-actions" id="rep-actions"></span>
   </div>
+
+  <div class="live-lane" id="live-lane" hidden>
+    <canvas id="live-canvas" role="img" aria-label="The score's notes coming up, and the pitch you play, as it happens"></canvas>
+    <button type="button" class="live-lane-close" id="live-close" aria-label="Hide the lane">&times;</button>
+  </div>
 </div>
 
 <p class="score-loading" id="score-loading" role="status">Loading the score…</p>
@@ -107,6 +112,7 @@
 <script src="/player.js"></script>
 <script src="/passages.js"></script>
 <script src="/listen.js"></script>
+<script src="/live.js"></script>
 <script src="/coach.js"></script>
 <script>
   // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
@@ -293,10 +299,12 @@
   addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
   document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
 
-  // ---- Record a take: saves the audio in Recordings, to listen back now (and, later, to check against the score) ----
+  // ---- Record a take: a bar of ticks, then the take, with the lane (live.js) showing your pitch against the score ----
   const record = document.getElementById("record"), take = document.getElementById("take");
   const takeName = document.getElementById("take-name"), takes = document.getElementById("takes");
-  let recorder;
+  const lane = $("live-lane");
+  let recorder, live = null;
+  $("live-close").addEventListener("click", () => { lane.hidden = true; });
   async function loadTakes() {   // this piece's saved takes, from the database
     if (!piece) return;
     const r = await fetch(`/api/pieces/${piece}/recordings`);
@@ -312,18 +320,30 @@
     }));
   }
   loadTakes();
+  function endTake() {   // Stop, or the music ran out; during the count-in, nothing was recorded
+    if (live) live.stop();
+    live = null;
+    if (recorder.state !== "inactive") return recorder.stop();
+    recorder.stream.getTracks().forEach(t => t.stop());
+    recorder = null;
+    lane.hidden = true;
+    record.textContent = "Record a take";
+  }
   record.addEventListener("click", async () => {
     if (!piece) { take.textContent = "Open a piece from the library to record it"; return; }
-    if (recorder) { recorder.stop(); return; }
+    if (recorder) return endTake();
     let stream;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    // the plain sound: the browser's voice clean-up would smear the notes
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
     catch { take.textContent = "Allow the microphone to record a take"; return; }
-    const chunks = [];
-    recorder = new MediaRecorder(stream);
+    player.stop();
+    listening.stop();
+    const chunks = [], mine = recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = async () => {
       stream.getTracks().forEach(t => t.stop());
-      recorder = null;
+      if (live) live.stop();
+      [recorder, live] = [null, null];
       record.textContent = "Record a take";
       record.classList.remove("is-recording");
       const form = new FormData();
@@ -336,10 +356,32 @@
       takeName.value = "";
       loadTakes();
     };
-    recorder.start();
+    const rolling = () => {
+      recorder.start();
+      record.textContent = "Stop recording";
+      record.classList.add("is-recording");
+    };
     take.textContent = "";
-    record.textContent = "Stop recording";
-    record.classList.add("is-recording");
+
+    // from the cursor, kept inside the picked passage, as Play does
+    const bars = passages.bars, at = osmd.cursor.Iterator;
+    if (bars && (at.EndReached || at.CurrentMeasureIndex < bars.first || at.CurrentMeasureIndex > bars.last)) passages.toStart();
+    else if (!bars && at.EndReached) osmd.cursor.reset();
+    const from = osmd.cursor.Iterator, inside = bars && (step => step.CurrentMeasureIndex >= bars.first && step.CurrentMeasureIndex <= bars.last);
+    const speed = tempo.value / 100, bpm = from.CurrentBpm || osmd.Sheet.DefaultStartTempoInBpm || 80;
+    const time = from.CurrentMeasure && from.CurrentMeasure.ActiveTimeSignature;   // count in one bar of its beats
+    const beats = (time && time.Numerator) || 4, beat = 4 / ((time && time.Denominator) || 4) * 60 / bpm / speed;
+    lane.hidden = false;
+    record.textContent = "Cancel";
+    try {
+      const started = await liveTake({ stream, osmd, lane: $("live-canvas"), events: scoreEvents(from, inside), speed, beats, beat,
+        onRoll: () => recorder === mine && rolling(), onEnd: () => recorder === mine && endTake() });
+      if (recorder === mine) live = started; else started.stop();   // Cancel was pressed while it got ready
+    } catch (err) {   // no lane on this browser: record plainly
+      console.warn("Recording without the live lane:", err);
+      lane.hidden = true;
+      if (recorder === mine) rolling();
+    }
   });
 
   // A sleeping free server takes up to a minute to answer: say so instead of sitting silent.

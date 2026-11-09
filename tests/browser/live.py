@@ -10,6 +10,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8124"
+where = "osmd.cursor.Iterator.CurrentEnrolledTimestamp.RealValue"   # the score's cursor, in whole notes
 SHOTS = sys.argv[sys.argv.index("--shots") + 1] if "--shots" in sys.argv else None   # a folder for screenshots
 
 # The microphone is a sawtooth (rich in overtones, like a bowed string), silent until the test plays it.
@@ -79,7 +80,7 @@ with sync_playwright() as p:
     on = sum(p["on"] for p in trail) / max(1, len(trail))
     assert len(trail) > 8 * 100, f"only {len(trail)} pitches in 8 s"   # about 190 a second
     assert on > 0.9, f"only {on:.0%} of the score-in-tune notes drawn as in tune"
-    assert page.evaluate("osmd.cursor.Iterator.CurrentEnrolledTimestamp.RealValue") > 1, "cursor didn't move with the take"
+    assert page.evaluate(where) > 1, "cursor didn't move with the take"
 
     lags = [page.evaluate(LAG)]
     page.evaluate("fake.osc.frequency.setValueAtTime(440, fake.ctx.currentTime)")
@@ -90,6 +91,30 @@ with sync_playwright() as p:
     page.locator("#record").click()   # Stop
     page.wait_for_function("document.getElementById('take').textContent.includes('Saved')", timeout=10000)
     assert lane.is_visible(), "the lane should stay up to look back at"
+
+    # looking back: drag, the arrow keys and the strip move the take; up and down still scroll the page
+    canvas = page.locator("#live-canvas")
+    picture = lambda: canvas.evaluate("c => c.toDataURL()")
+    assert "is-review" in lane.get_attribute("class")
+    box = canvas.bounding_box()
+    before = picture()
+    page.mouse.move(box["x"] + 200, box["y"] + 60); page.mouse.down()
+    page.mouse.move(box["x"] + 500, box["y"] + 60, steps=8); page.mouse.up()
+    page.wait_for_timeout(600)   # it coasts, then settles
+    dragged = picture()
+    assert dragged != before, "dragging didn't move the take"
+    canvas.focus(); page.keyboard.press("ArrowRight"); page.wait_for_timeout(500)
+    assert picture() != dragged, "the arrow key didn't move the take"
+    cursor = page.evaluate(where)
+    page.keyboard.press("ArrowLeft"); page.wait_for_timeout(300)
+    assert page.evaluate(where) == cursor, "the arrow key moved the score's cursor too"
+    page.mouse.click(box["x"] + 5, box["y"] + box["height"] - 4); page.wait_for_timeout(600)   # the strip: back to the start
+    assert canvas.evaluate("c => c.trail.length") and picture() != dragged
+    scroller = "(document.querySelector('main').scrollHeight > document.querySelector('main').clientHeight ? document.querySelector('main').scrollTop : scrollY)"
+    top = page.evaluate(scroller)
+    page.mouse.move(box["x"] + 300, box["y"] + 60); page.mouse.wheel(0, 400); page.wait_for_timeout(400)
+    assert page.evaluate(scroller) > top, "scrolling down over the lane should still scroll the page"
+
     page.locator("#live-close").click()
     assert lane.is_hidden()
 

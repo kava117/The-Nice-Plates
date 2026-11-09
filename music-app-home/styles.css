@@ -1436,6 +1436,18 @@ body[data-auth="guest"] .welcome {
   justify-content: center;
 }
 
+/* Only the × to put the lane away after a take; during one, Stop is on the Record button. */
+.live-lane:not(.is-review) .live-lane-close {
+  display: none;
+}
+
+/* Phones: no dragging hint (it's for a mouse, and Keys says it); the passage row stays one line. */
+@media (max-width: 600px) {
+  .chip-hint {
+    display: none;
+  }
+}
+
 /* During a take the passage row steps aside for the lane. */
 .passage-row .tool-group {
   flex: none;

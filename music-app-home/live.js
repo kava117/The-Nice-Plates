@@ -72,7 +72,9 @@ const PX_PER_SECOND = 150;
 async function liveTake({ stream, osmd, lane, events, speed, beats, beat, onRoll, onEnd }) {
   const context = new AudioContext({ latencyHint: "interactive" });
   const url = URL.createObjectURL(new Blob([TRACK], { type: "text/javascript" }));
-  try { await context.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+  try { await Promise.all([context.resume(), context.audioWorklet.addModule(url)]); }
+  catch (err) { context.close(); throw err; }
+  finally { URL.revokeObjectURL(url); }
   const tracker = new AudioWorkletNode(context, "pitch");
   const mute = new GainNode(context, { gain: 0 });
   context.createMediaStreamSource(stream).connect(tracker).connect(mute).connect(context.destination);   // silent, but keeps it running
@@ -82,18 +84,23 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, onRoll
   const heardLate = context.outputLatency || context.baseLatency || 0;
   const first = context.currentTime + 0.15;
   const downbeat = first + beats * beat;
-  for (let k = 0; k < beats; k++) tick(context, first + k * beat, k === 0);
+  for (let k = 0; k < beats; k++) countTick(context, first + k * beat, k === 0);
   const zero = downbeat + heardLate;
-  const notes = [];   // the score's notes, in seconds from the downbeat: {t, end, midi}
-  for (const e of events) for (const n of e.notes) notes.push({ t: e.seconds / speed, end: (e.seconds + n.seconds) / speed, midi: n.midi });
+  // the score's notes, in seconds from the downbeat: {t, end, midi}. Only the top staff: the
+  // violin's own line, or a piano score's right hand, not the bass under it.
+  const top = Math.min(...events.flatMap(e => e.notes.map(n => n.staff)));
+  const notes = [];
+  for (const e of events) for (const n of e.notes) if (n.staff === top) notes.push({ t: e.seconds / speed, end: (e.seconds + n.seconds) / speed, midi: n.midi });
   const end = (events.end ?? Math.max(...notes.map(n => n.end), 0) * speed) / speed;
 
-  const trail = [];     // what was played: {t, midi, on} (on: true, false, or null where the score rests)
+  const trail = lane.trail = [];   // what was played: {t, midi, want, on} (on: true, false, or null where the score rests)
   let floor = null, last = [], rolling = false, ended = false, steps = 1, running = true;
 
   tracker.port.onmessage = ({ data: [t, hz, clear, level] }) => {
-    // the room's own noise: drops at once, creeps up slowly under music
-    floor = floor === null || level < floor ? level : floor + 0.002 * (level - floor);
+    // the room's own noise, as Listen keeps it: drops at once, settles on a steady hum, and under
+    // music creeps up only half a dB a second, so a long held note doesn't fade from the lane
+    if (floor === null || level < floor) floor = level;
+    else floor += level < floor + 6 ? 0.05 * (level - floor) : 0.5 * 256 / context.sampleRate;
     if (!hz || clear < 0.8 || level < Math.max(floor + 12, -62)) { last = []; return; }
     const midi = 69 + 12 * Math.log2(hz / 440);
     last = [...last.slice(-2), midi];
@@ -110,7 +117,8 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, onRoll
 
   const now = () => {   // the audio clock, smoothly between its 3 ms steps
     const ts = context.getOutputTimestamp();
-    return ts.contextTime + Math.max(0, performance.now() - ts.performanceTime) / 1000;
+    if (!ts.performanceTime) return context.currentTime;   // no output device to time against
+    return ts.contextTime + Math.min(Math.max(0, performance.now() - ts.performanceTime) / 1000, 0.05);
   };
   const draw = drawLane(lane, notes);
   function frame() {
@@ -137,7 +145,7 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, onRoll
 }
 
 // One tick: a short high blip, higher on the first beat of the bar.
-function tick(context, at, first) {
+function countTick(context, at, first) {
   const tone = new OscillatorNode(context, { frequency: first ? 1760 : 1320 });
   const level = new GainNode(context, { gain: 0 });
   level.gain.setValueAtTime(0, at);
@@ -243,8 +251,11 @@ function drawLane(canvas, notes) {
       const near = Math.round(head.midi), cents = Math.round((head.midi - near) * 100);
       const label = noteName(near) + (Math.abs(cents) >= 5 ? ` ${cents > 0 ? "+" : "−"}${Math.abs(cents)}¢` : "");
       g.font = "700 12px " + colour("--font-body");
+      const lw = g.measureText(label).width + 10, ly = hy > 26 ? hy - 20 : hy + 20;   // a chip above the dot, off the line
+      g.fillStyle = colour("--surface");
+      g.beginPath(); g.roundRect(hx - lw / 2, ly - 9, lw, 18, 9); g.fill();
       g.fillStyle = ink;
-      g.fillText(label, hx - g.measureText(label).width - 12, Math.min(Math.max(hy, 10), h - 10));
+      g.fillText(label, hx - lw / 2 + 5, ly + 0.5);
     }
 
     // the count-in: the beats left, big, popping on each tick

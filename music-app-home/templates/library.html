@@ -45,7 +45,7 @@
   <ul class="library-grid">
     {% for piece in pieces %}
     <li><a class="card" href="/practice?piece={{ piece.id }}">
-      <div class="card-art"></div>
+      <div class="card-art" data-thumb="{{ piece.id }}"></div>
       <div class="card-caption">
         <div class="card-title">{{ piece.title }}</div>
         <div class="card-subtitle">{{ piece.composer or "" }}</div>
@@ -68,4 +68,5 @@
 </div>
 
 <script src="/upload.js"></script>
+<script src="/thumbs.js"></script>
 {% include "footer.html" %}

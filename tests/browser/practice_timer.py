@@ -25,7 +25,7 @@ with sync_playwright() as p:
     assert timer.inner_text() == "Pause" and stop.is_visible()
 
     page.reload(); page.wait_for_timeout(1200)
-    assert timer.inner_text() == "Pause" and clock.inner_text() != "0:00", "reload lost the running timer"
+    assert timer.inner_text() == "Pause" and not clock.inner_text().endswith("0:00"), "reload lost the running timer"
 
     page.goto(BASE + "/library"); page.wait_for_timeout(500)
     away = state()
@@ -35,7 +35,7 @@ with sync_playwright() as p:
     assert timer.inner_text() == "Resume" and state()["elapsed"] == away["elapsed"], "time away was counted"
 
     stop.click(); page.wait_for_timeout(500)
-    assert timer.inner_text() == "Start practice" and clock.inner_text().startswith("Saved")
+    assert timer.inner_text() == "Start practice" and clock.inner_text().startswith("Session saved")
 
     timer.click(); page.wait_for_timeout(1100)   # switching tabs: visibilitychange to hidden
     page.evaluate("Object.defineProperty(document, 'hidden', {value: true, configurable: true}); document.dispatchEvent(new Event('visibilitychange'))")

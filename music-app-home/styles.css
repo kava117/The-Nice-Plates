@@ -1353,6 +1353,23 @@ body[data-auth="guest"] .welcome {
   flex: none;
 }
 
+/* Start practice is the page's main action: the one solid button in the toolbar. */
+.tool-primary {
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+.tool-primary.is-running {
+  --edge: var(--edge-neutral);
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+
 .tempo {
   display: inline-flex;
   align-items: center;

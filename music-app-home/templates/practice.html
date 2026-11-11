@@ -18,8 +18,8 @@
       <button id="play" class="tool tool-play press" disabled title="Hear the selected passage, or the whole piece (Space)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="tool-label">Listen</span></button>
       <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
     </div>
-    <div class="tool-group" role="group" aria-label="Practice timer">
-      <button id="timer" class="tool press" title="Start or pause the practice timer">Start practice</button> <button id="stop" class="tool press" hidden title="Save this session to Progress">Stop and save</button> <span id="clock" class="clock" role="status"></span>
+    <div class="tool-group" role="group" aria-label="Practice session">
+      <button id="timer" class="btn btn-solid press tool-primary" title="Time a practice session: it's added to Progress when you finish"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Start practice</span></button> <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button> <span id="clock" class="clock" role="status"></span>
     </div>
     <div class="tool-group" role="group" aria-label="Record">
       <input id="take-name" class="take-name" maxlength="100" placeholder="Name this take" aria-label="Name this take"> <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
@@ -149,7 +149,7 @@
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
-    onPick: () => { player.stop(); coach.refresh(); listening.picked(); },   // the coach's suggestions name the picked bars
+    onPick: () => { player.stop(); coach.refresh(); listening.picked(); showClock(); },   // the coach's suggestions and "Practicing: bars 3–6" name the picked bars
     onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
@@ -264,18 +264,32 @@
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }).then(r => r.json());
   if (piece) post("/api/practice/piece", { piece_id: +piece });   // the saved session remembers which piece it was
   // The server's {running, elapsed} is the truth; every timer call goes through render().
+  // Its words always match the session: Start practice before one, Pause / Resume during it, and
+  // back to Start practice once Finish session has saved it. The line beside says what's practiced.
   const timer = document.getElementById("timer"), stop = document.getElementById("stop"), clock = document.getElementById("clock");
+  const timerWord = timer.querySelector(".tool-label");
   const minutes = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   let current = { running: false, elapsed: 0 }, shown = 0, tick;
+  const practicing = () => {
+    const bars = passages.bars;
+    if (!bars) return "whole piece";
+    const a = passages.number(bars.first), b = passages.number(bars.last);
+    return a === b ? `bar ${a}` : `bars ${a}–${b}`;
+  };
+  const showClock = () => {
+    const started = current.running || shown > 0;
+    clock.textContent = !started ? "" : `${current.running ? "Practicing" : "Paused"}: ${practicing()} · ${minutes(shown)}`;
+  };
   function render(state) {
     current = state;
     clearInterval(tick);
     const started = state.running || state.elapsed > 0;
-    timer.textContent = state.running ? "Pause" : started ? "Resume" : "Start practice";
+    timerWord.textContent = state.running ? "Pause" : started ? "Resume" : "Start practice";
+    timer.classList.toggle("is-running", !!state.running);
     stop.hidden = !started;
-    shown = state.elapsed;
-    clock.textContent = started ? minutes(shown) : "";
-    if (state.running) tick = setInterval(() => { clock.textContent = minutes(++shown); }, 1000);
+    shown = state.elapsed || 0;
+    showClock();
+    if (state.running) tick = setInterval(() => { shown++; showClock(); }, 1000);
     return state;
   }
   const refresh = () => fetch("/api/practice/state").then(r => r.json()).then(render);
@@ -288,12 +302,12 @@
   timer.addEventListener("click", async () => render(await post(current.running ? "/api/timer/pause" : "/api/timer/start")));
   stop.addEventListener("click", async () => {
     const state = render(await post("/api/timer/stop"));
-    if (state.too_long) { clock.textContent = "That session ran too long to count"; return; }
+    if (state.too_long) { clock.textContent = "That session ran over 4 hours, so it wasn't counted"; return; }
     if (!state.saved_session_id) { clock.textContent = ""; return; }
     const label = state.time_spent < 60 ? state.time_spent + " s" : Math.round(state.time_spent / 60) + " min";
     try { sessionStorage.setItem("progress-just-saved", String(state.time_spent)); } catch {}
     clock.replaceChildren();
-    clock.append("Saved ", label, " · ");
+    clock.append("Session saved: ", label, " · ");
     const link = document.createElement("a");
     link.href = "/progress";
     link.className = "clock-link";

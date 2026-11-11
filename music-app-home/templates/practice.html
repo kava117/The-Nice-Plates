@@ -26,7 +26,9 @@
       <button id="timer" class="btn btn-solid press tool-primary" title="Time a practice session: it's added to Progress when you finish"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Start practice</span></button> <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button> <span id="clock" class="clock" role="status"></span>
     </div>
     <div class="tool-group" role="group" aria-label="Record yourself">
-      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this recording" aria-label="Name this recording"> <button id="record" class="tool press" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button> <span id="take" class="take"></span>
+      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this recording" aria-label="Name this recording"> <button id="record" class="tool press" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button>
+      <button type="button" id="count-in" class="tool press is-on" aria-pressed="true" title="Hear a bar of ticks before recording starts">Count-in</button>
+      <span id="take" class="take"></span>
       <details id="takes" class="keys takes" hidden><summary class="tool press" title="Recordings you've saved for this piece">Recordings</summary><ol class="keys-panel takes-panel"></ol></details>
     </div>
   </div>
@@ -339,9 +341,24 @@
   // ---- Record yourself (it was "Record a take"; in code a recording is still a take): a bar of ticks, then the take, with the lane (live.js) showing your pitch against the score ----
   const record = document.getElementById("record"), take = document.getElementById("take");
   const takeName = document.getElementById("take-name"), takes = document.getElementById("takes");
+  const countIn = document.getElementById("count-in");
   const recordWord = record.querySelector(".tool-label");
   const lane = $("live-lane");
   let recorder, live = null;
+  // Count-in ticks are on by default; the lane still counts the bar when they're muted.
+  const COUNT_IN_KEY = "count-in-ticks";
+  function hearTicks() { return countIn.getAttribute("aria-pressed") === "true"; }
+  function showCountIn(on) {
+    countIn.setAttribute("aria-pressed", on ? "true" : "false");
+    countIn.classList.toggle("is-on", on);
+    countIn.title = on ? "Hear a bar of ticks before recording starts" : "Count-in ticks are off: the bar still counts down silently";
+  }
+  try { if (localStorage.getItem(COUNT_IN_KEY) === "0") showCountIn(false); } catch {}
+  countIn.addEventListener("click", () => {
+    const on = !hearTicks();
+    showCountIn(on);
+    try { localStorage.setItem(COUNT_IN_KEY, on ? "1" : "0"); } catch {}
+  });
   $("live-close").addEventListener("click", () => { lane.hidden = true; });
   async function loadTakes() {   // this piece's saved takes, from the database
     if (!piece) return;
@@ -420,6 +437,7 @@
     recordWord.textContent = "Cancel";
     try {
       const started = await liveTake({ stream, osmd, lane: $("live-canvas"), events: scoreEvents(from, inside), speed, beats, beat,
+        ticks: hearTicks(),
         onRoll: () => recorder === mine && rolling(), onEnd: () => recorder === mine && endTake() });
       if (recorder === mine) live = started; else started.stop();   // Cancel was pressed while it got ready
     } catch (err) {   // no lane on this browser: record plainly

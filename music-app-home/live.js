@@ -68,9 +68,10 @@ const STRIP = 4;           // the overview strip along the bottom of the lane, a
 
 // Starts a take on `stream`. events: scoreEvents() from the cursor, at the score's tempo; speed: the
 // tempo slider as a fraction; beats and beat: the count-in (how many, seconds each at that speed).
+// ticks: whether to hear the count-in blips (the lane still counts the bar either way).
 // onRoll fires on the downbeat (start recording then), onEnd when the music runs out.
 // Returns { stop() }: stops listening and leaves the take on the lane to look back over.
-async function liveTake({ stream, osmd, lane, events, speed, beats, beat, onRoll, onEnd }) {
+async function liveTake({ stream, osmd, lane, events, speed, beats, beat, ticks = true, onRoll, onEnd }) {
   if (lane.review) lane.review.abort();   // the last take's scrolling
   lane.parentElement.classList.remove("is-review");
   const context = new AudioContext({ latencyHint: "interactive" });
@@ -87,7 +88,7 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, onRoll
   const heardLate = context.outputLatency || context.baseLatency || 0;
   const first = context.currentTime + 0.15;
   const downbeat = first + beats * beat;
-  for (let k = 0; k < beats; k++) countTick(context, first + k * beat, k === 0);
+  if (ticks) for (let k = 0; k < beats; k++) countTick(context, first + k * beat, k === 0);
   const zero = downbeat + heardLate;
   // the score's notes, in seconds from the downbeat: {t, end, midi}. Only the top staff: the
   // violin's own line, or a piano score's right hand, not the bass under it.

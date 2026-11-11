@@ -24,11 +24,11 @@
         </svg>
         Normal
       </button>
-      <button type="button" class="view-option" data-density="cozy">
+      <button type="button" class="view-option" data-density="large">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <rect x="1" y="1" width="14" height="14" rx="2" />
         </svg>
-        Cozy
+        Large
       </button>
     </div>
   </div>
@@ -54,10 +54,10 @@
     {% endfor %}
   </ul>
   <script>
-    // Compact / Normal / Cozy = 6 / 4 / 3 tiles per row.
+    // Compact / Normal / Large = 6 / 4 / 3 tiles per row.
     document.querySelectorAll(".view-option").forEach(b => b.onclick = () => {
       document.querySelectorAll(".view-option").forEach(o => o.classList.toggle("is-active", o === b));
-      document.querySelector(".library-grid").style.gridTemplateColumns = `repeat(${ {compact: 6, normal: 4, cozy: 3}[b.dataset.density] }, minmax(0, 1fr))`;
+      document.querySelector(".library-grid").style.gridTemplateColumns = `repeat(${ {compact: 6, normal: 4, large: 3}[b.dataset.density] }, minmax(0, 1fr))`;
     });
   </script>
 

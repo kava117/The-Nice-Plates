@@ -218,16 +218,29 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     const send = () => { doomed.delete(r.id); return api(`/api/sections/${r.id}`, "DELETE", undefined, { keepalive: true }).catch(console.error); };
     doomed.set(r.id, send);
     if (was) pick(null); else render();
+    const restore = () => {
+      undoDelete = null;
+      doomed.delete(r.id);
+      keep(r);
+      if (was) pick(asBars(r)); else render();
+      toast("Passage restored");
+    };
+    undoDelete = restore;
     toast(`${label(asBars(r))} deleted`, {
-      action: "Undo", ms: 5000, onEnd: send,
-      onAction: () => {
-        doomed.delete(r.id);
-        keep(r);
-        if (was) pick(asBars(r)); else render();
-        toast("Passage restored");
-      },
+      action: "Undo", ms: 5000, onAction: restore,
+      onEnd: () => { if (undoDelete === restore) undoDelete = null; send(); },
     });
   }
+  // Ctrl+Z (Cmd+Z) undoes the delete while its Undo is still offered: no reaching for the toast.
+  let undoDelete = null;
+  addEventListener("keydown", e => {
+    if (!undoDelete || e.key.toLowerCase() !== "z" || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+    if (e.target.closest("input, textarea, [contenteditable]")) return;   // the box's own undo
+    e.preventDefault();
+    const box = document.getElementById("toast");
+    if (box && box.finish) box.finish(true);   // close the toast without sending the delete
+    if (undoDelete) undoDelete();
+  });
   const flushDeletes = () => Promise.all([...doomed.values()].map(send => send()));
   addEventListener("pagehide", () => { flushDeletes(); flushMove(); });
   // The coach (coach.js) names bars in its answers: they light up under the pointer, and a click picks them.

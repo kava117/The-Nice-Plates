@@ -779,10 +779,12 @@ main {
 
   .nav-list {
     flex-wrap: nowrap;
-    width: 100%;
+    width: calc(100% + 12px);
     gap: 4px;
     overflow-x: auto;
     scrollbar-width: none;
+    margin: -6px;             /* a scroller clips; this leaves room for the focus ring */
+    padding: 6px;
   }
 
   .nav-list li {
@@ -2374,7 +2376,8 @@ kbd {
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
-    padding-bottom: 2px;      /* room for the pressable buttons' bottom edge */
+    margin: -6px;             /* a scroller clips; this leaves room for the focus ring */
+    padding: 6px;
   }
 
   .controls-row:not(.rep-row) > *,

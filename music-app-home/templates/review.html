@@ -1,0 +1,178 @@
+{# Review: what happened after the playing. One piece at a time: its saved takes, how each passage is going,
+   and the sessions it was in. Practice stays for playing; the coach lives here because it answers from this record. #}
+{% set title = "Review" %}
+{% set active = "review" %}
+{% set auth = "signed-in" %}
+{% include "header.html" %}
+
+<div class="content review">
+
+  {% if not piece %}
+  <section class="panel review-empty">
+    <h2 class="section-title">Nothing to review yet</h2>
+    <p class="review-note">Add a piece to your library, play it and record yourself. The takes and your progress on each passage show up here.</p>
+    <a class="btn btn-solid press" href="/library">Open Library</a>
+  </section>
+  {% else %}
+
+  <header class="review-head">
+    <div class="review-title">
+      <h1 class="section-title">Review</h1>
+      <label class="review-pick">
+        <span class="visually-hidden">Piece</span>
+        <select id="review-piece" aria-label="Piece to review">
+          {% for p in pieces %}<option value="{{ p.id }}"{% if p.id == piece.id %} selected{% endif %}>{{ p.title }}{% if p.composer %} · {{ p.composer }}{% endif %}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="review-actions">
+      <button type="button" class="btn btn-ghost press" id="coach-toggle" aria-expanded="false" aria-controls="coach">Ask the coach</button>
+      <a class="btn btn-solid press" href="/practice?piece={{ piece.id }}">Practice this piece</a>
+    </div>
+  </header>
+
+  <section class="panel review-section" aria-labelledby="takes-title">
+    <div class="review-section-head">
+      <h2 class="review-h" id="takes-title">Recordings</h2>
+      <span class="review-count">{{ takes|length }} of {{ max_takes }} kept</span>
+    </div>
+    {% if takes %}
+    <ul class="take-list" id="take-list">
+      {% for t in takes %}
+      <li class="take-row" data-take="{{ t.id }}">
+        <div class="take-meta">
+          <span class="take-name-text">{{ t.name or "Recording " ~ t.id }}</span>
+          <time class="take-when" datetime="{{ t.date_created }}">{{ t.date_created[:16] }}</time>
+        </div>
+        <audio class="take-audio" controls preload="none" src="/api/recordings/{{ t.id }}"></audio>
+        <button type="button" class="take-delete press" data-delete-take="{{ t.id }}" aria-label="Delete {{ t.name or 'this recording' }}" title="Delete this recording">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5"/></svg>
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="review-note">The latest {{ max_takes }} recordings of each piece are kept. A new one replaces the oldest.</p>
+    {% else %}
+    <p class="review-note" id="take-empty">No recordings of this piece yet. On Practice, press Record and play; the take lands here.</p>
+    {% endif %}
+    <p class="review-note" id="take-empty-after" hidden>No recordings left. Record again on Practice.</p>
+  </section>
+
+  <section class="panel review-section" aria-labelledby="passages-title">
+    <div class="review-section-head">
+      <h2 class="review-h" id="passages-title">Passages</h2>
+    </div>
+    {% if sections %}
+    <table class="review-table">
+      <thead><tr><th scope="col">Bars</th><th scope="col">Tries</th><th scope="col">Clean</th><th scope="col">Best clean tempo</th><th scope="col">Last time</th></tr></thead>
+      <tbody>
+        {% for s in sections %}
+        <tr>
+          <th scope="row">{{ s.start if s.start == s.end else s.start ~ "–" ~ s.end }}</th>
+          <td>{{ s.reps }}</td>
+          <td>
+            <span class="review-meter" aria-hidden="true"><span style="width: {{ (s.clean * 100 / s.reps)|round|int }}%"></span></span>
+            {{ s.clean }} of {{ s.reps }}
+          </td>
+          <td>{{ s.best_tempo ~ " %" if s.best_tempo else "–" }}</td>
+          <td>{{ s.last_practiced[:10] if s.last_practiced else "–" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="review-note">Passages you answer <em>Yes</em> or <em>Not yet</em> on will show how they're going here.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel review-section" aria-labelledby="sessions-title">
+    <div class="review-section-head">
+      <h2 class="review-h" id="sessions-title">Sessions</h2>
+      <a class="review-link" href="/progress">All progress</a>
+    </div>
+    {% if sessions %}
+    <ul class="session-list">
+      {% for h in sessions %}
+      <li><time datetime="{{ h.date }}">{{ h.date[:10] }}</time><span>{{ (h.seconds // 60) ~ " min" if h.seconds >= 60 else h.seconds ~ " s" }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="review-note">Finish a practice session on this piece and it shows here.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+
+{% if piece %}
+<aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
+  <header class="coach-head">
+    <div class="coach-heading">
+      <h2 class="coach-title" id="coach-title">Coach</h2>
+      <p class="coach-sub" id="coach-sub" hidden></p>
+    </div>
+    <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
+    <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <p class="visually-hidden" id="coach-said" aria-live="polite"></p>
+  <div class="coach-thread" id="coach-thread">
+    <div class="coach-empty" id="coach-empty">
+      <p class="coach-lead" id="coach-lead">How’s practice going?</p>
+      <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
+      <div class="coach-asks" id="coach-asks"></div>
+    </div>
+  </div>
+  <form class="coach-form" id="coach-form">
+    <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
+    <button type="submit" class="coach-send press" id="coach-send" disabled>Ask</button>
+  </form>
+</aside>
+
+<script src="/toast.js"></script>
+<script src="/coach.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  $("review-piece").addEventListener("change", e => { location.href = `/review?piece=${e.target.value}`; });
+
+  // dates come from the server in UTC: show them as the musician's own clock reads
+  document.querySelectorAll("time[datetime]").forEach(t => {
+    const raw = t.getAttribute("datetime"), d = new Date(raw.includes("T") ? raw : raw.replace(" ", "T") + "Z");
+    if (Number.isNaN(d.getTime())) return;
+    t.textContent = t.closest(".session-list")
+      ? d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })
+      : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  });
+
+  // only one recording plays at a time
+  document.addEventListener("play", e => {
+    document.querySelectorAll(".take-audio").forEach(a => { if (a !== e.target) a.pause(); });
+  }, true);
+
+  // Delete: the row goes at once, with Undo for 5 seconds; the server delete waits until then.
+  const pending = new Map();
+  const send = id => fetch(`/api/recordings/${id}`, { method: "DELETE", keepalive: true });
+  const showEmpty = () => { $("take-empty-after").hidden = !!document.querySelector(".take-row:not([hidden])"); };
+  document.querySelectorAll("[data-delete-take]").forEach(btn => btn.addEventListener("click", () => {
+    const row = btn.closest(".take-row"), id = row.dataset.take;
+    row.querySelector("audio").pause();
+    row.hidden = true;
+    pending.set(id, row);
+    showEmpty();
+    toast("Recording deleted", {
+      action: "Undo", ms: 5000,
+      onAction: () => { pending.delete(id); row.hidden = false; showEmpty(); },
+      onEnd: () => { if (pending.delete(id)) { send(id); row.remove(); } },
+    });
+  }));
+  addEventListener("pagehide", () => { pending.forEach((_, id) => send(id)); pending.clear(); });
+
+  addCoach({
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"), said: $("coach-said"),
+    thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
+    form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
+  }, { pieceId: {{ piece.id }}, title: () => {{ piece.title | tojson }} });
+</script>
+{% endif %}
+
+{% include "footer.html" %}

@@ -190,7 +190,10 @@ def add_recording(piece_id):
     audio = request.files["file"].read()
     if not audio:   # the microphone gave nothing (denied mid-take, or stopped at once)
         return jsonify(error="the recording is empty"), 400
-    name = (request.form.get("name") or "").strip()[:100] or f"{piece['title']}, take {len(database.getRecordings(user_id(), piece_id)) + 1}"
+    takes = database.getRecordings(user_id(), piece_id)
+    named = [re.search(r", take (\d+)$", t["name"] or "") for t in takes]
+    number = max([len(takes), *(int(m.group(1)) for m in named if m)]) + 1   # counts on past the oldest takes dropped at the limit
+    name = (request.form.get("name") or "").strip()[:100] or f"{piece['title']}, take {number}"
     return jsonify(id=database.addRecording(piece_id, audio, name), name=name)
 
 
@@ -204,6 +207,12 @@ def list_recordings(piece_id):
 def play_recording(recording_id):
     row = database.getRecording(user_id(), recording_id) or abort(404)
     return send_file(BytesIO(row["audio"]), mimetype="audio/webm")
+
+
+@api.delete("/recordings/<int:recording_id>")
+def delete_recording(recording_id):
+    database.deleteRecording(user_id(), recording_id) or abort(404)
+    return "", 204
 
 
 if __name__ == "__main__":

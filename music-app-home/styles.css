@@ -1370,6 +1370,11 @@ body[data-auth="guest"] .welcome {
   color: var(--accent);
 }
 
+.back-link {
+  gap: 4px;
+  padding-left: 8px;
+}
+
 .bars-input::placeholder {
   color: var(--ink-muted);
   font-style: italic;

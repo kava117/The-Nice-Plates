@@ -1077,7 +1077,8 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0;
+  min-height: 36px;
+  padding: 0 4px;
   border: none;
   background: none;
   font: inherit;
@@ -1143,8 +1144,8 @@ main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -1227,6 +1228,53 @@ main {
 
 .input:hover {
   border-color: var(--ink-muted);
+}
+
+/* The browser's grey "Choose File" button, drawn like .btn-ghost instead */
+.input[type="file"] {
+  padding: 5px 8px;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.input[type="file"]:hover::file-selector-button {
+  border-color: var(--ink-muted);
+}
+
+/* Library's add-a-piece form: one row on a wide screen, so the pieces start higher up */
+.upload-form {
+  max-width: none;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 900px) {
+  .upload-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-form label {
+    grid-column: 1 / -1;
+  }
+
+  .upload-form .btn {
+    align-self: stretch;
+  }
 }
 
 /* Placeholders at full strength: muted colour alone keeps them AA (4.5:1) in both themes. */

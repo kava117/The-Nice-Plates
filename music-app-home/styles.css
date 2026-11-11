@@ -730,6 +730,48 @@ main {
 
 }
 
+/* A phone: top bar on one row, the nav on one row under it. The account tile goes;
+   Settings is in the nav. */
+@media (max-width: 600px) {
+  .topbar {
+    gap: 6px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  .topbar-optional,
+  .sidebar .account {
+    display: none;
+  }
+
+  .sidebar {
+    padding: 8px 12px;
+  }
+
+  .nav-list {
+    flex-wrap: nowrap;
+    width: 100%;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-list li {
+    flex: 1 0 auto;
+  }
+
+  .nav-link {
+    justify-content: center;
+    height: 40px;
+    padding: 0 10px;
+    font-size: 0.875rem;
+  }
+}
+
 @media (max-width: 480px) {
   .stats {
     grid-template-columns: minmax(0, 1fr);

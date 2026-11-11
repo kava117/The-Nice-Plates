@@ -811,9 +811,23 @@ main {
   }
 }
 
+/* A phone: both stats on one row, and Continue before the pieces instead of after all of them. */
 @media (max-width: 480px) {
   .stats {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .stat {
+    padding: 10px 12px;
+  }
+
+  .stat-value {
+    font-size: 1.375rem;
+  }
+
+  .tiles > li:has(> .actions) {
+    order: -1;
   }
 }
 

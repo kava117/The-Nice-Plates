@@ -35,23 +35,15 @@
               </a>
               {% endif %}
               <!-- Upload opens the file picker straight away and sends the file to the same route as the library's form. -->
-              <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data">
+              <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data" data-upload data-upload-on-pick>
                 <input class="visually-hidden" id="home-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
-                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="home-upload">Upload new sheets</label>
+                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="home-upload">Upload sheet music</label>
               </form>
+              {% include "upload_status.html" %}
               {% if not pieces %}
               <a class="btn btn-ghost press" href="/practice">Try the demo piece</a>
               {% endif %}
             </div>
-            <script>
-              document.getElementById("home-upload").addEventListener("change", e => {
-                const file = e.target.files[0], label = e.target.nextElementSibling;
-                if (!file) return;
-                if (file.size > 20 * 1024 * 1024) { label.textContent = "That file is over 20 MB"; return; }   // the server's limit
-                label.textContent = "Reading your sheet…";   // a photo can take half a minute
-                e.target.form.submit();
-              });
-            </script>
           </li>
         </ul>
 
@@ -67,4 +59,5 @@
         </ul>
       </div>
 
+<script src="/upload.js"></script>
 {% include "footer.html" %}

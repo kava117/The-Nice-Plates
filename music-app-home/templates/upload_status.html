@@ -1,0 +1,16 @@
+{# Where an upload says how it's going (upload.js): Uploading → Converting → Done, a bar while the
+   file goes up, and on failure what went wrong with Try again. Include once per page that has a
+   form marked data-upload. Without script the form posts as before, and an error comes back in
+   ?error=, shown here. #}
+<section class="upload-status{% if request.args.error %} is-error{% endif %}" id="upload-status" {% if not request.args.error %}hidden{% endif %}>
+  <ol class="upload-stages" aria-label="Upload progress">
+    <li data-stage="upload">Uploading</li>
+    <li data-stage="convert">Converting</li>
+    <li data-stage="done">Done</li>
+  </ol>
+  <p class="upload-message" id="upload-message" role="status">{{ request.args.error or "" }}</p>
+  <div class="upload-bar" id="upload-bar" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100" hidden><span class="upload-bar-fill"></span></div>
+  <p class="upload-actions" id="upload-actions" {% if not request.args.error %}hidden{% endif %}>
+    <button type="button" class="btn btn-solid press" id="upload-retry">Try again</button>
+  </p>
+</section>

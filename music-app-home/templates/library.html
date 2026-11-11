@@ -33,14 +33,14 @@
     </div>
   </div>
 
-  <p id="upload-error" style="color: #c0392b"{% if not request.args.error %} hidden{% endif %}>{{ request.args.error }}</p>
-  <form class="field" id="upload" style="margin-bottom: 20px" action="/api/pieces" method="post" enctype="multipart/form-data">
+  <form class="field" id="upload" style="margin-bottom: 20px" action="/api/pieces" method="post" enctype="multipart/form-data" data-upload>
     <label for="sheet">Add a piece: a PDF, a photo, or a MusicXML file</label>
     <input class="input" id="sheet" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
     <input class="input" name="title" type="text" placeholder="Title (optional)">
     <input class="input" name="composer" type="text" placeholder="Composer (optional)">
     <button type="submit" class="btn btn-solid press">Upload</button>
   </form>
+  {% include "upload_status.html" %}
 
   <ul class="library-grid">
     {% for piece in pieces %}
@@ -54,21 +54,6 @@
     {% endfor %}
   </ul>
   <script>
-    // The server rejects anything over 20 MB, but it may reset the connection before the browser
-    // sees that reply, so check here first.
-    document.getElementById("upload").onsubmit = e => {
-      const file = document.getElementById("sheet").files[0];
-      if (file && file.size > 20 * 1024 * 1024) {
-        e.preventDefault();
-        const error = document.getElementById("upload-error");
-        error.textContent = "File too large (max 20 MB).";
-        error.hidden = false;
-      } else if (file) {
-        const button = e.target.querySelector("button[type=submit]");   // a photo can take half a minute to read
-        button.textContent = "Reading your sheet…";
-        button.disabled = true;
-      }
-    };
     // Compact / Normal / Cozy = 6 / 4 / 3 tiles per row.
     document.querySelectorAll(".view-option").forEach(b => b.onclick = () => {
       document.querySelectorAll(".view-option").forEach(o => o.classList.toggle("is-active", o === b));
@@ -78,4 +63,5 @@
 
 </div>
 
+<script src="/upload.js"></script>
 {% include "footer.html" %}

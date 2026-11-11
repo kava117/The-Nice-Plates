@@ -3287,3 +3287,131 @@ body.coach-open main {
 .tool.is-recording .tool-icon {
   display: none;            /* the pulsing dot takes its place */
 }
+
+/* 27. Upload progress (upload.js, upload_status.html) --------------------- */
+
+.upload-status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.upload-status[hidden] {
+  display: none;
+}
+
+.upload-status.is-error {
+  border-color: var(--rec);
+}
+
+.upload-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.upload-stages li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A ring for each step: filled once done, outlined and bold while current. */
+.upload-stages li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.upload-stages li.is-current {
+  color: var(--ink);
+}
+
+.upload-stages li.is-current::before {
+  border-color: var(--accent);
+}
+
+.upload-stages li.is-done {
+  color: var(--accent);
+}
+
+.upload-stages li.is-done::before {
+  background: currentColor;
+}
+
+.upload-status.is-error .upload-stages {
+  display: none;              /* a failure says what went wrong, not which step it reached */
+}
+
+.upload-message {
+  font-weight: 600;
+}
+
+.upload-status.is-error .upload-message {
+  color: var(--rec);
+}
+
+.upload-status.is-busy .upload-message::after {
+  content: "";
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-left: 8px;
+  vertical-align: -0.1em;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: upload-spin 0.9s linear infinite;
+}
+
+@keyframes upload-spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.upload-bar[hidden] {
+  display: none;
+}
+
+.upload-bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.upload-actions[hidden] {
+  display: none;
+}
+
+label.btn.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-status.is-busy .upload-message::after {
+    animation: none;
+  }
+}

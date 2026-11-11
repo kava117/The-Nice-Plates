@@ -687,6 +687,7 @@ main {
 
 .stat-value {
   font-family: var(--font-display);
+  font-variant-numeric: lining-nums tabular-nums;   /* Young Serif's default 0 reads as a letter o */
   font-size: 1.75rem;       /* 28px */
   line-height: 1.3;
 }

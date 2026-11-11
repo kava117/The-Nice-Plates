@@ -967,40 +967,25 @@ main {
   color: var(--ink-muted);
 }
 
-/* Placeholder heights — wire these up to real data (or set via an inline
-   style like style="height: 62%" from the server) when you're ready. */
-.bar-m { height: 55%; }
-.bar-t { height: 80%; }
-.bar-w { height: 30%; }
-.bar-th { height: 62%; }
-.bar-f { height: 18%; }
-.bar-s { height: 72%; }
-.bar-su { height: 46%; }
+.bar-group.is-today span { color: var(--ink); font-weight: 700; }
+.bar-group:not(.is-today) .bar { opacity: 0.7; }
 
-.chart-legend {
+.goal {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 4px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ink-muted);
-  white-space: nowrap;
-}
-
-.chart-legend label {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  cursor: pointer;
+  min-width: 10rem;
+  padding-top: 4px;
+  font-size: 0.875rem;
 }
 
-.chart-legend input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-}
+.goal-text strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.goal-track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.goal-fill { width: 0; height: 100%; background: var(--accent); transition: width 0.4s ease-out; }
+.goal-edit { font-size: 0.8125rem; color: var(--ink-muted); }
+
+@media (prefers-reduced-motion: reduce) { .goal-fill { transition: none; } }
 
 /* Overall Time --------------------------------------------------------------- */
 

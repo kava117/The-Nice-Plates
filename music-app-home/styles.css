@@ -3415,3 +3415,18 @@ label.btn.is-disabled {
     animation: none;
   }
 }
+
+/* 28. Onboarding skip ----------------------------------------------------- */
+
+.onboarding-skip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 4px 0 24px;
+}
+
+.onboarding-skip-note {
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}

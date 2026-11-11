@@ -59,6 +59,13 @@
           and we'll use them to tailor your practice advice.
         </p>
 
+        {# Skip: beginner defaults (the first level everywhere), changeable later in Settings. #}
+        <form class="onboarding-skip" action="{{ url_for('onboarding') }}" method="post">
+          <input type="hidden" name="skip" value="beginner">
+          <button type="submit" class="btn btn-ghost press">Skip — I'm just starting out</button>
+          <span class="onboarding-skip-note">We'll start you at the beginner level. You can change it any time in Settings.</span>
+        </form>
+
         {% if request.method == "POST" %}
         {% set missing = questions | rejectattr("field", "in", selected) | map(attribute="title") %}
         <p class="form-error" role="alert">Please choose an option for: {{ missing | join(", ") }}.</p>

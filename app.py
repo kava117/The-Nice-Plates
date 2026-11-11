@@ -365,7 +365,8 @@ def onboarding():
         return redirect(url_for("home"))
     current = database.getUserProficiency(current_user.id)
     if request.method == "POST":
-        levels = read_levels(request.form)
+        # "Skip — I'm just starting out": the first, beginner level in every category
+        levels = dict.fromkeys(database.PROFICIENCY_FIELDS, 1) if request.form.get("skip") == "beginner" else read_levels(request.form)
         if len(levels) == len(database.PROFICIENCY_FIELDS):
             database.setUserProficiency(current_user.id, **levels)
             return redirect(url_for("home") if current["onboarded_at"] is None else url_for("settings"))

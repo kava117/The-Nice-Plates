@@ -25,6 +25,16 @@ def test_saving_levels_lets_them_in_and_shows_on_settings():
     assert "Just outside" in html
 
 
+def test_skipping_saves_beginner_levels_and_lets_them_in():
+    uid = make_user(onboarded=False)
+    client = login(flask_app.test_client(), uid)
+    r = client.post("/onboarding", data={"skip": "beginner"})
+    assert r.status_code == 302 and r.headers["Location"].endswith("/home")
+    levels = db.getUserProficiency(uid)
+    assert all(levels[f] == 1 for f in db.PROFICIENCY_FIELDS) and levels["onboarded_at"] is not None
+    assert client.get("/home").status_code == 200
+
+
 def test_the_scores_are_on_the_user_row():
     uid = make_user(onboarded=False)
     db.setUserProficiency(uid, **LEVELS)

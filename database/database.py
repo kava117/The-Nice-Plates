@@ -412,6 +412,18 @@ def touchPiece(piece_id):
     with get_db() as database:
         database.execute("UPDATE Pieces SET last_viewed = CURRENT_TIMESTAMP WHERE id = ?", (piece_id,))
 
+def deletePiece(user_id, piece_id):
+    """removes a piece from the library with its passages (and their reps), recordings and session links;
+    the sessions themselves stay, so practice time totals are kept. Returns whether the piece was theirs."""
+    with get_db() as database:
+        if not database.execute("SELECT 1 FROM Pieces WHERE id = ? AND user_id = ?", (piece_id, user_id)).fetchone():
+            return False
+        database.execute("DELETE FROM Sections WHERE piece_id = ?", (piece_id,))   # reps go too (ON DELETE CASCADE)
+        database.execute("DELETE FROM Recordings WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Session_Pieces WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Pieces WHERE id = ?", (piece_id,))
+        return True
+
 def getPieceSeconds(user_id):
     """seconds practiced per piece, from the sessions that referenced it"""
     with get_db() as database:

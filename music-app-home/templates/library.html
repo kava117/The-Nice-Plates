@@ -52,11 +52,27 @@
         <div class="card-practiced">{{ seconds.get(piece.id, 0) | practiced }}</div>
       </div>
     </a>
-    <button type="button" class="card-delete press" aria-label="Delete {{ piece.title }}" title="Delete this piece">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+    <button type="button" class="card-delete" data-delete="{{ piece.id }}" data-title="{{ piece.title }}" aria-label="Delete {{ piece.title }}">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2.5 4h11M6.5 4V2.5h3V4M4 4l.7 9.5h6.6L12 4M6.8 6.5v4.5M9.2 6.5v4.5" />
+      </svg>
     </button></li>
     {% endfor %}
   </ul>
+
+  {# Deleting asks first: nothing is removed until Delete in this dialog is pressed. #}
+  <dialog class="confirm-dialog" id="delete-dialog" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-text">
+    <form method="dialog">
+      <h3 class="confirm-title" id="delete-dialog-title">Delete this piece?</h3>
+      <p class="confirm-text" id="delete-dialog-text">
+        <strong data-piece-title></strong> will be removed from your library, along with its passages and recordings. This can't be undone.
+      </p>
+      <div class="confirm-actions">
+        <button type="submit" class="btn btn-ghost press" value="cancel" autofocus>Cancel</button>
+        <button type="submit" class="btn btn-danger press" value="delete">Delete</button>
+      </div>
+    </form>
+  </dialog>
   <script>
     // Compact / Normal / Large: the narrowest a card may get; the grid fits as many columns as the screen holds.
     document.querySelectorAll(".view-option").forEach(b => b.onclick = () => {
@@ -85,6 +101,36 @@
 
 </div>
 
+<script src="/toast.js"></script>
+<script>
+  // Delete: the trash button opens the dialog; only its Delete button sends the request.
+  (() => {
+    const dialog = document.getElementById("delete-dialog");
+    let target = null;
+    document.querySelectorAll("[data-delete]").forEach(b => b.onclick = () => {
+      target = b;
+      dialog.querySelector("[data-piece-title]").textContent = b.dataset.title;
+      dialog.returnValue = "";
+      dialog.showModal();
+    });
+    dialog.addEventListener("click", e => { if (e.target === dialog) dialog.close("cancel"); });   // a click on the backdrop
+    dialog.addEventListener("close", async () => {
+      const b = target;
+      target = null;
+      if (dialog.returnValue !== "delete" || !b) return b && b.focus();
+      b.disabled = true;
+      try {
+        const r = await fetch(`/api/pieces/${b.dataset.delete}`, { method: "DELETE" });
+        if (!r.ok && r.status !== 404) throw new Error(r.status);
+        b.closest("li").remove();
+        toast(`"${b.dataset.title}" deleted`);
+      } catch {
+        b.disabled = false;
+        toast("Couldn't delete that piece. Try again.");
+      }
+    });
+  })();
+</script>
 <script src="/upload.js"></script>
 <script src="/thumbs.js"></script>
 <script src="/toast.js"></script>

@@ -138,7 +138,9 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, ticks 
     const t = now();
     if (!rolling && t >= downbeat) { rolling = true; onRoll(); }
     const s = reached = t - zero;
-    while (steps < events.length && events[steps].seconds / speed <= s) { osmd.cursor.next(); steps++; }   // the score's cursor keeps time
+    let stepped = false;
+    while (steps < events.length && events[steps].seconds / speed <= s) { osmd.cursor.next(); steps++; stepped = true; }   // the score's cursor keeps time
+    if (stepped && typeof keepCursorInView === "function") keepCursorInView(osmd);
     if (!ended && s > end + 0.8) { ended = true; onEnd(); }
     const counted = (t - first - heardLate) / beat;   // beats of the count-in heard so far
     draw(s, trail, s < 0 ? { left: beats - Math.floor(counted), of: beats, phase: counted - Math.floor(counted) } : null);

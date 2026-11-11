@@ -145,7 +145,9 @@
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score", {
     autoResize: true,
     drawTitle: true,
-    followCursor: true,   // scrolls the page to keep the cursor in view
+    // Manual next/prev still follow; Listen and a take use keepCursorInView (player.js) so the
+    // cursor stays under the pinned toolbar instead of scrolling under it.
+    followCursor: true,
   });
 
   // ---- Play the score (player.js); with a passage picked it loops the passage ----
@@ -408,10 +410,12 @@
   }
   loadTakes();
   const controls = $("controls");
+  let takeFollow = true;
   function endTake() {   // Stop, or the music ran out; during the count-in, nothing was recorded
     controls.classList.remove("is-taking");
     if (live) live.stop();
     live = null;
+    osmd.FollowCursor = takeFollow;
     if (recorder.state !== "inactive") return recorder.stop();
     recorder.stream.getTracks().forEach(t => t.stop());
     recorder = null;
@@ -430,6 +434,8 @@
     player.stop();
     listening.stop();
     metro.stop();   // the take schedules its own pulse so the two don't clash
+    takeFollow = osmd.FollowCursor;
+    osmd.FollowCursor = false;   // keepCursorInView scrolls clear of the toolbar during the take
     const chunks = [], mine = recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = async () => {
@@ -437,6 +443,7 @@
       controls.classList.remove("is-taking");
       if (live) live.stop();
       [recorder, live] = [null, null];
+      osmd.FollowCursor = takeFollow;
       recordWord.textContent = "Record yourself";
       record.classList.remove("is-recording");
       if (metroOn()) { metroTempo(); void metro.setOn(true); }

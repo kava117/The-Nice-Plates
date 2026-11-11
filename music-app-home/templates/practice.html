@@ -21,7 +21,7 @@
     <div class="tool-group" role="group" aria-label="Listen">
       <button id="play" class="tool tool-play press" disabled title="Hear the selected passage, or the whole piece (Space)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="tool-label">Listen</span></button>
       <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
-      <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: count-in and clicks while you record">Metronome</button>
+      <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: clicks with Listen and while you record">Metronome</button>
     </div>
     <div class="tool-group" role="group" aria-label="Practice session">
       <button id="timer" class="tool press" hidden title="Pause or resume this practice session"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Pause</span></button>
@@ -162,7 +162,11 @@
 
   // ---- Play the score (player.js); with a passage picked it loops the passage ----
   const play = document.getElementById("play"), tempo = document.getElementById("tempo"), tempoLabel = document.getElementById("tempo-label");
-  const player = addPlayer(osmd, play, tempo, { passage: () => passages.bars, toStart: () => passages.toStart() });
+  // Metronome preference is read when Listen starts (metroBtn is wired below); mid-play mute via setTicks.
+  const METRO_KEY = "metronome";
+  const player = addPlayer(osmd, play, tempo, {
+    passage: () => passages.bars, toStart: () => passages.toStart(), metro: () => metroBtn && metroOn(),
+  });
 
   // ---- Passages (passages.js): pick bars, loop them, count clean reps ----
   const $ = id => document.getElementById(id);
@@ -363,21 +367,21 @@
   addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
   document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
 
-  // ---- Metronome: only while recording (count-in + through the take). Listen already keeps the tempo. ----
+  // ---- Metronome: clicks locked to the same clock as Listen's notes/cursor, and as the recording cursor ----
   const metroBtn = $("metro");
-  const METRO_KEY = "metronome";
   function metroOn() { return metroBtn.getAttribute("aria-pressed") === "true"; }
   function showMetro(on) {
     metroBtn.setAttribute("aria-pressed", on ? "true" : "false");
     metroBtn.classList.toggle("is-on", on);
     metroBtn.title = on
-      ? "Metronome on: count-in and clicks while you record"
-      : "Metronome: count-in and clicks while you record";
+      ? "Metronome on: clicks with Listen and while you record"
+      : "Metronome: clicks with Listen and while you record";
   }
   function setMetro(on) {
     showMetro(on);
     try { localStorage.setItem(METRO_KEY, on ? "1" : "0"); } catch {}
-    if (live) live.setTicks(on);   // mid-take: mute/unmute without rescheduling
+    player.setTicks(on);           // mid-Listen: mute/unmute without rescheduling
+    if (live) live.setTicks(on);   // mid-take: same
   }
   try { if (localStorage.getItem(METRO_KEY) === "1") showMetro(true); } catch {}
   metroBtn.addEventListener("click", () => setMetro(!metroOn()));

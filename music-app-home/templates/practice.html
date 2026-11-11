@@ -8,74 +8,76 @@
 
 
 <div id="controls">
-  <div class="controls-row">
+  {# One primary bar: listen/record first; cursor and session stay quiet. #}
+  <div class="controls-row controls-primary">
     <a class="tool press back-link" href="/library" title="Back to Library to pick another piece">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-      Change piece
+      <span class="wide-only">Library</span>
     </a>
-    <div class="tool-group" role="group" aria-label="Cursor">
-      <button id="cursor-prev" class="tool press" title="Previous note (Left arrow). Previous bar: Shift + Left" aria-label="Previous note">&#9664;</button>
-      <button id="cursor-next" class="tool press" title="Next note (Right arrow). Next bar: Shift + Right" aria-label="Next note">&#9654;</button>
-      <button id="cursor-reset" class="tool press" title="Back to the start (Home)">Reset</button>
-    </div>
-    <div class="tool-group" role="group" aria-label="Listen">
+
+    <div class="tool-group tool-main" role="group" aria-label="Play and record">
       <button id="play" class="tool tool-play press" disabled title="Hear the selected passage, or the whole piece (Space)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="tool-label">Listen</span></button>
-      <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
-      <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: clicks with Listen and while you record">Metronome</button>
-    </div>
-    <div class="tool-group" role="group" aria-label="Practice session">
-      <button id="timer" class="tool press" hidden title="Pause or resume this practice session"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Pause</span></button>
-      <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button>
-      <span id="clock" class="clock" role="status"></span>
-    </div>
-    <div class="tool-group" role="group" aria-label="Record yourself">
-      <input id="take-name" class="take-name" maxlength="100" placeholder="Name (optional)" aria-label="Name this recording">
-      <button id="record" class="btn btn-solid press tool tool-primary" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button>
+      <button id="record" class="btn btn-solid press tool tool-primary" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record</span></button>
+      <label class="tempo" title="Playback and recording speed"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
+      <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: clicks with Listen and while you record">Metro</button>
+      <input id="take-name" class="take-name" maxlength="100" placeholder="Name (optional)" aria-label="Name this recording" hidden>
       <span id="take" class="take"></span>
+    </div>
+
+    <div class="tool-group tool-quiet" role="group" aria-label="Cursor">
+      <button id="cursor-prev" class="tool press" title="Previous note (Left arrow)" aria-label="Previous note">&#9664;</button>
+      <button id="cursor-next" class="tool press" title="Next note (Right arrow)" aria-label="Next note">&#9654;</button>
+      <button id="cursor-reset" class="tool press" title="Back to the start (Home)" aria-label="Reset to start">↵</button>
+    </div>
+
+    <div class="tool-group tool-session" role="group" aria-label="Practice session">
+      <span id="clock" class="clock" role="status"></span>
+      <button id="timer" class="tool press" hidden title="Pause or resume this practice session"><span class="tool-label">Pause</span></button>
+      <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish</button>
     </div>
   </div>
 
   <div class="takes-dock" id="takes" hidden>
-    <audio id="take-player" class="take-player" controls preload="none"></audio>
     <label class="take-pick-wrap">
-      <span class="take-pick-label">Recording</span>
+      <span class="take-pick-label">Takes</span>
       <select id="take-pick" class="take-pick" aria-label="Saved recordings"></select>
     </label>
+    <audio id="take-player" class="take-player" controls preload="none"></audio>
   </div>
 
   <div class="controls-row passage-row">
-    <span class="row-label" id="passages-label">Passages</span>
-    <button type="button" id="new-passage" class="tool press new-passage" aria-pressed="false" aria-describedby="select-hint">+ New<span class="wide-only"> passage</span></button>
-    <div class="chips" id="passage-chips" role="group" aria-labelledby="passages-label"></div>
-    <p class="passage-empty" id="passage-empty" hidden>No passages yet. A passage is a few bars you loop and practice on their own. Start one with <strong>+&nbsp;New passage</strong>.</p>
-    <p class="select-hint" id="select-hint" hidden><span><strong>Drag across the bars you want to practice.</strong> <span class="select-hint-more">Or tap the first bar, then the last, or type them in Bars.</span></span> <button type="button" class="link-button" id="cancel-select">Cancel</button></p>
-    <form class="bars-form" id="bars-form">
-      <label for="bars-input">Bars</label>
-      <input class="bars-input" id="bars-input" placeholder="e.g. 12–16" autocomplete="off" enterkeyhint="go" size="6" aria-describedby="bars-help">
-      <span class="visually-hidden" id="bars-help">Type bar numbers to make a passage</span>
-    </form>
-    <details class="keys" id="keys">
-      <summary class="tool press" title="Keyboard shortcuts (?)">Keys</summary>
-      <dl class="keys-panel">
-        <dt><kbd>Space</kbd></dt><dd>Listen, or stop</dd>
-        <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
-        <dt><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next bar</dd>
-        <dt><kbd>Home</kbd></dt><dd>Start of the passage, or the piece</dd>
-        <dt>Mouse</dt><dd>Drag across bars to make a passage; drag its handles to move either end</dd>
-        <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Make a passage: [ on its first bar, ] on its last</dd>
-        <dt><kbd>Delete</kbd></dt><dd>Delete the selected passage</dd>
-        <dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Undo that delete, for 5 seconds</dd>
-        <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That was correct, or not yet</dd>
-        <dt><kbd>L</kbd></dt><dd>Auto-mark: hears each go and marks it for you</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Deselect the passage: back to the whole piece</dd>
-        <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
-        <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
-      </dl>
-    </details>
-    <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
-    <div class="tool-group" role="group" aria-label="Zoom">
+    <button type="button" id="new-passage" class="tool press new-passage" aria-pressed="false" aria-describedby="select-hint">+ Passage</button>
+    <div class="chips" id="passage-chips" role="group" aria-label="Passages"></div>
+    <p class="passage-empty" id="passage-empty" hidden>No passages yet — drag across bars on the score, or type them in Bars.</p>
+    <p class="select-hint" id="select-hint" hidden><span><strong>Drag across the bars you want.</strong> <span class="select-hint-more">Or type them in Bars.</span></span> <button type="button" class="link-button" id="cancel-select">Cancel</button></p>
+
+    <div class="tool-group tool-end" role="group" aria-label="More">
+      <form class="bars-form" id="bars-form">
+        <label for="bars-input" class="wide-only">Bars</label>
+        <input class="bars-input" id="bars-input" placeholder="12–16" autocomplete="off" enterkeyhint="go" size="5" aria-label="Bars for a new passage" aria-describedby="bars-help">
+        <span class="visually-hidden" id="bars-help">Type bar numbers to make a passage</span>
+      </form>
+      <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Coach</button>
       <button id="zoom-out" class="tool press" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
       <button id="zoom-in" class="tool press" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <details class="keys" id="keys">
+        <summary class="tool press" title="Keyboard shortcuts (?)">Keys</summary>
+        <dl class="keys-panel">
+          <dt><kbd>Space</kbd></dt><dd>Listen, or stop</dd>
+          <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
+          <dt><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next bar</dd>
+          <dt><kbd>Home</kbd></dt><dd>Start of the passage, or the piece</dd>
+          <dt>Mouse</dt><dd>Drag across bars to make a passage; drag its handles to move either end</dd>
+          <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Make a passage: [ on its first bar, ] on its last</dd>
+          <dt><kbd>Delete</kbd></dt><dd>Delete the selected passage</dd>
+          <dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Undo that delete, for 5 seconds</dd>
+          <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That was correct, or not yet</dd>
+          <dt><kbd>L</kbd></dt><dd>Auto-mark: hears each go and marks it for you</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Deselect the passage: back to the whole piece</dd>
+          <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
+          <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
+        </dl>
+      </details>
     </div>
   </div>
 
@@ -110,7 +112,7 @@
 <p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to Library</a></p>
 <p class="first-hint" id="first-hint" hidden>
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>
-  <span><strong>Practice a few bars at a time.</strong> Click <strong>+&nbsp;New passage</strong>, then drag across the bars you want on the sheet music below.</span>
+  <span><strong>Practice a few bars at a time.</strong> Click <strong>+&nbsp;Passage</strong>, then drag across the bars you want on the score.</span>
 </p>
 <div id="score"></div>
 
@@ -443,8 +445,9 @@
     recorder.stream.getTracks().forEach(t => t.stop());
     recorder = null;
     lane.hidden = true;
-    recordWord.textContent = "Record yourself";
+    recordWord.textContent = "Record";
     record.classList.remove("is-recording");
+    takeName.hidden = true;
   }
   record.addEventListener("click", async () => {
     if (!piece) { take.textContent = "Open a piece from Library to record yourself"; return; }
@@ -456,6 +459,7 @@
     player.stop();
     listening.stop();
     void ensureSession();   // recording is practice: the session clock starts itself
+    takeName.hidden = false;
     takeFollow = osmd.FollowCursor;
     osmd.FollowCursor = false;   // keepCursorInView scrolls clear of the toolbar during the take
     const chunks = [], mine = recorder = new MediaRecorder(stream);
@@ -466,8 +470,9 @@
       if (live) live.stop();
       [recorder, live] = [null, null];
       osmd.FollowCursor = takeFollow;
-      recordWord.textContent = "Record yourself";
+      recordWord.textContent = "Record";
       record.classList.remove("is-recording");
+      takeName.hidden = true;
       const form = new FormData();
       form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
       form.append("name", takeName.value);

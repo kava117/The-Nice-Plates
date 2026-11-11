@@ -472,6 +472,20 @@ def addSection(piece_id, start, end):
         cur = database.execute("INSERT INTO Sections (piece_id, start_measure, end_measure) VALUES (?, ?, ?)", (piece_id, start, end))
         return cur.lastrowid, True
 
+def moveSection(section_id, start, end):
+    """new bars for a passage, keeping its reps; returns the id of another passage that already has
+    these bars (nothing changes then), or None once moved"""
+    with get_db() as database:
+        database.execute("BEGIN IMMEDIATE")
+        other = database.execute(
+            """SELECT o.id FROM Sections o JOIN Sections s ON s.piece_id = o.piece_id
+               WHERE s.id = ? AND o.id != s.id AND o.start_measure = ? AND o.end_measure = ?""", (section_id, start, end)
+        ).fetchone()
+        if other:
+            return other["id"]
+        database.execute("UPDATE Sections SET start_measure = ?, end_measure = ? WHERE id = ?", (start, end, section_id))
+        return None
+
 def deleteSection(section_id):
     with get_db() as database:
         database.execute("DELETE FROM Sections WHERE id = ?", (section_id,))   # its reps go too (ON DELETE CASCADE)

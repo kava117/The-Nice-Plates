@@ -273,7 +273,7 @@ const TAP = `registerProcessor("tap", class extends AudioWorkletProcessor {
 
 const READY = "Play it through. I’ll mark it when you stop.";
 
-// button: Listen, in the rep row; status: the line beside it ("Was that clean?" while not listening).
+// button: Listen, in the rep row; status: the line beside it ("Was that correct?" while not listening).
 // passages and player: passages.js and player.js; tempo: the tempo slider, a first guess at the pace.
 function addListening(osmd, { button, status }, { passages, player, tempo }) {
   const word = button.querySelector(".listen-word"), asked = status.textContent;

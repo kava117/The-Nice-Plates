@@ -29,7 +29,10 @@
 
   <div class="controls-row passage-row">
     <span class="row-label" id="passages-label">Passages</span>
+    <button type="button" id="new-passage" class="tool press new-passage" aria-pressed="false" aria-describedby="select-hint">+ New<span class="wide-only"> passage</span></button>
     <div class="chips" id="passage-chips" role="group" aria-labelledby="passages-label"></div>
+    <p class="passage-empty" id="passage-empty" hidden>No passages yet. A passage is a few bars you loop and practice on their own. Start one with <strong>+&nbsp;New passage</strong>.</p>
+    <p class="select-hint" id="select-hint" hidden><span><strong>Drag across the bars you want to practice.</strong> <span class="select-hint-more">Or tap the first bar, then the last, or type them in Bars.</span></span> <button type="button" class="link-button" id="cancel-select">Cancel</button></p>
     <form class="bars-form" id="bars-form">
       <label for="bars-input">Bars</label>
       <input class="bars-input" id="bars-input" placeholder="12-16" autocomplete="off" enterkeyhint="go" size="6">
@@ -41,11 +44,12 @@
         <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
         <dt><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next bar</dd>
         <dt><kbd>Home</kbd></dt><dd>Start of the passage, or the piece</dd>
-        <dt>Mouse</dt><dd>Drag across bars to pick a passage; drag its handles to move either end</dd>
-        <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Mark a passage: [ on its first bar, ] on its last</dd>
-        <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That went clean, or not yet</dd>
+        <dt>Mouse</dt><dd>Drag across bars to make a passage; drag its handles to move either end</dd>
+        <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Make a passage: [ on its first bar, ] on its last</dd>
+        <dt><kbd>Delete</kbd></dt><dd>Delete the selected passage (you can undo)</dd>
+        <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That was correct, or not yet</dd>
         <dt><kbd>L</kbd></dt><dd>Listen, and mark each go for you</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Back to the whole piece</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Deselect the passage: back to the whole piece</dd>
         <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
       </dl>
@@ -59,12 +63,19 @@
 
   <div class="controls-row rep-row" id="rep" hidden>
     <strong class="rep-title" id="rep-title"></strong>
+    <button type="button" class="tool press rep-delete" id="rep-delete" title="Delete this passage (Delete key)">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+      Delete
+    </button>
     <button type="button" class="tool press listen" id="listen" aria-pressed="false" title="Hears each go and marks it for you. Nothing is recorded. (L)">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
       <span class="listen-word">Listen</span>
     </button>
-    <span class="rep-ask" id="rep-ask">Was that clean?</span>
-    <button type="button" class="btn btn-solid press rep-button" id="rep-yes">Yes <kbd>Y</kbd></button>
+    <span class="rep-question">
+      <span class="rep-ask" id="rep-ask">Was that correct?</span>
+      <span class="rep-help" id="rep-help">Answering tracks your progress on this passage and suggests when to change the tempo.</span>
+    </span>
+    <button type="button" class="btn btn-solid press rep-button" id="rep-yes" aria-describedby="rep-help">Yes <kbd>Y</kbd></button>
     <button type="button" class="btn btn-ghost press rep-button" id="rep-no">Not yet <kbd>N</kbd></button>
     <span class="dots dots-large" id="rep-dots" aria-hidden="true"></span>
     <span class="rep-note" id="rep-note" role="status"></span>
@@ -108,6 +119,7 @@
 
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
+<script src="/toast.js"></script>
 <script src="/passages.js"></script>
 <script src="/listen.js"></script>
 <script src="/live.js"></script>
@@ -133,6 +145,7 @@
   const passages = addPassages(osmd, {
     score: $("score"), chips: $("passage-chips"), form: $("bars-form"), input: $("bars-input"),
     rep: $("rep"), title: $("rep-title"), yes: $("rep-yes"), no: $("rep-no"), dots: $("rep-dots"), note: $("rep-note"), actions: $("rep-actions"),
+    newButton: $("new-passage"), remove: $("rep-delete"), empty: $("passage-empty"), selectHint: $("select-hint"), cancelSelect: $("cancel-select"),
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
@@ -227,6 +240,7 @@
     "y": () => passages.rep(true),
     "n": () => passages.rep(false),
     "l": () => listening.toggle(),
+    "Delete": () => passages.deleteActive(), "Backspace": () => passages.deleteActive(),
     "Escape": () => keys.open ? (keys.open = false) : $("takes").open ? ($("takes").open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },

@@ -3046,3 +3046,211 @@ body.coach-open main {
 .welcome .sign-in-agree {
   margin-top: 4px;
 }
+
+/* 25. Making and deleting passages (passages.js) ------------------------- */
+
+/* + New passage: stands out (solid) until the piece has its first passage. */
+.new-passage {
+  flex: none;
+}
+
+.new-passage.is-first {
+  --edge: var(--accent-edge);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.new-passage[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--ink);
+}
+
+.chips[hidden],
+.passage-empty[hidden],
+.select-hint[hidden] {
+  display: none;
+}
+
+/* A chip and its delete button read as one pill. */
+.chip-wrap {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.chip-wrap .chip {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-right: 6px;
+}
+
+.chip-wrap.is-on {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.chip-wrap.is-draft {
+  border-style: dashed;
+}
+
+.chip-delete,
+.rep-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.chip-delete {
+  width: 28px;
+  height: 28px;
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.chip-delete:hover,
+.rep-delete:hover {
+  color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 10%, transparent);
+}
+
+.chip-delete:focus-visible {
+  outline-offset: 0;
+}
+
+.passage-empty,
+.select-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+.select-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+  padding: 4px 12px;
+  border-left: 3px solid var(--accent);
+  color: var(--ink);
+}
+
+.select-hint > span {
+  flex: 1 1 18em;
+}
+
+.select-hint-more {
+  color: var(--ink-muted);
+}
+
+/* While picking a new passage, the score says it's waiting for a drag. */
+.score-bars.is-selecting .score-bar {
+  cursor: crosshair;
+}
+
+.score-bars.is-selecting .score-bar:hover {
+  background: rgba(47, 93, 62, 0.12);
+}
+
+.chips.is-alone {
+  flex: none;
+}
+
+.rep-question {
+  display: flex;
+  flex: 0 1 24em;
+  flex-direction: column;
+  min-width: 12em;
+  line-height: 1.3;
+}
+
+.rep-help {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 600px) {
+  .wide-only,
+  .select-hint-more,
+  .rep-help {
+    display: none;
+  }
+
+  .rep-question {
+    display: none;            /* the phone layout already drops the question; Yes / Not yet stay */
+  }
+
+  .bars-form label {          /* still named for screen readers; the chips get the room */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+
+/* 26. Toast (toast.js): brief, never in the way ---------------------------- */
+
+.toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  animation: toast-in 0.18s ease-out;
+}
+
+.toast-action {
+  padding: 4px 10px;
+  border: 1.5px solid color-mix(in srgb, var(--bg) 55%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toast-action:hover {
+  background: color-mix(in srgb, var(--bg) 15%, transparent);
+}
+
+.toast-action:focus-visible {
+  outline-color: var(--bg);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

@@ -237,6 +237,18 @@ def api_add_section(piece_id):
     section_id, created = database.addSection(piece_id, *bars)
     return jsonify(database.getSectionRecord(section_id)), 201 if created else 200
 
+# Dragging a passage's handles moves its bars; its reps stay with it.
+@app.route("/api/sections/<int:section_id>", methods=["PUT"])
+def api_move_section(section_id):
+    my_section(section_id)
+    bars = read_bars(request.get_json(silent=True) or {})
+    if not bars:
+        return jsonify(error=f"start and end must be bar numbers from 1 to {MAX_BAR}, start first"), 400
+    other = database.moveSection(section_id, *bars)
+    if other:
+        return jsonify(error="those bars are already a passage", passage=database.getSectionRecord(other)), 409
+    return jsonify(database.getSectionRecord(section_id))
+
 @app.route("/api/sections/<int:section_id>", methods=["DELETE"])
 def api_delete_section(section_id):
     my_section(section_id)

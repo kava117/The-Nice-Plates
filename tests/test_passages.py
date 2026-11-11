@@ -31,6 +31,35 @@ def test_the_same_bars_are_one_passage(user):
     assert len(client.get(f"/api/pieces/{pid}/sections").get_json()) == 1
 
 
+def test_moving_a_passage_keeps_its_reps(user):
+    client, uid = user
+    pid = piece_for(uid)
+    p = client.post(f"/api/pieces/{pid}/sections", json={"start": 5, "end": 8}).get_json()
+    client.post(f"/api/sections/{p['id']}/reps", json={"clean": True})
+    moved = client.put(f"/api/sections/{p['id']}", json={"start": 4, "end": 9})
+    assert moved.status_code == 200
+    assert (moved.get_json()["id"], moved.get_json()["start"], moved.get_json()["end"], moved.get_json()["reps"]) == (p["id"], 4, 9, 1)
+    assert [(s["start"], s["end"]) for s in client.get(f"/api/pieces/{pid}/sections").get_json()] == [(4, 9)]
+
+
+def test_moving_onto_another_passage_is_409_and_changes_nothing(user):
+    client, uid = user
+    pid = piece_for(uid)
+    a = client.post(f"/api/pieces/{pid}/sections", json={"start": 1, "end": 4}).get_json()
+    b = client.post(f"/api/pieces/{pid}/sections", json={"start": 5, "end": 8}).get_json()
+    clash = client.put(f"/api/sections/{b['id']}", json={"start": 1, "end": 4})
+    assert clash.status_code == 409 and clash.get_json()["passage"]["id"] == a["id"]
+    assert client.put(f"/api/sections/{b['id']}", json={"start": 9, "end": 3}).status_code == 400
+    assert [(s["start"], s["end"]) for s in client.get(f"/api/pieces/{pid}/sections").get_json()] == [(1, 4), (5, 8)]
+
+
+def test_moving_someone_elses_passage_is_404(user):
+    client, uid = user
+    other = make_user()
+    p = login(flask_app.test_client(), other).post(f"/api/pieces/{piece_for(other)}/sections", json={"start": 1, "end": 2}).get_json()
+    assert client.put(f"/api/sections/{p['id']}", json={"start": 3, "end": 4}).status_code == 404
+
+
 def test_one_bar_is_a_passage(user):
     client, uid = user
     assert client.post(f"/api/pieces/{piece_for(uid)}/sections", json={"start": 3, "end": 3}).status_code == 201

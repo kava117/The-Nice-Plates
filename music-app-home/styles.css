@@ -1055,7 +1055,9 @@ main {
 
 .donut-value {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 2.5rem;        /* SVG units: the 120-unit ring is drawn at 76px, so this is ~25px */
+  font-variant-numeric: lining-nums;
+  dominant-baseline: central;
   fill: var(--ink);
 }
 

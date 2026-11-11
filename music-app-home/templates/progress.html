@@ -66,7 +66,7 @@
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ practiced }} pieces practiced">
         <circle class="donut-track" cx="60" cy="60" r="50" />
         <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="{{ (314 * practiced / (pieces or 1))|round|int }} 314" transform="rotate(-90 60 60)" />
-        <text class="donut-value" x="60" y="68" text-anchor="middle">{{ practiced }}</text>
+        <text class="donut-value" x="60" y="62" text-anchor="middle">{{ practiced }}</text>
       </svg>
       <div class="donut-copy">
         <div class="donut-label">Pieces Practiced</div>
@@ -77,7 +77,7 @@
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ pieces }} pieces in the library">
         <circle class="donut-track" cx="60" cy="60" r="50" />
         <circle class="donut-fill" cx="60" cy="60" r="50" stroke-dasharray="314 314" transform="rotate(-90 60 60)" />
-        <text class="donut-value" x="60" y="68" text-anchor="middle">{{ pieces }}</text>
+        <text class="donut-value" x="60" y="62" text-anchor="middle">{{ pieces }}</text>
       </svg>
       <div class="donut-label">In Your Library</div>
     </div>

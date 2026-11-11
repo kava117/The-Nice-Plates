@@ -498,6 +498,22 @@ def practice():
     return render_template("practice.html", latest_piece=None if asked else piece and piece["id"],
                            piece_title=piece and piece["title"])   # the library's name for it; an upload's score may have none
 
+@app.route("/review")
+@onboarding_required
+def review():
+    """Everything after the playing: the takes, how each passage is going, and the sessions. Practice stays for playing."""
+    pieces = database.getPieces(user_id())
+    asked = request.args.get("piece")
+    piece = database.getPieceForUser(user_id(), int(asked)) if asked and asked.isdigit() else None
+    piece = piece or next(iter(pieces), None)
+    takes = sections = sessions = []
+    if piece:
+        takes = database.getRecordings(user_id(), piece["id"])
+        sections = [s for s in database.getSections(user_id(), piece["id"]) if s["reps"]]
+        sessions = [h for h in database.getSessionHistory(user_id(), 200) if any(p["id"] == piece["id"] for p in h["pieces"])][:8]
+    return render_template("review.html", pieces=pieces, piece=piece, takes=takes, sections=sections, sessions=sessions,
+                           max_takes=database.MAX_TAKES)
+
 def give_starter_piece(uid):
     """The starter pieces, copied, so a new account has something to practice before its first upload"""
     if not database.getPieces(uid):

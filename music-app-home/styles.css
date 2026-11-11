@@ -4233,21 +4233,6 @@ label.btn.is-disabled {
   .practice-bar .tempo-word { display: none; }
 }
 
-/* In the ⋯ menu: the coach button and the saved takes */
-.more-takes {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.more-takes[hidden] { display: none; }
-
-.more-takes .take-pick-wrap { flex-direction: column; align-items: stretch; gap: 6px; }
-.more-takes .take-pick { width: 100%; max-width: 100%; }
-.more-takes .take-player { flex: none; width: 100%; min-width: 0; height: 36px; }
-
 /* Rep row: just the question and its two answers. The passage is already named on its chip and on the score,
    Delete is on the chip (and the Delete key), and the explanation is in the Yes button's description. */
 #rep .rep-delete { display: none; }
@@ -4260,4 +4245,205 @@ label.btn.is-disabled {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* 33. Review page --------------------------------------------------------- */
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 880px;
+}
+
+.review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.review-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.review-title .section-title { margin: 0; }
+
+.review-pick select {
+  max-width: min(360px, 60vw);
+  padding: 7px 10px;
+  border: 1.5px solid var(--control-edge);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.review-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.review-section { margin: 0; }
+
+.review-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.review-h {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.review-count,
+.review-link {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.review-link:hover { color: var(--ink); }
+
+.review-note {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.review-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.review-empty .review-note { margin: 0; }
+
+.take-list,
+.session-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.take-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.take-row:first-child { border-top: 0; padding-top: 0; }
+.take-row[hidden] { display: none; }
+
+.take-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.take-name-text {
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.take-when {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.take-audio {
+  width: 100%;
+  height: 36px;
+}
+
+.take-delete {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.take-delete:hover {
+  background: var(--bg);
+  color: var(--rec);
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-table th,
+.review-table td {
+  padding: 9px 12px 9px 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.review-table thead th {
+  border-top: 0;
+  padding-top: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.review-table tbody th { font-weight: 600; }
+
+.review-meter {
+  display: inline-block;
+  width: 64px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 3px;
+  background: var(--line);
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.review-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.session-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.session-list li:first-child { border-top: 0; padding-top: 0; }
+.session-list time { color: var(--ink); }
+.session-list span { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+  .take-row { grid-template-columns: 1fr auto; }
+  .take-audio { grid-column: 1 / -1; grid-row: 2; }
+  .review-table { display: block; overflow-x: auto; }
 }

@@ -1,6 +1,6 @@
 {# Practice page: renders one piece from the library, or the demo score.
    Kept for playing: one bar (Listen, Record, tempo, metronome), the passages and the rep
-   count for the picked passage. Zoom, bars, saved takes, the coach and shortcuts are in the ⋯ menu. passages.js explains how picking a passage works. #}
+   count for the picked passage. Saved takes, the coach and the sessions are on Review. passages.js explains how picking a passage works. #}
 {% set title = "Practice" %}
 {% set active = "practice" %}
 {% set auth = "signed-in" %}
@@ -8,7 +8,7 @@
 
 
 <div id="controls">
-  {# Playing only: Listen and Record, the tempo and the metronome. Everything else is in the ⋯ menu. #}
+  {# Playing only: Listen and Record, the tempo and the metronome. What comes after (takes, the coach) lives on Review. #}
   <div class="controls-row practice-bar">
     <a class="tool press back-link" href="/library" title="Back to Library to pick another piece" aria-label="Library">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
@@ -17,7 +17,7 @@
 
     <div class="tool-group tool-main" role="group" aria-label="Play and record">
       <button id="play" class="tool tool-play press" disabled title="Hear the selected passage, or the whole piece (Space)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="tool-label">Listen</span></button>
-      <button id="record" class="btn btn-solid press tool tool-primary" title="Record yourself; the take is saved in the ⋯ menu"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record</span></button>
+      <button id="record" class="btn btn-solid press tool tool-primary" title="Record yourself; the take is saved to Review"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record</span></button>
     </div>
 
     <label class="tempo" title="Playback and recording speed"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
@@ -46,17 +46,6 @@
           <input class="bars-input" id="bars-input" placeholder="12–16" autocomplete="off" enterkeyhint="go" size="5" aria-label="Bars for a new passage" aria-describedby="bars-help">
           <span class="visually-hidden" id="bars-help">Type bar numbers to make a passage</span>
         </form>
-        <div class="more-takes" id="takes" hidden>
-          <label class="take-pick-wrap">
-            <span class="take-pick-label">Recordings</span>
-            <select id="take-pick" class="take-pick" aria-label="Saved recordings"></select>
-          </label>
-          <audio id="take-player" class="take-player" controls preload="none"></audio>
-        </div>
-        <div class="more-line">
-          <span class="more-label">Practice questions</span>
-          <button id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)">Ask the coach</button>
-        </div>
         <dl class="keys-list">
           <dt><kbd>Space</kbd></dt><dd>Listen, or stop</dd>
           <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
@@ -69,7 +58,6 @@
           <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That was correct, or not yet</dd>
           <dt><kbd>L</kbd></dt><dd>Auto-mark: hears each go and marks it for you</dd>
           <dt><kbd>Esc</kbd></dt><dd>Deselect the passage: back to the whole piece</dd>
-          <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
           <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
         </dl>
       </div>
@@ -118,38 +106,12 @@
 </p>
 <div id="score"></div>
 
-<aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
-  <header class="coach-head">
-    <div class="coach-heading">
-      <h2 class="coach-title" id="coach-title">Coach</h2>
-      <p class="coach-sub" id="coach-sub" hidden></p>
-    </div>
-    <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
-    <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-  </header>
-  <p class="visually-hidden" id="coach-said" aria-live="polite"></p>
-  <div class="coach-thread" id="coach-thread">
-    <div class="coach-empty" id="coach-empty">
-      <p class="coach-lead" id="coach-lead">How’s practice going?</p>
-      <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
-      <div class="coach-asks" id="coach-asks"></div>
-    </div>
-  </div>
-  <form class="coach-form" id="coach-form">
-    <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
-    <button type="submit" class="coach-send press" id="coach-send" disabled>Ask</button>
-  </form>
-</aside>
-
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
 <script src="/toast.js"></script>
 <script src="/passages.js"></script>
 <script src="/listen.js"></script>
 <script src="/live.js"></script>
-<script src="/coach.js"></script>
 <script>
   // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
   const piece = new URLSearchParams(location.search).get("piece") || {{ latest_piece | tojson }};
@@ -181,7 +143,7 @@
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
-    onPick: () => { player.stop(); coach.refresh(); listening.picked(); showClock(); },   // the coach's suggestions and "Practicing: bars 3–6" name the picked bars
+    onPick: () => { player.stop(); listening.picked(); showClock(); },   // "Practicing: bars 3–6" names the picked bars
     onRep: () => { void ensureSession(); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
@@ -192,16 +154,6 @@
 
   // ---- Listen (listen.js): hears each go at the passage and marks the rep, on this device ----
   const listening = addListening(osmd, { button: $("listen"), status: $("rep-ask") }, { passages, player, tempo });
-
-  // ---- Coach (coach.js): questions about this musician's practice, beside the score ----
-  const coach = addCoach({
-    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"), said: $("coach-said"),
-    thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
-    form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
-  }, {
-    pieceId: piece && +piece, passage: () => passages.bars, score: passages,
-    title: () => {{ piece_title | tojson }} || ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // else as printed on the score
-  });
 
   async function loadSong(url) {
     try {
@@ -215,7 +167,6 @@
       document.getElementById("score-loading").hidden = true;
       play.disabled = false;
       showTempo();
-      coach.refresh();   // the piece's title, under the coach's name
       passages.ready((await firstState).section_id);   // back on the passage the last visit left on
     } catch (err) {
       console.error("Couldn't load song:", err);
@@ -285,7 +236,6 @@
     "l": () => listening.toggle(),
     "Delete": () => passages.deleteActive(), "Backspace": () => passages.deleteActive(),
     "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
-    "c": () => coach.toggle(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },
   };
@@ -392,39 +342,6 @@
   const recordWord = record.querySelector(".tool-label");
   const lane = $("live-lane");
   let recorder, live = null;
-  const takes = $("takes"), takePick = $("take-pick"), takePlayer = $("take-player");
-  function takeWhen(iso) {   // "12 Nov · 3:41 pm" from the server's date_created
-    if (!iso) return "";
-    const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
-    if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
-  }
-  function playTake(id) {
-    if (!id) { takePlayer.removeAttribute("src"); takePlayer.load(); return; }
-    takePlayer.src = `/api/recordings/${id}`;
-    takePlayer.load();
-  }
-  function showTakes(list, selectId) {
-    takes.hidden = !list.length;
-    const keep = selectId || takePick.value;
-    takePick.replaceChildren(...list.map(t => {
-      const opt = document.createElement("option"), when = takeWhen(t.date_created);
-      opt.value = String(t.id);
-      opt.textContent = (t.name || `Recording ${t.id}`) + (when ? ` · ${when}` : "");
-      return opt;
-    }));
-    if (!list.length) { playTake(null); return; }
-    const pick = list.some(t => String(t.id) === keep) ? keep : String(list[0].id);
-    takePick.value = pick;
-    playTake(pick);
-  }
-  takePick.addEventListener("change", () => playTake(takePick.value));
-  async function loadTakes(selectId) {   // this piece's saved takes, from the database
-    if (!piece) return;
-    const r = await fetch(`/api/pieces/${piece}/recordings`);
-    if (r.ok) showTakes(await r.json(), selectId);
-  }
-  loadTakes();
   $("live-close").addEventListener("click", () => { lane.hidden = true; });
   const controls = $("controls");
   let takeFollow = true;
@@ -466,10 +383,11 @@
       form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
       const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
       if (!r.ok) { take.textContent = "That recording was empty. Try again."; return; }
-      const saved = await r.json();
-      take.textContent = "";
-      await loadTakes(String(saved.id));   // newest take, ready in the ⋯ menu
-      toast(`Saved “${saved.name}”`);
+      const link = document.createElement("a");   // the take is heard and managed on Review
+      link.href = `/review?piece=${piece}`;
+      link.className = "clock-link";
+      link.textContent = "Review it";
+      take.replaceChildren("Saved · ", link);
     };
     const rolling = () => {
       recorder.start();

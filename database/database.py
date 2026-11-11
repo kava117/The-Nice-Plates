@@ -433,9 +433,24 @@ def getPieceSeconds(user_id):
         ).fetchall()
         return {row["piece_id"]: row["seconds"] for row in rows}
 
+MAX_TAKES = 10   # takes kept for each piece: a new one pushes the oldest out, so Review stays short and the database small
+
 def addRecording(piece_id, audio, name=None):
     with get_db() as database:
-        return database.execute("INSERT INTO Recordings (piece_id, audio, name) VALUES (?, ?, ?)", (piece_id, audio, name)).lastrowid
+        new = database.execute("INSERT INTO Recordings (piece_id, audio, name) VALUES (?, ?, ?)", (piece_id, audio, name)).lastrowid
+        database.execute(
+            "DELETE FROM Recordings WHERE piece_id = ? AND id NOT IN (SELECT id FROM Recordings WHERE piece_id = ? ORDER BY id DESC LIMIT ?)",
+            (piece_id, piece_id, MAX_TAKES),
+        )
+        return new
+
+def deleteRecording(user_id, recording_id):
+    """removes one take; returns whether it was theirs"""
+    with get_db() as database:
+        return database.execute(
+            "DELETE FROM Recordings WHERE id = ? AND piece_id IN (SELECT id FROM Pieces WHERE user_id = ?)",
+            (recording_id, user_id),
+        ).rowcount > 0
 
 def getRecordings(user_id, piece_id):
     """A piece's takes, newest first, without the audio."""

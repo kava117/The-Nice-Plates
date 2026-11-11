@@ -23,7 +23,7 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 
 # ---------------------------------------------------------------- boot & pages
-PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/privacy", "/terms"]
+PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/review", "/privacy", "/terms"]
 APP_PAGES = [p for p in PAGES if p not in ("/", "/index")]   # welcome sends signed-in people to Home
 
 @pytest.mark.parametrize("path", PAGES)

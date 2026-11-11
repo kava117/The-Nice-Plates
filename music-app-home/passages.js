@@ -26,7 +26,11 @@ const TRASH = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" strok
 // onRep runs after each saved rep; onPick when the passage changes or a click moves the cursor;
 // playing() says if the player is going.
 function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () => {}, playing = () => false }) {
-  const { score, chips, form, input, rep, title, yes, no, dots, note, actions, newButton, remove, empty, selectHint, cancelSelect } = els;
+  const { score, chips, form, input, rep, title, yes, no, dots, note, actions, newButton, remove, empty, selectHint, cancelSelect, firstHint } = els;
+  // firstHint: how to make a passage, by the sheet music, until this browser has made its first one
+  const FIRST = "made-a-passage";
+  let madeOne = false;
+  try { madeOne = localStorage.getItem(FIRST) === "1"; } catch {}
   let saved = [];        // the piece's passages from the server, in bar order
   let active = null;     // the picked passage: {first, last, id}; id is null until it's saved
   let preview = null;    // bars under a drag, or between [ and the cursor, not picked yet
@@ -427,6 +431,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     await flushDeletes();   // re-making bars just deleted must not get back the row about to go
     const made = keep(await api(`/api/pieces/${pieceId}/sections`, "POST", { start: p.first + 1, end: p.last + 1 }));
     p.id = made.id;
+    if (!madeOne) { madeOne = true; try { localStorage.setItem(FIRST, "1"); } catch {} }
     if (p !== active) return made;
     await remember();   // finish before the timer starts: two requests at once would each write the session cookie, and one would lose
     return made;
@@ -530,6 +535,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
       list.push(wrap);
     }
     chips.replaceChildren(...list);
+    if (firstHint) firstHint.hidden = madeOne || saved.length > 0 || selecting;
     const none = !saved.length && !active && !selecting;
     chips.hidden = selecting;
     chips.classList.toggle("is-alone", !saved.length && !active);   // just Whole piece: room for the empty state beside it

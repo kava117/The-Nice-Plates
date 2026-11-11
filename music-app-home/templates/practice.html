@@ -95,6 +95,10 @@
 
 <p class="score-loading" id="score-loading" role="status">Loading the sheet music…</p>
 <p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to Library</a></p>
+<p class="first-hint" id="first-hint" hidden>
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>
+  <span><strong>Practice a few bars at a time.</strong> Click <strong>+&nbsp;New passage</strong>, then drag across the bars you want on the sheet music below.</span>
+</p>
 <div id="score"></div>
 
 <aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
@@ -150,7 +154,7 @@
   const passages = addPassages(osmd, {
     score: $("score"), chips: $("passage-chips"), form: $("bars-form"), input: $("bars-input"),
     rep: $("rep"), title: $("rep-title"), yes: $("rep-yes"), no: $("rep-no"), dots: $("rep-dots"), note: $("rep-note"), actions: $("rep-actions"),
-    newButton: $("new-passage"), remove: $("rep-delete"), empty: $("passage-empty"), selectHint: $("select-hint"), cancelSelect: $("cancel-select"),
+    newButton: $("new-passage"), remove: $("rep-delete"), empty: $("passage-empty"), selectHint: $("select-hint"), cancelSelect: $("cancel-select"), firstHint: $("first-hint"),
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,

@@ -3430,3 +3430,28 @@ label.btn.is-disabled {
   font-size: 0.875rem;
   color: var(--ink-muted);
 }
+
+/* 29. First-passage hint (passages.js): by the sheet music until the first passage --- */
+
+.first-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--band);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.first-hint[hidden] {
+  display: none;
+}
+
+.first-hint svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}

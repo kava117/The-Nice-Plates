@@ -1,6 +1,6 @@
-import os, re, sqlite3
+import os, re, sqlite3, uuid
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 DB_NAME = "niceplates.db"
 
@@ -581,20 +581,76 @@ _demo_ids = {}   # per database; a guest's page asked three or four times, each 
 
 DEMO_EMAIL = "sample.user@example.com"
 
-def demoUser():
-    """One shared user until Google login lands; then use the signed-in user's id instead."""
-    where = DATABASE_URL or DB_NAME
+STARTER_EMAIL = "starter.pieces@example.com"
+
+def _fixedUser(name, email):
+    where = (DATABASE_URL or DB_NAME, email)
     if where not in _demo_ids:
         with get_db() as database:
-            database.execute(
-                "INSERT OR IGNORE INTO Users (name, email) VALUES ('Sample User', ?)",
-                (DEMO_EMAIL,),
-            )
+            database.execute("INSERT OR IGNORE INTO Users (name, email) VALUES (?, ?)", (name, email))
             _demo_ids[where] = database.execute(
-                "SELECT id FROM Users WHERE email = ?", (DEMO_EMAIL,)
+                "SELECT id FROM Users WHERE email = ?", (email,)
             ).fetchone()[0]
     return _demo_ids[where]
 
+def demoUser():
+    """One shared user until Google login lands; then use the signed-in user's id instead."""
+    return _fixedUser("Sample User", DEMO_EMAIL)
+
+def starterUser():
+    """Holds the pieces every new account and guest is given a copy of; nobody signs in as it."""
+    return _fixedUser("Starter Pieces", STARTER_EMAIL)
+
 def isDemoUser(user_id):
-    """True for the shared guest account (Continue as guest logs in as this user)."""
-    return user_id == demoUser()
+    """True for the Sample User and for every guest made from it (they skip onboarding)."""
+    if user_id == demoUser():
+        return True
+    row = getUserById(user_id)
+    return bool(row and row["email"].endswith(GUEST_DOMAIN))
+
+# Continue as guest makes a throwaway user with its own copy of the starter pieces,
+# so one guest deleting a piece never touches another. They are removed after GUEST_HOURS.
+GUEST_DOMAIN = "@guest.niceplates"
+GUEST_HOURS = 24
+
+def copyStarterPieces(user_id):
+    """Copies the starter pieces and their passages into user_id's library."""
+    with get_db() as database:
+        for p in database.execute(
+            "SELECT id, title, composer, bpm, midi, xml FROM Pieces WHERE user_id = ? ORDER BY id", (starterUser(),)
+        ).fetchall():
+            new = database.execute(
+                "INSERT INTO Pieces (user_id, title, composer, bpm, midi, xml) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, p["title"], p["composer"], p["bpm"], p["midi"], p["xml"]),
+            ).lastrowid
+            for s in database.execute(
+                "SELECT start_measure, end_measure FROM Sections WHERE piece_id = ?", (p["id"],)
+            ).fetchall():
+                database.execute("INSERT INTO Sections (piece_id, start_measure, end_measure) VALUES (?, ?, ?)",
+                                 (new, s["start_measure"], s["end_measure"]))
+
+def deleteUser(database, user_id):
+    pieces = "SELECT id FROM Pieces WHERE user_id = ?"
+    sessions = "SELECT id FROM Sessions WHERE user_id = ?"
+    database.execute(f"DELETE FROM Section_Reps WHERE section_id IN (SELECT id FROM Sections WHERE piece_id IN ({pieces}))", (user_id,))
+    database.execute(f"DELETE FROM Sections WHERE piece_id IN ({pieces})", (user_id,))
+    database.execute(f"DELETE FROM Recordings WHERE piece_id IN ({pieces})", (user_id,))
+    database.execute(f"DELETE FROM Session_Pieces WHERE piece_id IN ({pieces}) OR session_id IN ({sessions})", (user_id, user_id))
+    database.execute("DELETE FROM Sessions WHERE user_id = ?", (user_id,))
+    database.execute("DELETE FROM Pieces WHERE user_id = ?", (user_id,))
+    database.execute("DELETE FROM Users WHERE id = ?", (user_id,))
+
+def deleteStaleGuests(hours=GUEST_HOURS):
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+    with get_db() as database:
+        for row in database.execute(
+            "SELECT id FROM Users WHERE email LIKE ? AND date_registered < ?", ("%" + GUEST_DOMAIN, cutoff)
+        ).fetchall():
+            deleteUser(database, row["id"])
+
+def addGuest():
+    """A fresh guest with the starter pieces; clears out old guests first."""
+    deleteStaleGuests()
+    uid = addUser("Guest", f"{uuid.uuid4().hex}{GUEST_DOMAIN}")
+    copyStarterPieces(uid)
+    return getUserById(uid)

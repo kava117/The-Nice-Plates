@@ -45,11 +45,27 @@ if database.POSTGRES:
 elif os.environ.get("RENDER"):   # Render's disk is wiped on deploy and spin-down
     app.logger.warning("Database: SQLite on Render's disk. Accounts and sessions vanish on restart; set DATABASE_URL.")
 
+STARTER_PIECES = [
+    ("Air", "J. S. Bach", "AirOnG.musicxml"),
+    ("Ode to Joy", "L. van Beethoven", "OdeToJoy.musicxml"),
+    ("Minuet in G", "C. Petzold", "MinuetInG.musicxml"),
+]
+
+def seed_starter_pieces():
+    """What new accounts and guests get a copy of; added by title, so an older database gains the new ones."""
+    have = {p["title"] for p in database.getPieces(database.starterUser())}
+    for title, composer, file in STARTER_PIECES:
+        if title not in have:
+            with open(os.path.join(app.static_folder, file), "rb") as f:
+                database.addPiece(database.starterUser(), title, composer, xml=f.read())
+
 with app.app_context():
     database.init_db()
     database.migrate()
+    air = lambda uid: database.addPiece(uid, "Air", "J. S. Bach", xml=open(app.static_folder + "/AirOnG.musicxml", "rb").read())
     if not database.getPieces(database.demoUser()):   # free hosting wipes the disk on restart: keep one piece to try
-        database.addPiece(database.demoUser(), "Air", "J. S. Bach", xml=open(app.static_folder + "/AirOnG.musicxml", "rb").read())
+        air(database.demoUser())
+    seed_starter_pieces()
 
 #handles logging in/out and passing credentials when required
 login_manager = LoginManager(app)
@@ -75,8 +91,8 @@ def unauthorized():
 def user_id():
     return current_user.id if current_user.is_authenticated else database.demoUser()
 
-# Signed-in Google users go to onboarding until they finish it. The shared guest
-# account (Continue as guest) skips it so people can try the app at once.
+# Signed-in Google users go to onboarding until they finish it. Guest accounts
+# (Continue as guest) skip it so people can try the app at once.
 def onboarding_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -95,7 +111,7 @@ def too_large(e):
     return jsonify(error=message), 413
 
 # Makes {{ year }} available to every template (used by footer.html).
-# guest_account: signed in as the shared Sample User via Continue as guest.
+# guest_account: signed in as a throwaway guest via Continue as guest.
 @app.context_processor
 def inject_year():
     me = current_user if current_user.is_authenticated else database.getUserById(database.demoUser())
@@ -251,6 +267,8 @@ def my_section(section_id):
 
 @app.route("/api/pieces/<int:piece_id>", methods=["DELETE"])
 def api_delete_piece(piece_id):
+    if not current_user.is_authenticated:   # signed-out visitors share the Sample User
+        return jsonify(error="login required"), 401
     if not database.deletePiece(user_id(), piece_id):
         abort(404)
     if session.get("current_piece_id") == piece_id:
@@ -470,10 +488,9 @@ def practice():
                            piece_title=piece and piece["title"])   # the library's name for it; an upload's score may have none
 
 def give_starter_piece(uid):
-    """Bach's Air, so a new account has a piece to practice before its first upload (the demo user gets it at startup)"""
+    """The starter pieces, copied, so a new account has something to practice before its first upload"""
     if not database.getPieces(uid):
-        with open(os.path.join(app.static_folder, "AirOnG.musicxml"), "rb") as f:
-            database.addPiece(uid, "Air", "J. S. Bach", xml=f.read())
+        database.copyStarterPieces(uid)
 
 @app.route("/login/google")
 def login_google():
@@ -484,8 +501,8 @@ def login_google():
 
 @app.route("/login/guest")
 def login_guest():
-    """Sign in as the shared Sample User so guests get a real session and Log out."""
-    row = database.getUserById(database.demoUser())
+    """Sign in as a new throwaway guest with its own copy of the starter pieces."""
+    row = database.addGuest()
     clear_practice_state()
     login_user(User(row))
     return redirect(url_for("home"))

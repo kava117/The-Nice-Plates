@@ -415,6 +415,15 @@ p {
   background: color-mix(in srgb, white 12%, var(--accent));
 }
 
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-solid:disabled:hover { border-color: var(--accent); background: var(--accent); }
+
 .theme-toggle {
   display: grid;
   place-items: center;

@@ -88,13 +88,13 @@
   </div>
 
   <div class="live-lane" id="live-lane" hidden>
-    <canvas id="live-canvas" role="img" aria-label="The score's notes coming up, and the pitch you play, as it happens"></canvas>
+    <canvas id="live-canvas" role="img" aria-label="The notes coming up in the sheet music, and the pitch you play, as it happens"></canvas>
     <button type="button" class="live-lane-close" id="live-close" aria-label="Hide the lane">&times;</button>
   </div>
 </div>
 
-<p class="score-loading" id="score-loading" role="status">Loading the score…</p>
-<p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to your library</a></p>
+<p class="score-loading" id="score-loading" role="status">Loading the sheet music…</p>
+<p class="score-missing" id="score-missing" hidden>This piece couldn't be found. It may have been removed. <a href="/library">Back to Library</a></p>
 <div id="score"></div>
 
 <aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
@@ -193,12 +193,12 @@
     } catch (err) {
       console.error("Couldn't load song:", err);
       const loading = document.getElementById("score-loading");
-      if (url === "/AirOnG.musicxml") { loading.textContent = "The score didn't load. Reload the page to try again."; return; }
+      if (url === "/AirOnG.musicxml") { loading.textContent = "The sheet music didn't load. Reload the page to try again."; return; }
       if (piece && err.status === 404) {   // a removed piece says so, instead of quietly showing Bach
         loading.hidden = true;
         document.getElementById("score-missing").hidden = false;
       }
-      else if (piece) loading.textContent = "The score didn't load. Reload the page to try again.";
+      else if (piece) loading.textContent = "The sheet music didn't load. Reload the page to try again.";
       else loadSong("/AirOnG.musicxml");
     }
   }

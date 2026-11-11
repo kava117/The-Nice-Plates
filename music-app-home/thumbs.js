@@ -7,8 +7,9 @@
 (function () {
   var arts = Array.prototype.slice.call(document.querySelectorAll("[data-thumb]"));
   if (!arts.length || !window.HTMLCanvasElement) return;
-  // Wider, flatter crop: a page of music, not a few notes blown up to fill the card.
-  var VERSION = "v7", WIDTH = 1100, OUT_W = 960, OUT_H = 420, BARS = 12, ZOOM = 1;
+  // The card is 960 x 420. A piece's first bars are drawn as wide as it takes for them to wrap into a block
+  // about that shape (a single long line would be a thin strip in a big white card), then cut from the top.
+  var VERSION = "v8", WIDTHS = [900, 720, 580, 470], OUT_W = 960, OUT_H = 420, BARS = 16;
   var queue = [], running = false, osmdReady = null;
 
   function cached(id) { try { return localStorage.getItem("thumb:" + VERSION + ":" + id); } catch (e) { return null; } }
@@ -52,7 +53,7 @@
     await loadOsmd();
     var stage = document.createElement("div");
     stage.setAttribute("aria-hidden", "true");
-    stage.style.cssText = "position:absolute;left:-10000px;top:0;width:" + WIDTH + "px;background:#fffdf5";
+    stage.style.cssText = "position:absolute;left:-10000px;top:0;width:" + WIDTHS[0] + "px;background:#fffdf5";
     document.body.appendChild(stage);
     try {
       var r = await fetch("/api/pieces/" + id + "/musicxml");
@@ -65,19 +66,24 @@
       await osmd.load(await r.text());
       osmd.setOptions({ drawUpToMeasureNumber: BARS });
       osmd.zoom = 0.85;
-      osmd.render();
-      var svg = stage.querySelector("svg");
-      var high = svg.height.baseVal.value || svg.getBoundingClientRect().height, wide = svg.width.baseVal.value || WIDTH;
+      var svg, high, wide;
+      for (var i = 0; i < WIDTHS.length; i++) {   // the widest drawing that fills the card
+        stage.style.width = WIDTHS[i] + "px";
+        osmd.render();
+        svg = stage.querySelector("svg");
+        high = svg.height.baseVal.value || svg.getBoundingClientRect().height;
+        wide = svg.width.baseVal.value || WIDTHS[i];
+        if (wide / high <= OUT_W / OUT_H * 1.05) break;
+      }
       var img = await svgImage(svg);
       var canvas = document.createElement("canvas");
       canvas.width = OUT_W; canvas.height = OUT_H;
       var ctx = canvas.getContext("2d");
       ctx.fillStyle = "#fffdf5";
       ctx.fillRect(0, 0, OUT_W, OUT_H);
-      // Fit the whole rendered strip inside the card (letterbox), so short pieces aren't magnified.
-      var scale = Math.min(OUT_W / wide, OUT_H / high) * ZOOM;
-      var dw = wide * scale, dh = high * scale;
-      ctx.drawImage(img, 0, 0, wide, high, (OUT_W - dw) / 2, (OUT_H - dh) / 2, dw, dh);
+      // Full width, from the top: what doesn't fit below is cut off, and a short piece just has some paper under it.
+      var scale = OUT_W / wide;
+      ctx.drawImage(img, 0, 0, wide, high, 0, 0, wide * scale, high * scale);
       return canvas.toDataURL("image/jpeg", 0.92);
     } finally {
       stage.remove();

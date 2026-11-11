@@ -24,13 +24,23 @@
       <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: click at this tempo while you practice">Metronome</button>
     </div>
     <div class="tool-group" role="group" aria-label="Practice session">
-      <button id="timer" class="btn btn-solid press tool-primary" title="Time a practice session: it's added to Progress when you finish"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Start practice</span></button> <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button> <span id="clock" class="clock" role="status"></span>
+      <button id="timer" class="tool press" hidden title="Pause or resume this practice session"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Pause</span></button>
+      <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button>
+      <span id="clock" class="clock" role="status"></span>
     </div>
     <div class="tool-group" role="group" aria-label="Record yourself">
-      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this recording" aria-label="Name this recording"> <button id="record" class="tool press" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button>
+      <input id="take-name" class="take-name" maxlength="100" placeholder="Name (optional)" aria-label="Name this recording">
+      <button id="record" class="btn btn-solid press tool tool-primary" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button>
       <span id="take" class="take"></span>
-      <details id="takes" class="keys takes" hidden><summary class="tool press" title="Recordings you've saved for this piece">Recordings</summary><ol class="keys-panel takes-panel"></ol></details>
     </div>
+  </div>
+
+  <div class="takes-dock" id="takes" hidden>
+    <audio id="take-player" class="take-player" controls preload="none"></audio>
+    <label class="take-pick-wrap">
+      <span class="take-pick-label">Recording</span>
+      <select id="take-pick" class="take-pick" aria-label="Saved recordings"></select>
+    </label>
   </div>
 
   <div class="controls-row passage-row">
@@ -164,7 +174,7 @@
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
     onPick: () => { player.stop(); coach.refresh(); listening.picked(); showClock(); },   // the coach's suggestions and "Practicing: bars 3–6" name the picked bars
-    onRep: () => { if (!current.running) post("/api/timer/start").then(render); },   // reps are practice: the timer runs
+    onRep: () => { void ensureSession(); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
     const bpm = osmd.Sheet && osmd.Sheet.DefaultStartTempoInBpm;
@@ -255,7 +265,7 @@
     "n": () => passages.rep(false),
     "l": () => listening.toggle(),
     "Delete": () => passages.deleteActive(), "Backspace": () => passages.deleteActive(),
-    "Escape": () => keys.open ? (keys.open = false) : $("takes").open ? ($("takes").open = false) : passages.clear(),
+    "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),
     "?": () => { keys.open = !keys.open; },
     "c": () => coach.toggle(),
@@ -274,12 +284,9 @@
     if (e.pointerType === "mouse" && e.target.closest("button, summary")) e.preventDefault();
   });
 
-  // ---- Practice timer: saves a row in Sessions on stop ----
+  // ---- Practice timer: saves a row in Sessions on stop. No Start button — recording or a rep starts it. ----
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }).then(r => r.json());
   if (piece) post("/api/practice/piece", { piece_id: +piece });   // the saved session remembers which piece it was
-  // The server's {running, elapsed} is the truth; every timer call goes through render().
-  // Its words always match the session: Start practice before one, Pause / Resume during it, and
-  // back to Start practice once Finish session has saved it. The line beside says what's practiced.
   const timer = document.getElementById("timer"), stop = document.getElementById("stop"), clock = document.getElementById("clock");
   const timerWord = timer.querySelector(".tool-label");
   const minutes = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -298,15 +305,17 @@
     current = state;
     clearInterval(tick);
     const started = state.running || state.elapsed > 0;
-    timerWord.textContent = state.running ? "Pause" : started ? "Resume" : "Start practice";
-    timer.classList.toggle("is-running", !!state.running);
+    timer.hidden = !started;
     stop.hidden = !started;
+    timerWord.textContent = state.running ? "Pause" : "Resume";
+    timer.classList.toggle("is-running", !!state.running);
     shown = state.elapsed || 0;
     showClock();
     if (state.running) tick = setInterval(() => { shown++; showClock(); }, 1000);
     return state;
   }
   const refresh = () => fetch("/api/practice/state").then(r => r.json()).then(render);
+  const ensureSession = () => current.running ? Promise.resolve(current) : post("/api/timer/start").then(render);
   const firstState = refresh().catch(() => ({}));
   firstState.then(state => {   // a reload pauses too (pagehide): pick straight back up if this tab paused it moments ago
     let left = 0;
@@ -379,9 +388,10 @@
   // ---- Record yourself (it was "Record a take"; in code a recording is still a take): a bar of ticks, then the take, with the lane (live.js) showing your pitch against the score ----
   const record = document.getElementById("record"), take = document.getElementById("take");
   const takeName = document.getElementById("take-name"), takes = document.getElementById("takes");
+  const takePick = document.getElementById("take-pick"), takePlayer = document.getElementById("take-player");
   const recordWord = record.querySelector(".tool-label");
   const lane = $("live-lane");
-  let recorder, live = null;
+  let recorder, live = null, takeList = [];
   $("live-close").addEventListener("click", () => { lane.hidden = true; });
   function takeWhen(iso) {   // "12 Nov · 3:41 pm" from the server's date_created
     if (!iso) return "";
@@ -389,24 +399,36 @@
     if (Number.isNaN(d.getTime())) return "";
     return d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
   }
-  async function loadTakes() {   // this piece's saved takes, from the database
+  function takeLabel(t) {
+    const when = takeWhen(t.date_created);
+    return (t.name || `Recording ${t.id}`) + (when ? ` · ${when}` : "");
+  }
+  function playTake(id) {
+    if (!id) { takePlayer.removeAttribute("src"); takePlayer.load(); return; }
+    takePlayer.src = `/api/recordings/${id}`;
+    takePlayer.load();
+  }
+  function showTakes(list, selectId) {
+    takeList = list || [];
+    takes.hidden = !takeList.length;
+    const keep = selectId || takePick.value;
+    takePick.replaceChildren(...takeList.map(t => {
+      const opt = document.createElement("option");
+      opt.value = String(t.id);
+      opt.textContent = takeLabel(t);
+      return opt;
+    }));
+    if (!takeList.length) { playTake(null); return; }
+    const pick = takeList.some(t => String(t.id) === keep) ? keep : String(takeList[0].id);
+    takePick.value = pick;
+    playTake(pick);
+  }
+  takePick.addEventListener("change", () => playTake(takePick.value));
+  async function loadTakes(selectId) {   // this piece's saved takes, from the database
     if (!piece) return;
     const r = await fetch(`/api/pieces/${piece}/recordings`);
     if (!r.ok) return;
-    const list = await r.json();
-    takes.hidden = !list.length;
-    takes.querySelector("summary").textContent = `Recordings (${list.length})`;
-    takes.querySelector("ol").replaceChildren(...list.map(t => {
-      const li = document.createElement("li");
-      const meta = Object.assign(document.createElement("div"), { className: "take-meta" });
-      meta.append(Object.assign(document.createElement("span"), { className: "take-name-line", textContent: t.name || `Recording ${t.id}` }));
-      const when = takeWhen(t.date_created);
-      if (when) meta.append(Object.assign(document.createElement("span"), { className: "take-when", textContent: when }));
-      const audio = document.createElement("audio");
-      audio.controls = true; audio.preload = "none"; audio.src = `/api/recordings/${t.id}`;
-      li.append(meta, audio);
-      return li;
-    }));
+    showTakes(await r.json(), selectId);
   }
   loadTakes();
   const controls = $("controls");
@@ -434,6 +456,7 @@
     player.stop();
     listening.stop();
     metro.stop();   // the take schedules its own pulse so the two don't clash
+    void ensureSession();   // recording is practice: the session clock starts itself
     takeFollow = osmd.FollowCursor;
     osmd.FollowCursor = false;   // keepCursorInView scrolls clear of the toolbar during the take
     const chunks = [], mine = recorder = new MediaRecorder(stream);
@@ -455,9 +478,7 @@
       const saved = await r.json();
       take.textContent = "";
       takeName.value = "";
-      await loadTakes();
-      takes.hidden = false;
-      takes.open = true;
+      await loadTakes(String(saved.id));   // newest take already loaded in the one player
       toast(`Saved “${saved.name}”`);
     };
     const rolling = () => {
@@ -477,7 +498,6 @@
     const beats = (time && time.Numerator) || 4, beat = 4 / ((time && time.Denominator) || 4) * 60 / bpm / speed;
     lane.hidden = false;
     controls.classList.add("is-taking");   // passages can't change mid-take: their row gives the lane its room
-    takes.open = false;
     recordWord.textContent = "Cancel";
     try {
       const started = await liveTake({ stream, osmd, lane: $("live-canvas"), events: scoreEvents(from, inside), speed, beats, beat,

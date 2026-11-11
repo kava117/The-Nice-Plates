@@ -1374,7 +1374,7 @@ body[data-auth="guest"] .welcome {
   flex: none;
 }
 
-/* Start practice is the page's main action: the one solid button in the toolbar. */
+/* Record yourself is the page's main action: the one solid button in the toolbar. */
 .tool-primary {
   gap: 6px;
   height: 34px;
@@ -1384,10 +1384,8 @@ body[data-auth="guest"] .welcome {
   white-space: nowrap;
 }
 
-.tool-primary.is-running {
-  --edge: var(--edge-neutral);
+#timer.is-running {
   border-color: var(--accent);
-  background: var(--surface);
   color: var(--accent);
 }
 
@@ -1452,7 +1450,7 @@ body[data-auth="guest"] .welcome {
 }
 
 .take-name {
-  width: 11em;
+  width: 8.5em;
   font: inherit;
   font-size: 0.8125rem;
   padding: 6px 8px;
@@ -1462,48 +1460,50 @@ body[data-auth="guest"] .welcome {
   color: var(--ink);
 }
 
-/* Saved takes: a drop-down like Keys, so the toolbar stays one line. */
-.takes-panel {
+/* One player + a picker: no scrolling list of audio controls. */
+.takes-dock {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: min(60vh, 420px);
-  overflow-y: auto;
-  list-style: none;
-  color: var(--ink);
-}
-
-.takes li {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
+  gap: 10px 14px;
+  padding: 8px 12px 10px;
   border-bottom: 1px solid var(--line);
+  background: var(--surface);
 }
 
-.takes li:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.takes-dock[hidden] {
+  display: none;
 }
 
-.take-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.take-player {
+  flex: 1 1 220px;
+  min-width: 180px;
+  height: 36px;
+}
+
+.take-pick-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
-.take-name-line {
+.take-pick-label {
+  font-size: 0.75rem;
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--ink-muted);
   white-space: nowrap;
 }
 
-.take-when {
-  font-size: 0.75rem;
-  color: var(--ink-muted);
+.take-pick {
+  max-width: min(280px, 70vw);
+  padding: 6px 8px;
+  border: 1px solid var(--control-edge);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
 }
 
 /* Record yourself keeps one width as it reads Record yourself, Cancel, Stop recording: the toolbar doesn't jump. */
@@ -1531,12 +1531,17 @@ body[data-auth="guest"] .welcome {
 }
 
 #controls.is-taking .passage-row,
-#controls.is-taking .rep-row {
+#controls.is-taking .rep-row,
+#controls.is-taking .takes-dock {
   display: none;
 }
 
-.takes audio {
-  height: 32px;
+/* While recording, Record yourself stays readable as Cancel / Stop on the solid button. */
+#record.is-recording {
+  --edge: var(--rec);
+  border-color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 12%, var(--surface));
+  color: var(--rec);
 }
 
 /* Recording: a red dot that pulses, so it's plain the microphone is on. */

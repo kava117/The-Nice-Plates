@@ -270,6 +270,8 @@ def api_delete_section(section_id):
         session.pop("selected_section_id")
     return "", 204
 
+# "clean" is what the page now calls "correct" ("Was that correct?"); the field, the Section_Reps
+# column and the coach's record keep the old name, so saved data and the coach stay as they were.
 @app.route("/api/sections/<int:section_id>/reps", methods=["POST"])
 def api_add_rep(section_id):
     my_section(section_id)

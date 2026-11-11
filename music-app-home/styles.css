@@ -1455,6 +1455,32 @@ body[data-auth="guest"] .welcome {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.takes li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.take-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.take-name-line {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.take-when {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
 }
 
 /* Record yourself keeps one width as it reads Record yourself, Cancel, Stop recording: the toolbar doesn't jump. */

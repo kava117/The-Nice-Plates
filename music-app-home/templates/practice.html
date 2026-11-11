@@ -360,6 +360,12 @@
     try { localStorage.setItem(COUNT_IN_KEY, on ? "1" : "0"); } catch {}
   });
   $("live-close").addEventListener("click", () => { lane.hidden = true; });
+  function takeWhen(iso) {   // "12 Nov · 3:41 pm" from the server's date_created
+    if (!iso) return "";
+    const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  }
   async function loadTakes() {   // this piece's saved takes, from the database
     if (!piece) return;
     const r = await fetch(`/api/pieces/${piece}/recordings`);
@@ -368,10 +374,14 @@
     takes.hidden = !list.length;
     takes.querySelector("summary").textContent = `Recordings (${list.length})`;
     takes.querySelector("ol").replaceChildren(...list.map(t => {
-      const li = document.createElement("li"), audio = document.createElement("audio");
-      li.textContent = (t.name || `Recording ${t.id}`) + " ";
+      const li = document.createElement("li");
+      const meta = Object.assign(document.createElement("div"), { className: "take-meta" });
+      meta.append(Object.assign(document.createElement("span"), { className: "take-name-line", textContent: t.name || `Recording ${t.id}` }));
+      const when = takeWhen(t.date_created);
+      if (when) meta.append(Object.assign(document.createElement("span"), { className: "take-when", textContent: when }));
+      const audio = document.createElement("audio");
       audio.controls = true; audio.preload = "none"; audio.src = `/api/recordings/${t.id}`;
-      li.append(audio);
+      li.append(meta, audio);
       return li;
     }));
   }
@@ -412,9 +422,12 @@
       const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
       if (!r.ok) { take.textContent = "That recording was empty. Try again."; return; }
       const saved = await r.json();
-      take.textContent = `Saved “${saved.name}”`;
+      take.textContent = "";
       takeName.value = "";
-      loadTakes();
+      await loadTakes();
+      takes.hidden = false;
+      takes.open = true;
+      toast(`Saved “${saved.name}”`);
     };
     const rolling = () => {
       recorder.start();

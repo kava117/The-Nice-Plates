@@ -41,15 +41,17 @@ function loadScript(src) {
   });
 }
 
-// button toggles Play / Stop; tempo is a range input in percent of the score's tempo.
+// button toggles Listen / Stop (its .tool-label; the icon stays); tempo is a range input in percent of the score's tempo.
 // passage() gives the picked bars as {first, last} measure indexes (0-based), or null for the
 // whole piece; toStart() puts the cursor on the passage's first note.
 function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) {
   let piano, playing = false;
+  const word = button.querySelector(".tool-label") || button;
+  const say = (text, state) => { word.textContent = text; button.dataset.state = state; };
 
   async function play() {
     playing = true;
-    button.textContent = "Loading piano…";
+    say("Loading…", "loading");
     if (!window.Tone) await loadScript("/Tone.js");
     await Tone.start();   // browsers only allow sound after a click
     if (!piano) {
@@ -61,7 +63,7 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
     }
     if (!playing) return;   // Stop was pressed while loading
     schedule();
-    button.textContent = "■ Stop";
+    say("Stop", "playing");
   }
 
   // Plays from the cursor to the end of the piece, or to the end of the passage and round again.
@@ -102,7 +104,7 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
       Tone.getDraw().cancel();
     }
     if (piano) piano.releaseAll();
-    button.textContent = "▶ Play";
+    say("Listen", "stopped");
   }
 
   button.addEventListener("click", () => playing ? stop() : play());

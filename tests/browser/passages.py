@@ -95,7 +95,7 @@ with sync_playwright() as p:
     assert {b for b, _ in path} == {2}, f"left the passage: {path}"
     beats = [t for _, t in path]
     assert any(later < earlier for earlier, later in zip(beats, beats[1:])), "never went round"
-    assert "Play" in page.locator("#play").inner_text()
+    assert "Listen" in page.locator("#play").inner_text()
 
     # arrows on the tempo slider change the tempo, not the cursor
     at = page.evaluate(bar_at)

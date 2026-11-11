@@ -1343,13 +1343,14 @@ body[data-auth="guest"] .welcome {
   cursor: default;
 }
 
-/* Play is the one button used every minute: accent outline, fixed width so Stop doesn't shift the row. */
+/* Listen: a secondary button; fixed width so Stop doesn't shift the row. */
 .tool-play {
-  --edge: var(--accent-edge);
-  min-width: 88px;
+  min-width: 96px;
   justify-content: center;
-  border-color: var(--accent);
-  color: var(--accent);
+}
+
+.tool-icon {
+  flex: none;
 }
 
 .tempo {

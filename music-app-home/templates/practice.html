@@ -15,7 +15,7 @@
       <button id="cursor-reset" class="tool press" title="Back to the start (Home)">Reset</button>
     </div>
     <div class="tool-group" role="group" aria-label="Listen">
-      <button id="play" class="tool tool-play press" disabled title="Play or stop (Space)">&#9654; Play</button>
+      <button id="play" class="tool tool-play press" disabled title="Hear the selected passage, or the whole piece (Space)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="tool-label">Listen</span></button>
       <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
     </div>
     <div class="tool-group" role="group" aria-label="Practice timer">
@@ -40,7 +40,7 @@
     <details class="keys" id="keys">
       <summary class="tool press" title="Keyboard shortcuts (?)">Keys</summary>
       <dl class="keys-panel">
-        <dt><kbd>Space</kbd></dt><dd>Play or stop</dd>
+        <dt><kbd>Space</kbd></dt><dd>Listen, or stop</dd>
         <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next note</dd>
         <dt><kbd>Shift</kbd> + <kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Previous or next bar</dd>
         <dt><kbd>Home</kbd></dt><dd>Start of the passage, or the piece</dd>
@@ -48,7 +48,7 @@
         <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>Make a passage: [ on its first bar, ] on its last</dd>
         <dt><kbd>Delete</kbd></dt><dd>Delete the selected passage (you can undo)</dd>
         <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That was correct, or not yet</dd>
-        <dt><kbd>L</kbd></dt><dd>Listen, and mark each go for you</dd>
+        <dt><kbd>L</kbd></dt><dd>Auto-mark: hears each go and marks it for you</dd>
         <dt><kbd>Esc</kbd></dt><dd>Deselect the passage: back to the whole piece</dd>
         <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
         <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
@@ -67,9 +67,9 @@
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
       Delete
     </button>
-    <button type="button" class="tool press listen" id="listen" aria-pressed="false" title="Hears each go and marks it for you. Nothing is recorded. (L)">
+    <button type="button" class="tool press listen" id="listen" aria-pressed="false" title="Auto-mark: hears each go through the microphone and answers for you. Nothing is recorded. (L)">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
-      <span class="listen-word">Listen</span>
+      <span class="listen-word">Auto-mark</span>
     </button>
     <span class="rep-question">
       <span class="rep-ask" id="rep-ask">Was that correct?</span>

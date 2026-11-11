@@ -452,12 +452,22 @@ main {
   max-width: 960px;
 }
 
+/* Home and Library: the cards use the whole width, so a wide screen isn't half empty. */
+.content--wide {
+  max-width: 1600px;
+}
+
 /* Two equal columns; used by the piece/actions tiles and the stat tiles. */
 .tiles,
 .stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+}
+
+/* Home's few tiles (up to 3 pieces and the actions tile) stretch to fill the row. */
+.tiles {
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 }
 
 .stats {
@@ -609,6 +619,10 @@ main {
   font-size: 0.8125rem;     /* 13px */
 }
 
+.content--wide ~ .site-footer {
+  max-width: 1600px;        /* ...and with the wide Home and Library */
+}
+
 /* 13. Responsive --------------------------------------------------------- */
 
 /* At 900px and below the sidebar becomes a wrapping row under the top bar
@@ -657,9 +671,6 @@ main {
     padding: 20px 16px 32px;
   }
 
-  .tiles {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 480px) {
@@ -968,11 +979,12 @@ main {
   --art-h: 14rem;
 }
 
-/* 17. Library grid (4 columns, more compact tiles than the home .tiles) --- */
+/* 17. Library grid: as many columns as fit; the view size (library.html) sets --card-min --- */
 
 .library-grid {
+  --card-min: 220px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--card-min), 100%), 1fr));
   gap: 20px;
   margin: 0;
   padding: 0;
@@ -997,15 +1009,6 @@ main {
     gap: 12px;
   }
 
-  .library-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .library-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 /* ==========================================================================
    Additions for settings.html: form fields, toggle switches, and the

@@ -5,12 +5,12 @@
 {% include "header.html" %}
 <!DOCTYPE html>
 
-<div class="content">
+<div class="content content--wide">
 
   <div class="library-header">
     <h2 class="section-title">Your pieces</h2>
     <div class="view-toggle" role="group" aria-label="Grid density">
-      <button type="button" class="view-option" data-density="compact">
+      <button type="button" class="view-option" aria-pressed="false" data-density="compact">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <circle cx="3" cy="3" r="1.3" /><circle cx="8" cy="3" r="1.3" /><circle cx="13" cy="3" r="1.3" />
           <circle cx="3" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="13" cy="8" r="1.3" />
@@ -24,7 +24,7 @@
         </svg>
         Normal
       </button>
-      <button type="button" class="view-option" data-density="large">
+      <button type="button" class="view-option" aria-pressed="false" data-density="large">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
           <rect x="1" y="1" width="14" height="14" rx="2" />
         </svg>
@@ -55,10 +55,13 @@
     {% endfor %}
   </ul>
   <script>
-    // Compact / Normal / Large = 6 / 4 / 3 tiles per row.
+    // Compact / Normal / Large: the narrowest a card may get; the grid fits as many columns as the screen holds.
     document.querySelectorAll(".view-option").forEach(b => b.onclick = () => {
-      document.querySelectorAll(".view-option").forEach(o => o.classList.toggle("is-active", o === b));
-      document.querySelector(".library-grid").style.gridTemplateColumns = `repeat(${ {compact: 6, normal: 4, large: 3}[b.dataset.density] }, minmax(0, 1fr))`;
+      document.querySelectorAll(".view-option").forEach(o => {
+        o.classList.toggle("is-active", o === b);
+        o.setAttribute("aria-pressed", o === b);
+      });
+      document.querySelector(".library-grid").style.setProperty("--card-min", { compact: "150px", normal: "220px", large: "320px" }[b.dataset.density]);
     });
   </script>
 

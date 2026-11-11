@@ -1420,7 +1420,7 @@ body[data-auth="guest"] .welcome {
 }
 
 .take-name {
-  width: 8.5em;
+  width: 11em;
   font: inherit;
   font-size: 0.8125rem;
   padding: 6px 8px;
@@ -1448,9 +1448,9 @@ body[data-auth="guest"] .welcome {
   gap: 12px;
 }
 
-/* Record a take keeps one width as it reads Record a take, Cancel, Stop recording: the toolbar doesn't jump. */
+/* Record yourself keeps one width as it reads Record yourself, Cancel, Stop recording: the toolbar doesn't jump. */
 #record {
-  min-width: 10.5em;
+  min-width: 11.5em;
   justify-content: center;
 }
 
@@ -3271,4 +3271,8 @@ body.coach-open main {
   .toast {
     animation: none;
   }
+}
+
+.tool.is-recording .tool-icon {
+  display: none;            /* the pulsing dot takes its place */
 }

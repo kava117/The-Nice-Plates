@@ -21,9 +21,9 @@
     <div class="tool-group" role="group" aria-label="Practice session">
       <button id="timer" class="btn btn-solid press tool-primary" title="Time a practice session: it's added to Progress when you finish"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Start practice</span></button> <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button> <span id="clock" class="clock" role="status"></span>
     </div>
-    <div class="tool-group" role="group" aria-label="Record">
-      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this take" aria-label="Name this take"> <button id="record" class="tool press" title="Record yourself, then listen back">Record a take</button> <span id="take" class="take"></span>
-      <details id="takes" class="keys takes" hidden><summary class="tool press" title="Takes you've saved for this piece">Takes</summary><ol class="keys-panel takes-panel"></ol></details>
+    <div class="tool-group" role="group" aria-label="Record yourself">
+      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this recording" aria-label="Name this recording"> <button id="record" class="tool press" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button> <span id="take" class="take"></span>
+      <details id="takes" class="keys takes" hidden><summary class="tool press" title="Recordings you've saved for this piece">Recordings</summary><ol class="keys-panel takes-panel"></ol></details>
     </div>
   </div>
 
@@ -326,9 +326,10 @@
   addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
   document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
 
-  // ---- Record a take: a bar of ticks, then the take, with the lane (live.js) showing your pitch against the score ----
+  // ---- Record yourself (it was "Record a take"; in code a recording is still a take): a bar of ticks, then the take, with the lane (live.js) showing your pitch against the score ----
   const record = document.getElementById("record"), take = document.getElementById("take");
   const takeName = document.getElementById("take-name"), takes = document.getElementById("takes");
+  const recordWord = record.querySelector(".tool-label");
   const lane = $("live-lane");
   let recorder, live = null;
   $("live-close").addEventListener("click", () => { lane.hidden = true; });
@@ -338,10 +339,10 @@
     if (!r.ok) return;
     const list = await r.json();
     takes.hidden = !list.length;
-    takes.querySelector("summary").textContent = `Takes (${list.length})`;
+    takes.querySelector("summary").textContent = `Recordings (${list.length})`;
     takes.querySelector("ol").replaceChildren(...list.map(t => {
       const li = document.createElement("li"), audio = document.createElement("audio");
-      li.textContent = (t.name || `Take ${t.id}`) + " ";
+      li.textContent = (t.name || `Recording ${t.id}`) + " ";
       audio.controls = true; audio.preload = "none"; audio.src = `/api/recordings/${t.id}`;
       li.append(audio);
       return li;
@@ -357,15 +358,16 @@
     recorder.stream.getTracks().forEach(t => t.stop());
     recorder = null;
     lane.hidden = true;
-    record.textContent = "Record a take";
+    recordWord.textContent = "Record yourself";
+    record.classList.remove("is-recording");
   }
   record.addEventListener("click", async () => {
-    if (!piece) { take.textContent = "Open a piece from the library to record it"; return; }
+    if (!piece) { take.textContent = "Open a piece from Library to record yourself"; return; }
     if (recorder) return endTake();
     let stream;
     // the plain sound: the browser's voice clean-up would smear the notes
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
-    catch { take.textContent = "Allow the microphone to record a take"; return; }
+    catch { take.textContent = "Allow the microphone to record yourself"; return; }
     player.stop();
     listening.stop();
     const chunks = [], mine = recorder = new MediaRecorder(stream);
@@ -375,13 +377,13 @@
       controls.classList.remove("is-taking");
       if (live) live.stop();
       [recorder, live] = [null, null];
-      record.textContent = "Record a take";
+      recordWord.textContent = "Record yourself";
       record.classList.remove("is-recording");
       const form = new FormData();
       form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
       form.append("name", takeName.value);
       const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
-      if (!r.ok) { take.textContent = "That take was empty. Try again."; return; }
+      if (!r.ok) { take.textContent = "That recording was empty. Try again."; return; }
       const saved = await r.json();
       take.textContent = `Saved “${saved.name}”`;
       takeName.value = "";
@@ -389,7 +391,7 @@
     };
     const rolling = () => {
       recorder.start();
-      record.textContent = "Stop recording";
+      recordWord.textContent = "Stop recording";
       record.classList.add("is-recording");
     };
     take.textContent = "";
@@ -405,7 +407,7 @@
     lane.hidden = false;
     controls.classList.add("is-taking");   // passages can't change mid-take: their row gives the lane its room
     takes.open = false;
-    record.textContent = "Cancel";
+    recordWord.textContent = "Cancel";
     try {
       const started = await liveTake({ stream, osmd, lane: $("live-canvas"), events: scoreEvents(from, inside), speed, beats, beat,
         onRoll: () => recorder === mine && rolling(), onEnd: () => recorder === mine && endTake() });

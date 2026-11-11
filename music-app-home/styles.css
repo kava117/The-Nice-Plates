@@ -1370,6 +1370,12 @@ body[data-auth="guest"] .welcome {
   color: var(--accent);
 }
 
+.bars-input::placeholder {
+  color: var(--ink-muted);
+  font-style: italic;
+  opacity: 0.75;
+}
+
 .tempo {
   display: inline-flex;
   align-items: center;
@@ -1729,7 +1735,7 @@ kbd {
 }
 
 .bars-input {
-  width: 76px;
+  width: 92px;
   height: 32px;
   padding: 0 8px;
   border: 1.5px solid var(--line);

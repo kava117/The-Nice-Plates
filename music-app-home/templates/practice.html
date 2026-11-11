@@ -35,7 +35,8 @@
     <p class="select-hint" id="select-hint" hidden><span><strong>Drag across the bars you want to practice.</strong> <span class="select-hint-more">Or tap the first bar, then the last, or type them in Bars.</span></span> <button type="button" class="link-button" id="cancel-select">Cancel</button></p>
     <form class="bars-form" id="bars-form">
       <label for="bars-input">Bars</label>
-      <input class="bars-input" id="bars-input" placeholder="12-16" autocomplete="off" enterkeyhint="go" size="6">
+      <input class="bars-input" id="bars-input" placeholder="e.g. 12–16" autocomplete="off" enterkeyhint="go" size="6" aria-describedby="bars-help">
+      <span class="visually-hidden" id="bars-help">Type bar numbers to make a passage</span>
     </form>
     <details class="keys" id="keys">
       <summary class="tool press" title="Keyboard shortcuts (?)">Keys</summary>

@@ -808,7 +808,13 @@ main {
 }
 
 .content--wide ~ .site-footer {
-  max-width: 1600px;        /* ...and with the wide Home and Library */
+  max-width: 1200px;        /* ...and with the wide Home and Library */
+}
+
+/* Pages with a column sit in the middle of a big screen, with the footer under them. */
+.content,
+.content ~ .site-footer {
+  margin-inline: auto;
 }
 
 /* 13. Responsive --------------------------------------------------------- */
@@ -4103,4 +4109,155 @@ label.btn.is-disabled {
     overflow: hidden;
     clip: rect(0 0 0 0);
   }
+}
+
+/* 32. Practice bar: one quiet line for playing -------------------------- */
+
+.practice-bar {
+  gap: 10px 14px;   /* wraps on a narrow window; on a phone it scrolls (see the 600px rules) */
+}
+
+.practice-bar .back-link {
+  flex: none;
+  color: var(--ink-muted);
+  font-weight: 500;
+  background: transparent;
+}
+
+.practice-bar .back-link:hover { color: var(--ink); }
+
+.practice-bar .tool-main {
+  flex: none;
+  gap: 8px;
+}
+
+/* Record is the one solid button */
+.practice-bar #record:not(.is-recording) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.practice-bar #record:not(.is-recording):hover {
+  border-color: color-mix(in srgb, white 12%, var(--accent));
+  background: color-mix(in srgb, white 12%, var(--accent));
+}
+
+.practice-bar .tempo {
+  flex: none;
+}
+
+.practice-bar .take {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-bar .tool-session {
+  flex: none;
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+
+.practice-bar .tool-session .tool {
+  height: 30px;
+  padding: 0 8px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  background: transparent;
+}
+
+.practice-bar .tool-session .tool:hover {
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.practice-bar .keys {
+  flex: none;
+}
+
+/* the ⋯ menu: zoom, passage by bars, shortcuts */
+.more summary {
+  width: 32px;
+  justify-content: center;
+  padding: 0;
+}
+
+.more-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 340px;
+  max-width: 90vw;
+}
+
+.more-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.more-label {
+  flex: 1 1 auto;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.more-line .tool {
+  min-width: 32px;
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.keys-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.keys-list dt { white-space: nowrap; }
+.keys-list dd { margin: 0; color: var(--ink-muted); }
+
+/* Passage row: just the chips, no right-hand tools */
+.passage-row { align-items: center; }
+
+@media (max-width: 900px) {
+  .practice-bar .tempo-word { display: none; }
+}
+
+/* In the ⋯ menu: the coach button and the saved takes */
+.more-takes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.more-takes[hidden] { display: none; }
+
+.more-takes .take-pick-wrap { flex-direction: column; align-items: stretch; gap: 6px; }
+.more-takes .take-pick { width: 100%; max-width: 100%; }
+.more-takes .take-player { flex: none; width: 100%; min-width: 0; height: 36px; }
+
+/* Rep row: just the question and its two answers. The passage is already named on its chip and on the score,
+   Delete is on the chip (and the Delete key), and the explanation is in the Yes button's description. */
+#rep .rep-delete { display: none; }
+
+#rep .rep-title,
+#rep .rep-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

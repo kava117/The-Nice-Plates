@@ -1,7 +1,7 @@
 {# Sidebar: main nav and account tile (the logo and name are in the top bar, header.html). Included by header.html.
    The link matching `active` gets aria-current="page", which styles.css highlights. #}
 {% macro nav_attr(name) %}{% if active == name %} aria-current="page"{% endif %}{% endmacro %}
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
       <nav aria-label="Main">
         <ul class="nav-list">
           <li><a class="nav-link press" href="/home"{{ nav_attr("home") }}>Home</a></li>

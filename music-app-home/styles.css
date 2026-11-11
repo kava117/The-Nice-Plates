@@ -3423,3 +3423,37 @@ label.btn.is-disabled {
   padding: 6px 14px;
   letter-spacing: 0.02em;
 }
+
+/* 31. Collapsible sidebar (theme.js) ------------------------------------- */
+
+.sidebar-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+  border-color: var(--ink-muted);
+  background: var(--bg);
+}
+
+:root[data-sidebar="collapsed"] .frame {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:root[data-sidebar="collapsed"] .sidebar {
+  display: none;
+}
+
+:root[data-sidebar="collapsed"] .sidebar-toggle {
+  border-color: var(--accent);
+  color: var(--accent);
+}

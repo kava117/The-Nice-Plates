@@ -1,25 +1,46 @@
-{# Signed-in home page. #}
+{# Signed-in home page. Laptop/web first: a clear top row, then an even grid of pieces. #}
 {% set title = "Home" %}
 {% set active = "home" %}
 {% set auth = "signed-in" %}
 {% include "header.html" %}
       <h1 class="visually-hidden">Home</h1>
 
-      <div class="content content--wide">
-        <ul class="stats" aria-label="Your practice">
-          <li class="stat">
-            <p class="stat-label">Time practiced</p>
-            <p class="stat-value" data-stat="time">{{ total // 3600 }}h {{ total % 3600 // 60 }}m</p>
-          </li>
-          <li class="stat">
-            <p class="stat-label">Current streak</p>
-            <p class="stat-value" data-stat="streak">{{ streak }} day{{ "" if streak == 1 else "s" }}</p>
-          </li>
-        </ul>
+      <div class="content content--wide home">
+        <header class="home-top">
+          <div class="home-intro">
+            <p class="home-kicker">Practice</p>
+            <ul class="home-stats" aria-label="Your practice">
+              <li>
+                <span class="home-stat-value" data-stat="time">{{ total // 3600 }}h {{ total % 3600 // 60 }}m</span>
+                <span class="home-stat-label">practiced</span>
+              </li>
+              <li>
+                <span class="home-stat-value" data-stat="streak">{{ streak }}</span>
+                <span class="home-stat-label">day{{ "" if streak == 1 else "s" }} streak</span>
+              </li>
+            </ul>
+          </div>
+          <div class="home-actions">
+            {% if pieces %}
+            <a class="btn btn-solid press btn-stack" href="/practice?piece={{ pieces[0].id }}">
+              {{ "Continue practicing" if seconds.get(pieces[0].id) else "Start practicing" }}
+              <span class="btn-sub">{{ pieces[0].title }}</span>
+            </a>
+            {% else %}
+            <a class="btn btn-solid press" href="/practice">Try the demo piece</a>
+            {% endif %}
+            <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data" data-upload data-upload-on-pick>
+              <input class="visually-hidden" id="home-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
+              <label class="btn btn-ghost press" for="home-upload">Upload sheet music</label>
+            </form>
+          </div>
+        </header>
+        {% include "upload_status.html" %}
 
-        <ul class="tiles">
+        {% if pieces %}
+        <ul class="home-grid">
           {% for p in pieces %}
-          <li{% if loop.first %} class="home-lead"{% endif %}>
+          <li>
             <a class="card press" href="/practice?piece={{ p.id }}">
               <div class="card-art" data-thumb="{{ p.id }}"></div>
               <div class="card-caption">
@@ -30,28 +51,11 @@
             </a>
           </li>
           {% endfor %}
-          <li>
-            <!-- Two different jobs: carry on with the last piece, or add a new one. The sidebar already goes to the library. -->
-            <div class="actions">
-              {% if pieces %}
-              <a class="btn btn-solid press btn-stack" href="/practice?piece={{ pieces[0].id }}">
-                {{ "Continue practicing" if seconds.get(pieces[0].id) else "Start practicing" }}
-                <span class="btn-sub">{{ pieces[0].title }}</span>
-              </a>
-              {% endif %}
-              <!-- Upload opens the file picker straight away and sends the file to the same route as the library's form. -->
-              <form class="upload-now" action="/api/pieces" method="post" enctype="multipart/form-data" data-upload data-upload-on-pick>
-                <input class="visually-hidden" id="home-upload" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
-                <label class="btn {{ 'btn-ghost' if pieces else 'btn-solid' }} press" for="home-upload">Upload sheet music</label>
-              </form>
-              {% include "upload_status.html" %}
-              {% if not pieces %}
-              <a class="btn btn-ghost press" href="/practice">Try the demo piece</a>
-              {% endif %}
-            </div>
-          </li>
         </ul>
-
+        <p class="home-more"><a href="/library">All pieces in Library</a></p>
+        {% else %}
+        <p class="home-empty">Upload a PDF, a photo, or a MusicXML file to start. It shows up here and in Library.</p>
+        {% endif %}
       </div>
 
 <script src="/upload.js"></script>

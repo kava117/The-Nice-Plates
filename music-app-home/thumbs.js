@@ -7,7 +7,8 @@
 (function () {
   var arts = Array.prototype.slice.call(document.querySelectorAll("[data-thumb]"));
   if (!arts.length || !window.HTMLCanvasElement) return;
-  var VERSION = "v6", WIDTH = 1000, OUT_W = 960, OUT_H = 528, BARS = 8, ZOOM = 0.98;
+  // Wider, flatter crop: a page of music, not a few notes blown up to fill the card.
+  var VERSION = "v7", WIDTH = 1100, OUT_W = 960, OUT_H = 420, BARS = 12, ZOOM = 1;
   var queue = [], running = false, osmdReady = null;
 
   function cached(id) { try { return localStorage.getItem("thumb:" + VERSION + ":" + id); } catch (e) { return null; } }
@@ -63,23 +64,21 @@
       });
       await osmd.load(await r.text());
       osmd.setOptions({ drawUpToMeasureNumber: BARS });
-      osmd.zoom = 1.15;
+      osmd.zoom = 0.85;
       osmd.render();
       var svg = stage.querySelector("svg");
       var high = svg.height.baseVal.value || svg.getBoundingClientRect().height, wide = svg.width.baseVal.value || WIDTH;
       var img = await svgImage(svg);
-      var stripW = wide * ZOOM, stripH = Math.min(high, stripW * OUT_H / OUT_W);
-      var left = Math.max(0, (wide - stripW) / 2), top = 0;
       var canvas = document.createElement("canvas");
       canvas.width = OUT_W; canvas.height = OUT_H;
       var ctx = canvas.getContext("2d");
       ctx.fillStyle = "#fffdf5";
       ctx.fillRect(0, 0, OUT_W, OUT_H);
-      // object-fit: cover from the top of the staff — keep note proportions
-      var scale = Math.max(OUT_W / stripW, OUT_H / stripH);
-      var dw = stripW * scale, dh = stripH * scale;
-      ctx.drawImage(img, left, top, stripW, stripH, (OUT_W - dw) / 2, 0, dw, dh);
-      return canvas.toDataURL("image/jpeg", 0.9);
+      // Fit the whole rendered strip inside the card (letterbox), so short pieces aren't magnified.
+      var scale = Math.min(OUT_W / wide, OUT_H / high) * ZOOM;
+      var dw = wide * scale, dh = high * scale;
+      ctx.drawImage(img, 0, 0, wide, high, (OUT_W - dw) / 2, (OUT_H - dh) / 2, dw, dh);
+      return canvas.toDataURL("image/jpeg", 0.92);
     } finally {
       stage.remove();
     }

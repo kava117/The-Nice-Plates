@@ -2369,6 +2369,43 @@ kbd {
     gap: 6px 10px;
   }
 
+  /* Wrapped, the pinned rows took 330px of an 844px screen. One line each; swipe for the rest. */
+  .controls-row:not(.rep-row) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;      /* room for the pressable buttons' bottom edge */
+  }
+
+  .controls-row:not(.rep-row) > *,
+  .controls-row:not(.rep-row) .tool-group {
+    flex: none;
+    flex-wrap: nowrap;
+  }
+
+  .controls-row .select-hint {
+    flex: none;
+    width: 15em;
+  }
+
+  /* what you came to do first in view; moving the cursor and Change piece after a swipe */
+  .controls-row > [aria-label="Record yourself"] {
+    order: -2;
+  }
+
+  .controls-row > [aria-label="Listen"] {
+    order: -1;
+  }
+
+  .take-name {
+    display: none;
+  }
+
+  /* the first-time tip under the toolbar says the same thing */
+  .passage-empty {
+    display: none;
+  }
+
   .tempo-word,
   .row-label,
   .rep-ask,
@@ -2379,10 +2416,6 @@ kbd {
 
   .tempo input {
     width: 72px;
-  }
-
-  .bars-input {
-    width: 5.5em;
   }
 
   .rep-row {

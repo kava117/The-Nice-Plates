@@ -43,12 +43,12 @@
   --band: #263A3B;          /* dark teal */
   --ink: #F0E6CF;
   --ink-muted: #B9B09C;
-  --accent: #3EC5BB;        /* turquoise */
-  --on-accent: #14201F;
+  --accent: #6FBF8A;        /* sage green: the light theme's forest green, lit for a dark page */
+  --on-accent: #14201A;
   --accent-2: #E9DCBC;      /* cream */
   --on-accent-2: #1D1F22;
   --line: #3A3D43;
-  --accent-edge: #2B8A83;
+  --accent-edge: #3F8A5A;
   --edge-neutral: #15171A;
   --sheet-tint: 78%;
 }

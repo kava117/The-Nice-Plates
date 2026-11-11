@@ -56,7 +56,7 @@
       </button>
       {% if current_user.is_authenticated %}
         {% if guest_account %}
-        <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in<span class="wide-only"> with Google</span></a>
+        <a class="btn btn-ghost press" href="{{ url_for('login_google') }}">Sign in<span class="wide-only">&nbsp;with Google</span></a>
         {% endif %}
         {# a guest on a phone leaves from Settings ("Leave guest"), so the bar fits one row #}
         <a class="btn btn-ghost press{% if guest_account %} topbar-optional{% endif %}" href="{{ url_for('logout') }}">Log out</a>

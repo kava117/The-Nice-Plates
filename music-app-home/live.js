@@ -251,52 +251,6 @@ function countTick(context, at, first, dest = context.destination) {
   tone.stop(at + 0.07);
 }
 
-// A free-running metronome for the practice page (not only while recording).
-// setTempo(secondsPerBeat, beatsPerBar) can change while it's on; setOn starts or stops the pulse.
-function makeMetronome() {
-  let ctx = null, bus = null, timer = null, next = 0, beat = 0.5, beats = 4, n = 0, on = false;
-  function ensure() {
-    if (ctx) return ctx.resume();
-    ctx = new AudioContext({ latencyHint: "interactive" });
-    bus = new GainNode(ctx, { gain: 1 });
-    bus.connect(ctx.destination);
-    return ctx.resume();
-  }
-  function pump() {
-    if (!on || !ctx) return;
-    const until = ctx.currentTime + 0.25;
-    while (next < until) {
-      countTick(ctx, next, n % beats === 0, bus);
-      next += beat;
-      n += 1;
-    }
-    timer = setTimeout(pump, 40);
-  }
-  return {
-    get on() { return on; },
-    async setOn(want) {
-      on = !!want;
-      clearTimeout(timer);
-      timer = null;
-      if (!on) return;
-      await ensure();
-      n = 0;
-      next = ctx.currentTime + 0.08;
-      pump();
-    },
-    setTempo(secondsPerBeat, perBar) {
-      beat = Math.max(0.05, secondsPerBeat);
-      beats = Math.max(1, perBar | 0);
-    },
-    stop() {
-      on = false;
-      clearTimeout(timer);
-      timer = null;
-      if (ctx) { ctx.close(); ctx = null; bus = null; }
-    },
-  };
-}
-
 // The lane: pitch up the side, time along. The score's notes are blue bars sliding left to the
 // now line; what you play is drawn at that line as it happens. Returns draw(now, trail, count, still):
 // still, after the take, is {from, to, hint}: the take's span, for the overview strip.

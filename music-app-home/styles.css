@@ -22,11 +22,10 @@
   --accent-edge: #1E3D28;   /* bottom edge of accent pressables */
   --edge-neutral: #B8A67C;  /* soft border of neutral buttons */
   --control-edge: #857558;  /* text-box borders: 3:1 against every background (WCAG 1.4.11) */
-  --sheet-tint: 45%;        /* how strongly --band covers the sheet music */
+  --sheet-tint: 12%;        /* light wash so the score stays readable */
 
   /* Tokens that do not change with the theme. */
   --depth: 0px;             /* the old 3D press edge, now flat; kept so rules that pad for it still work */
-  --sheet-blur: 3px;
   --radius: 8px;            /* buttons, nav items, small panels */
   --radius-tile: 16px;
   --radius-sm: 8px;
@@ -52,7 +51,7 @@
   --accent-edge: #3F8A5A;
   --edge-neutral: #15171A;
   --control-edge: #80858E;
-  --sheet-tint: 78%;
+  --sheet-tint: 28%;
 }
 
 /* Guests have no stat tiles, so their piece tiles are taller (208px). */
@@ -510,11 +509,11 @@ main {
   grid-column: 1 / -1;
 }
 
-/* The thumbnail's own shape (thumbs.js draws 480x264), so a wide tile doesn't crop off the title */
+/* Keep the lead tile's art the same shape as thumbs.js (960×528), so the score isn't cropped */
 .tiles > li.home-lead .card-art {
   height: auto;
   max-height: 22rem;
-  aspect-ratio: 480 / 264;
+  aspect-ratio: 960 / 528;
 }
 
 .tiles > li.home-lead .card-art img {
@@ -567,17 +566,14 @@ main {
   background-position: center 18%;
 }
 
-/* Blurred sheet music. The blur is CSS-only so real scores get the same look;
-   scale(1.08) stops the blur fading at the edges. */
+/* The piece's own first bars, sharp. A light tint (below) keeps the tile on-palette. */
 .card-art img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-  filter: blur(var(--sheet-blur));
-  transform: scale(1.08);
+  object-position: center top;
   opacity: 0;
   transition: opacity 0.35s ease;
 }

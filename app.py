@@ -463,7 +463,7 @@ def healthz():
 @onboarding_required
 def home():
     sessions = database.getSessions(user_id())
-    return render_template("home.html", pieces=database.getPieces(user_id())[:3], seconds=database.getPieceSeconds(user_id()),
+    return render_template("home.html", pieces=database.getPieces(user_id())[:6], seconds=database.getPieceSeconds(user_id()),
                            total=sum(s["time_spent"] for s in sessions), streak=streak(sessions))
 
 @app.route("/library")

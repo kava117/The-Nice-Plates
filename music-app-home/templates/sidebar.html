@@ -1,16 +1,7 @@
-{# Sidebar: logo, main nav and account tile. Included by header.html.
+{# Sidebar: main nav and account tile (the logo and name are in the top bar, header.html). Included by header.html.
    The link matching `active` gets aria-current="page", which styles.css highlights. #}
 {% macro nav_attr(name) %}{% if active == name %} aria-current="page"{% endif %}{% endmacro %}
     <div class="sidebar">
-      <a class="brand" href="/home">
-        <!-- Stand-in quarter-note logo (open item: real logo). -->
-        <svg width="16" height="20" viewBox="0 0 16 20" fill="currentColor" aria-hidden="true">
-          <ellipse cx="5.5" cy="16" rx="4.5" ry="3.2" transform="rotate(-20 5.5 16)"/>
-          <rect x="9" y="1" width="1.8" height="15.5"/>
-        </svg>
-        <span>The Nice Plates</span>
-      </a>
-
       <nav aria-label="Main">
         <ul class="nav-list">
           <li><a class="nav-link press" href="/home"{{ nav_attr("home") }}>Home</a></li>

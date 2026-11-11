@@ -167,7 +167,7 @@ p {
 .frame {
   display: grid;
   grid-template-columns: 216px minmax(0, 1fr);
-  grid-template-rows: 48px minmax(0, 1fr);
+  grid-template-rows: 44px minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
 }
@@ -179,8 +179,8 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 0 24px var(--depth);   /* bottom padding leaves room for the press edge */
+  gap: 8px;
+  padding: 0 16px;
   background: var(--band);
   border-bottom: 1px solid var(--line);
 }
@@ -251,18 +251,18 @@ p {
 .sidebar {
   display: flex;
   flex-direction: column;
-  padding: 16px 12px 20px;
+  padding: 14px 12px 16px;
   overflow-y: auto;
   background: var(--band);
   border-right: 1px solid var(--line);
 }
 
-/* Logo and app name: a plain link, not pressable. */
+/* Logo and app name, at the left of the top bar: a plain link, not pressable. */
 .brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-right: auto;       /* everything else sits at the right */
   padding-left: 2px;
   font-family: var(--font-display);
   font-size: 1.1rem;        /* 17.6px */
@@ -630,7 +630,7 @@ main {
 @media (max-width: 900px) {
   .frame {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 48px auto auto;
+    grid-template-rows: 44px auto auto;
     height: auto;
     min-height: 100vh;
   }
@@ -649,10 +649,6 @@ main {
     overflow-y: visible;
     border-right: 0;
     border-bottom: 1px solid var(--line);
-  }
-
-  .brand {
-    margin-bottom: 0;
   }
 
   .nav-list {
@@ -3413,4 +3409,17 @@ label.btn.is-disabled {
   flex: none;
   margin-top: 1px;
   color: var(--accent);
+}
+
+/* 30. A tighter top bar (header.html) ----------------------------------- */
+
+.topbar .theme-toggle,
+.topbar .tour-help {
+  width: 32px;
+  height: 32px;
+}
+
+.topbar .btn {
+  padding: 6px 14px;
+  letter-spacing: 0.02em;
 }

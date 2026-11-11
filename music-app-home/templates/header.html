@@ -29,6 +29,14 @@
 
   <div class="frame{% if focused %} frame--focused{% endif %}">
     <header class="topbar">
+      <a class="brand" href="/home">
+        <!-- Stand-in quarter-note logo (open item: real logo). -->
+        <svg width="16" height="20" viewBox="0 0 16 20" fill="currentColor" aria-hidden="true">
+          <ellipse cx="5.5" cy="16" rx="4.5" ry="3.2" transform="rotate(-20 5.5 16)"/>
+          <rect x="9" y="1" width="1.8" height="15.5"/>
+        </svg>
+        <span>The Nice Plates</span>
+      </a>
       <!-- tour.js shows this on pages that have a tour -->
       <button type="button" class="tour-help press" data-tour-help hidden aria-label="Show me around this page" title="Show me around this page">?</button>
       <button type="button" class="theme-toggle press" data-theme-toggle aria-label="Switch to dark theme">

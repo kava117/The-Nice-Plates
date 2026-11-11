@@ -201,7 +201,7 @@
       const response = await fetch(url);   // fetched here, not by OSMD: its own request gives up after a few seconds
       if (!response.ok) throw Object.assign(new Error(`${url}: ${response.status}`), { status: response.status });
       await osmd.load(await response.text());
-      if (document.getElementById("score").clientWidth < 560) osmd.zoom = 0.65;   // a phone: the whole line and its title fit
+      osmd.zoom = fitZoom();
       osmd.render();
       osmd.cursor.show();   // cursor only exists after render()
       document.getElementById("score-loading").hidden = true;
@@ -244,8 +244,22 @@
   document.getElementById("cursor-prev").addEventListener("click", cursorPrev);
   document.getElementById("cursor-reset").addEventListener("click", cursorReset);
 
+  // A phone: the whole line and its title fit. Follows the width (rotating, resizing) until the user zooms.
+  let zoomedByHand = false;
+  const fitZoom = () => document.getElementById("score").clientWidth < 560 ? 0.65 : 1;
+  let refit;
+  window.addEventListener("resize", () => {
+    clearTimeout(refit);
+    refit = setTimeout(() => {
+      if (zoomedByHand || !osmd.Sheet || osmd.zoom === fitZoom()) return;
+      osmd.zoom = fitZoom();
+      osmd.render();
+    }, 250);
+  });
+
   function zoom(by) {
     player.stop();
+    zoomedByHand = true;
     osmd.zoom = Math.min(Math.max(osmd.zoom + by, 0.4), 3);
     osmd.render();
   }

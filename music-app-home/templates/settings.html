@@ -19,10 +19,12 @@
               <label for="display-name">Display name</label>
               <input class="input" id="display-name" type="text" value="{{ me.name }}" autocomplete="name">
             </div>
+            {% if not guest_account %}
             <div class="field">
               <label for="email">Email</label>
               <input class="input" id="email" type="email" value="{{ me.email }}" autocomplete="email">
             </div>
+            {% endif %}
             {% if current_user.is_authenticated and levels and levels.onboarded_at %}
             {% for field, title, names in playing %}
             <div class="field playing-level">
@@ -74,6 +76,7 @@
             </label>
           </section>
 
+          {% if not guest_account %}
           <section class="panel" aria-labelledby="settings-danger">
             <h2 class="section-title" id="settings-danger">Account actions</h2>
             <div class="field-actions">
@@ -81,6 +84,7 @@
               <button type="button" class="btn btn-danger press">Delete account</button>
             </div>
           </section>
+          {% endif %}
 
           <div class="settings-save">
             <button type="submit" class="btn btn-solid press">Save changes</button>

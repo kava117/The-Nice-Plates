@@ -507,7 +507,9 @@ main {
   flex-direction: column;
   flex: 1;
   overflow: hidden;         /* clips image and caption to the rounded corners */
+  border: 1.5px solid var(--line);
   border-radius: var(--radius-tile);
+  background: var(--surface);
 }
 
 /* Paper + faint staff lines while the piece's own thumbnail is still drawing.

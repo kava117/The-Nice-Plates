@@ -91,6 +91,11 @@ a {
   text-decoration: none;
 }
 
+/* rules like .panel { display: flex } would otherwise show elements marked hidden */
+[hidden] {
+  display: none !important;
+}
+
 ul {
   margin: 0;
   padding: 0;

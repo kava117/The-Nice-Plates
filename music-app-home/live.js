@@ -68,10 +68,11 @@ const STRIP = 4;           // the overview strip along the bottom of the lane, a
 
 // Starts a take on `stream`. events: scoreEvents() from the cursor, at the score's tempo; speed: the
 // tempo slider as a fraction; beats and beat: the count-in (how many, seconds each at that speed).
-// ticks: whether to hear the count-in blips (the lane still counts the bar either way).
+// ticks: hear the metronome (count-in and on through the take). The lane still counts the opening
+// bar either way. setTicks(on) mutes or unmutes mid-take without rescheduling.
 // onRoll fires on the downbeat (start recording then), onEnd when the music runs out.
-// Returns { stop() }: stops listening and leaves the take on the lane to look back over.
-async function liveTake({ stream, osmd, lane, events, speed, beats, beat, ticks = true, onRoll, onEnd }) {
+// Returns { stop(), setTicks(on) }.
+async function liveTake({ stream, osmd, lane, events, speed, beats, beat, ticks = false, onRoll, onEnd }) {
   if (lane.review) lane.review.abort();   // the last take's scrolling
   lane.parentElement.classList.remove("is-review");
   const context = new AudioContext({ latencyHint: "interactive" });
@@ -88,14 +89,20 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, ticks 
   const heardLate = context.outputLatency || context.baseLatency || 0;
   const first = context.currentTime + 0.15;
   const downbeat = first + beats * beat;
-  if (ticks) for (let k = 0; k < beats; k++) countTick(context, first + k * beat, k === 0);
-  const zero = downbeat + heardLate;
+  const clickBus = new GainNode(context, { gain: ticks ? 1 : 0 });
+  clickBus.connect(context.destination);
   // the score's notes, in seconds from the downbeat: {t, end, midi}. Only the top staff: the
   // violin's own line, or a piano score's right hand, not the bass under it.
   const top = Math.min(...events.flatMap(e => e.notes.map(n => n.staff)));
   const notes = [];
   for (const e of events) for (const n of e.notes) if (n.staff === top) notes.push({ t: e.seconds / speed, end: (e.seconds + n.seconds) / speed, midi: n.midi });
   const end = (events.end ?? Math.max(...notes.map(n => n.end), 0) * speed) / speed;
+  // one bar of count-in, then keep the pulse going for the whole take (not only the opening)
+  const lastClick = downbeat + Math.max(end, 0) + 0.8;
+  for (let at = first, i = 0; at <= lastClick + 1e-6; at += beat, i++) {
+    countTick(context, at, i % beats === 0, clickBus);
+  }
+  const zero = downbeat + heardLate;
 
   const trail = lane.trail = [];   // what was played: {t, midi, want, on} (on: true, false, or null where the score rests)
   let floor = null, last = [], rolling = false, ended = false, steps = 1, running = true, reached = 0;
@@ -145,6 +152,10 @@ async function liveTake({ stream, osmd, lane, events, speed, beats, beat, ticks 
       running = false;
       context.close();
       reviewLane(lane, draw, trail, Math.min(0, trail.length ? trail[0].t : 0), Math.max(0.5, reached));   // from the downbeat to where it stopped
+    },
+    setTicks(on) {
+      if (!running) return;
+      clickBus.gain.setValueAtTime(on ? 1 : 0, context.currentTime);
     },
   };
 }
@@ -226,15 +237,62 @@ function reviewLane(canvas, draw, trail, from, to) {
 }
 
 // One tick: a short high blip, higher on the first beat of the bar.
-function countTick(context, at, first) {
+// `dest` is usually the metronome bus so the whole pulse can mute without cancelling the schedule.
+function countTick(context, at, first, dest = context.destination) {
   const tone = new OscillatorNode(context, { frequency: first ? 1760 : 1320 });
   const level = new GainNode(context, { gain: 0 });
   level.gain.setValueAtTime(0, at);
   level.gain.linearRampToValueAtTime(first ? 0.5 : 0.35, at + 0.002);
   level.gain.exponentialRampToValueAtTime(0.001, at + 0.06);
-  tone.connect(level).connect(context.destination);
+  tone.connect(level).connect(dest);
   tone.start(at);
   tone.stop(at + 0.07);
+}
+
+// A free-running metronome for the practice page (not only while recording).
+// setTempo(secondsPerBeat, beatsPerBar) can change while it's on; setOn starts or stops the pulse.
+function makeMetronome() {
+  let ctx = null, bus = null, timer = null, next = 0, beat = 0.5, beats = 4, n = 0, on = false;
+  function ensure() {
+    if (ctx) return ctx.resume();
+    ctx = new AudioContext({ latencyHint: "interactive" });
+    bus = new GainNode(ctx, { gain: 1 });
+    bus.connect(ctx.destination);
+    return ctx.resume();
+  }
+  function pump() {
+    if (!on || !ctx) return;
+    const until = ctx.currentTime + 0.25;
+    while (next < until) {
+      countTick(ctx, next, n % beats === 0, bus);
+      next += beat;
+      n += 1;
+    }
+    timer = setTimeout(pump, 40);
+  }
+  return {
+    get on() { return on; },
+    async setOn(want) {
+      on = !!want;
+      clearTimeout(timer);
+      timer = null;
+      if (!on) return;
+      await ensure();
+      n = 0;
+      next = ctx.currentTime + 0.08;
+      pump();
+    },
+    setTempo(secondsPerBeat, perBar) {
+      beat = Math.max(0.05, secondsPerBeat);
+      beats = Math.max(1, perBar | 0);
+    },
+    stop() {
+      on = false;
+      clearTimeout(timer);
+      timer = null;
+      if (ctx) { ctx.close(); ctx = null; bus = null; }
+    },
+  };
 }
 
 // The lane: pitch up the side, time along. The score's notes are blue bars sliding left to the

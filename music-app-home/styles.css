@@ -838,12 +838,14 @@ main {
   background: var(--surface);
 }
 
+.history-panel {
+  margin-top: 20px;
+}
+
 .history-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 360px;
-  overflow-y: auto;
 }
 
 .history-row {
@@ -894,7 +896,7 @@ main {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
-.panel + .panel {
+.panel:not([hidden]) + .panel {
   margin-top: 20px;
 }
 
@@ -991,7 +993,16 @@ main {
 .overall-chart {
   display: block;
   width: 100%;
-  height: auto;
+  height: 180px;            /* the viewBox stretches; height: auto made it 400px+ on a wide screen */
+}
+
+/* nothing to plot yet: a short placeholder, not two big empty boxes */
+.panel.is-empty .bars {
+  height: 48px;
+}
+
+.panel.is-empty .overall-chart {
+  height: 40px;
 }
 
 .overall-chart .line {
@@ -1065,6 +1076,7 @@ main {
 @media (max-width: 900px) {
   .practice-panel {
     flex-direction: column;
+    align-items: stretch;   /* else the chart shrinks to its labels and the bars bunch up on the left */
     gap: 18px;
   }
 

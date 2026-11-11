@@ -61,24 +61,6 @@
     </svg>
   </section>
 
-  {% if history %}
-  <section class="panel history-panel" aria-labelledby="history-title">
-    <h2 class="section-title" id="history-title">Past sessions</h2>
-    <ol class="history-list">
-      {% for s in history %}
-      <li class="history-row">
-        <time class="history-when" datetime="{{ s.date }}">{{ s.date[:16] }}</time>
-        <span class="history-pieces">
-          {% for p in s.pieces %}<a href="/practice?piece={{ p.id }}">{{ p.title }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="history-none">No piece recorded</span>{% endfor %}
-        </span>
-        {% set m = (s.seconds / 60)|round|int %}
-        <span class="history-time">{% if s.seconds < 60 %}{{ s.seconds }} s{% elif m < 60 %}{{ m }} min{% else %}{{ m // 60 }} h {{ m % 60 }} min{% endif %}</span>
-      </li>
-      {% endfor %}
-    </ol>
-  </section>
-  {% endif %}
-
   <div class="tiles donut-row">
     <div class="donut-card{% if practiced == 0 %} is-empty{% endif %}">
       <svg class="donut-chart" viewBox="0 0 120 120" role="img" aria-label="{{ practiced }} pieces practiced">
@@ -100,6 +82,24 @@
       <div class="donut-label">In Your Library</div>
     </div>
   </div>
+
+  {% if history %}
+  <section class="panel history-panel" aria-labelledby="history-title">
+    <h2 class="section-title" id="history-title">Past sessions</h2>
+    <ol class="history-list">
+      {% for s in history %}
+      <li class="history-row">
+        <time class="history-when" datetime="{{ s.date }}">{{ s.date[:16] }}</time>
+        <span class="history-pieces">
+          {% for p in s.pieces %}<a href="/practice?piece={{ p.id }}">{{ p.title }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="history-none">No piece recorded</span>{% endfor %}
+        </span>
+        {% set m = (s.seconds / 60)|round|int %}
+        <span class="history-time">{% if s.seconds < 60 %}{{ s.seconds }} s{% elif m < 60 %}{{ m }} min{% else %}{{ m // 60 }} h {{ m % 60 }} min{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
 
 </div>
 

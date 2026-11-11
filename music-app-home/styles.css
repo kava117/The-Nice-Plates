@@ -3334,6 +3334,9 @@ body.coach-open main {
 }
 
 .site-footer-links a {
+  display: inline-block;
+  padding: 6px 2px;         /* a finger-sized target without moving the text */
+  margin: -6px 0;
   color: var(--ink-muted);
   font-weight: 600;
   text-decoration: underline;

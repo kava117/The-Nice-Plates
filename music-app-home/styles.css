@@ -501,8 +501,33 @@ main {
   grid-column: 1 / -1;
 }
 
+/* The thumbnail's own shape (thumbs.js draws 480x264), so a wide tile doesn't crop off the title */
 .tiles > li.home-lead .card-art {
-  --art-h: 15rem;
+  height: auto;
+  max-height: 22rem;
+  aspect-ratio: 480 / 264;
+}
+
+.tiles > li.home-lead .card-art img {
+  object-position: top;
+}
+
+/* Wide screens: the lead piece and the actions side by side, not the actions alone on a row */
+@media (min-width: 900px) {
+  .tiles:has(> li.home-lead) {
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    grid-auto-flow: dense;
+  }
+
+  .tiles > li.home-lead {
+    grid-column: 1;
+  }
+
+  .tiles > li.home-lead ~ li:last-child {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
 }
 
 /* 9. Piece tiles --------------------------------------------------------- */

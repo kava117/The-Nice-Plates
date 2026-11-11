@@ -21,12 +21,14 @@
     <div class="tool-group" role="group" aria-label="Listen">
       <button id="play" class="tool tool-play press" disabled title="Hear the selected passage, or the whole piece (Space)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span class="tool-label">Listen</span></button>
       <label class="tempo"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
+      <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: click at this tempo while you practice">Metronome</button>
     </div>
     <div class="tool-group" role="group" aria-label="Practice session">
       <button id="timer" class="btn btn-solid press tool-primary" title="Time a practice session: it's added to Progress when you finish"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2h5"/></svg><span class="tool-label">Start practice</span></button> <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish session</button> <span id="clock" class="clock" role="status"></span>
     </div>
     <div class="tool-group" role="group" aria-label="Record yourself">
-      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this recording" aria-label="Name this recording"> <button id="record" class="tool press" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button> <span id="take" class="take"></span>
+      <input id="take-name" class="take-name" maxlength="100" placeholder="Name this recording" aria-label="Name this recording"> <button id="record" class="tool press" title="Record yourself, then play it back"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg><span class="tool-label">Record yourself</span></button>
+      <span id="take" class="take"></span>
       <details id="takes" class="keys takes" hidden><summary class="tool press" title="Recordings you've saved for this piece">Recordings</summary><ol class="keys-panel takes-panel"></ol></details>
     </div>
   </div>
@@ -143,7 +145,9 @@
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score", {
     autoResize: true,
     drawTitle: true,
-    followCursor: true,   // scrolls the page to keep the cursor in view
+    // Manual next/prev still follow; Listen and a take use keepCursorInView (player.js) so the
+    // cursor stays under the pinned toolbar instead of scrolling under it.
+    followCursor: true,
   });
 
   // ---- Play the score (player.js); with a passage picked it loops the passage ----
@@ -336,6 +340,42 @@
   addEventListener("pageshow", e => { if (e.persisted) refresh(); });   // back button restored the page from cache
   document.addEventListener("visibilitychange", () => document.hidden ? away() : refresh());
 
+  // ---- Metronome (live.js): free-running click at the score tempo × the slider; also rides through a take ----
+  const metroBtn = $("metro");
+  const metro = makeMetronome();
+  const METRO_KEY = "metronome";
+  function metroOn() { return metroBtn.getAttribute("aria-pressed") === "true"; }
+  function showMetro(on) {
+    metroBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    metroBtn.classList.toggle("is-on", on);
+    metroBtn.title = on
+      ? "Metronome on: clicks while you practice and through a recording"
+      : "Metronome: click at this tempo while you practice";
+  }
+  function metroTempo() {
+    const it = osmd.cursor && osmd.cursor.Iterator;
+    const bpm = (it && it.CurrentBpm) || (osmd.Sheet && osmd.Sheet.DefaultStartTempoInBpm) || 80;
+    const time = it && it.CurrentMeasure && it.CurrentMeasure.ActiveTimeSignature;
+    const perBar = (time && time.Numerator) || 4;
+    const denom = (time && time.Denominator) || 4;
+    const speed = tempo.value / 100;
+    metro.setTempo((4 / denom) * 60 / bpm / speed, perBar);
+  }
+  async function setMetro(on) {
+    showMetro(on);
+    try { localStorage.setItem(METRO_KEY, on ? "1" : "0"); } catch {}
+    if (live) { live.setTicks(on); return; }   // a take owns the pulse; just mute/unmute its bus
+    metroTempo();
+    await metro.setOn(on);
+  }
+  try { if (localStorage.getItem(METRO_KEY) === "1") showMetro(true); } catch {}   // preference only; audio needs a click
+  metroBtn.addEventListener("click", () => {
+    // after a reload the button can look on before the audio context has started
+    if (metroOn() && !live && !metro.on) { void setMetro(true); return; }
+    void setMetro(!metroOn());
+  });
+  tempo.addEventListener("input", () => { if (metroOn() && !live) { metroTempo(); } });
+
   // ---- Record yourself (it was "Record a take"; in code a recording is still a take): a bar of ticks, then the take, with the lane (live.js) showing your pitch against the score ----
   const record = document.getElementById("record"), take = document.getElementById("take");
   const takeName = document.getElementById("take-name"), takes = document.getElementById("takes");
@@ -343,6 +383,12 @@
   const lane = $("live-lane");
   let recorder, live = null;
   $("live-close").addEventListener("click", () => { lane.hidden = true; });
+  function takeWhen(iso) {   // "12 Nov · 3:41 pm" from the server's date_created
+    if (!iso) return "";
+    const d = new Date(iso.includes("T") ? iso : iso.replace(" ", "T") + "Z");
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+  }
   async function loadTakes() {   // this piece's saved takes, from the database
     if (!piece) return;
     const r = await fetch(`/api/pieces/${piece}/recordings`);
@@ -351,25 +397,32 @@
     takes.hidden = !list.length;
     takes.querySelector("summary").textContent = `Recordings (${list.length})`;
     takes.querySelector("ol").replaceChildren(...list.map(t => {
-      const li = document.createElement("li"), audio = document.createElement("audio");
-      li.textContent = (t.name || `Recording ${t.id}`) + " ";
+      const li = document.createElement("li");
+      const meta = Object.assign(document.createElement("div"), { className: "take-meta" });
+      meta.append(Object.assign(document.createElement("span"), { className: "take-name-line", textContent: t.name || `Recording ${t.id}` }));
+      const when = takeWhen(t.date_created);
+      if (when) meta.append(Object.assign(document.createElement("span"), { className: "take-when", textContent: when }));
+      const audio = document.createElement("audio");
       audio.controls = true; audio.preload = "none"; audio.src = `/api/recordings/${t.id}`;
-      li.append(audio);
+      li.append(meta, audio);
       return li;
     }));
   }
   loadTakes();
   const controls = $("controls");
+  let takeFollow = true;
   function endTake() {   // Stop, or the music ran out; during the count-in, nothing was recorded
     controls.classList.remove("is-taking");
     if (live) live.stop();
     live = null;
+    osmd.FollowCursor = takeFollow;
     if (recorder.state !== "inactive") return recorder.stop();
     recorder.stream.getTracks().forEach(t => t.stop());
     recorder = null;
     lane.hidden = true;
     recordWord.textContent = "Record yourself";
     record.classList.remove("is-recording");
+    if (metroOn()) { metroTempo(); void metro.setOn(true); }   // free-running pulse picks up again
   }
   record.addEventListener("click", async () => {
     if (!piece) { take.textContent = "Open a piece from Library to record yourself"; return; }
@@ -380,6 +433,9 @@
     catch { take.textContent = "Allow the microphone to record yourself"; return; }
     player.stop();
     listening.stop();
+    metro.stop();   // the take schedules its own pulse so the two don't clash
+    takeFollow = osmd.FollowCursor;
+    osmd.FollowCursor = false;   // keepCursorInView scrolls clear of the toolbar during the take
     const chunks = [], mine = recorder = new MediaRecorder(stream);
     recorder.ondataavailable = e => chunks.push(e.data);
     recorder.onstop = async () => {
@@ -387,17 +443,22 @@
       controls.classList.remove("is-taking");
       if (live) live.stop();
       [recorder, live] = [null, null];
+      osmd.FollowCursor = takeFollow;
       recordWord.textContent = "Record yourself";
       record.classList.remove("is-recording");
+      if (metroOn()) { metroTempo(); void metro.setOn(true); }
       const form = new FormData();
       form.append("file", new Blob(chunks, { type: "audio/webm" }), "take.webm");
       form.append("name", takeName.value);
       const r = await fetch(`/api/pieces/${piece}/recordings`, { method: "POST", body: form });
       if (!r.ok) { take.textContent = "That recording was empty. Try again."; return; }
       const saved = await r.json();
-      take.textContent = `Saved “${saved.name}”`;
+      take.textContent = "";
       takeName.value = "";
-      loadTakes();
+      await loadTakes();
+      takes.hidden = false;
+      takes.open = true;
+      toast(`Saved “${saved.name}”`);
     };
     const rolling = () => {
       recorder.start();
@@ -420,6 +481,7 @@
     recordWord.textContent = "Cancel";
     try {
       const started = await liveTake({ stream, osmd, lane: $("live-canvas"), events: scoreEvents(from, inside), speed, beats, beat,
+        ticks: metroOn(),
         onRoll: () => recorder === mine && rolling(), onEnd: () => recorder === mine && endTake() });
       if (recorder === mine) live = started; else started.stop();   // Cancel was pressed while it got ready
     } catch (err) {   // no lane on this browser: record plainly
@@ -428,6 +490,7 @@
       if (recorder === mine) rolling();
     }
   });
+  addEventListener("pagehide", () => metro.stop());
 
   // A sleeping free server takes up to a minute to answer: say so instead of sitting silent.
   setTimeout(() => {

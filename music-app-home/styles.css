@@ -479,6 +479,25 @@ main {
 .tiles > li {
   display: flex;
   flex-direction: column;
+  animation: tile-in 0.4s ease both;
+}
+
+.tiles > li:nth-child(1) { animation-delay: 0.02s; }
+.tiles > li:nth-child(2) { animation-delay: 0.08s; }
+.tiles > li:nth-child(3) { animation-delay: 0.14s; }
+.tiles > li:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes tile-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+/* Most recent piece across the row; its art is taller so the score can be read at a glance. */
+.tiles > li.home-lead {
+  grid-column: 1 / -1;
+}
+
+.tiles > li.home-lead .card-art {
+  --art-h: 15rem;
 }
 
 /* 9. Piece tiles --------------------------------------------------------- */
@@ -488,13 +507,25 @@ main {
   flex-direction: column;
   flex: 1;
   overflow: hidden;         /* clips image and caption to the rounded corners */
+  border: 1.5px solid var(--line);
   border-radius: var(--radius-tile);
+  background: var(--surface);
 }
 
+/* Paper + faint staff lines while the piece's own thumbnail is still drawing.
+   Once the thumb lands, the image covers this; the tint below still softens it. */
 .card-art {
   position: relative;
   height: var(--art-h);
   overflow: hidden;
+  background-color: color-mix(in srgb, var(--surface) 72%, var(--band));
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 10px,
+    color-mix(in srgb, var(--ink) 14%, transparent) 10px 11px
+  );
+  background-size: 100% 56px;
+  background-position: center 18%;
 }
 
 /* Blurred sheet music. The blur is CSS-only so real scores get the same look;
@@ -508,6 +539,12 @@ main {
   object-position: center;
   filter: blur(var(--sheet-blur));
   transform: scale(1.08);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.card-art.has-thumb img {
+  opacity: 1;
 }
 
 /* Tint keeps the tile on-palette and stops white paper glaring in dark mode. */
@@ -536,6 +573,12 @@ main {
   font-weight: 600;
 }
 
+.card-subtitle {
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
 /* Practice time: a quiet line under the title (it used to be a badge over the art, which read like a grade). */
 .card-practiced {
   margin-top: 2px;
@@ -543,9 +586,13 @@ main {
   color: var(--ink-muted);
 }
 
+.card-subtitle + .card-practiced {
+  margin-top: 4px;
+}
+
 /* 10. Actions tile ------------------------------------------------------- */
 
-/* A plain container: not a link, not pressable. */
+/* A plain container: not a link, not pressable. Same staff paper as empty cards. */
 .actions {
   display: flex;
   flex: 1;
@@ -553,7 +600,14 @@ main {
   gap: 12px;
   padding: 16px 16px 20px;  /* extra bottom room for the buttons' edges */
   border-radius: var(--radius-tile);
-  background: var(--band);
+  background-color: var(--band);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 10px,
+    color-mix(in srgb, var(--ink) 10%, transparent) 10px 11px
+  );
+  background-size: 100% 56px;
+  background-position: center 12%;
 }
 
 .actions .btn {
@@ -685,6 +739,10 @@ main {
   *::before,
   *::after {
     transition: none !important;
+  }
+
+  .tiles > li {
+    animation: none;
   }
 }
 
@@ -995,7 +1053,7 @@ main {
 }
 
 .library-grid .card-art {
-  --art-h: 8.5rem;
+  --art-h: 10rem;
 }
 
 /* 18. Responsive ------------------------------------------------------------- */
@@ -1420,6 +1478,32 @@ body[data-auth="guest"] .welcome {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.takes li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.take-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.take-name-line {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.take-when {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
 }
 
 /* Record yourself keeps one width as it reads Record yourself, Cancel, Stop recording: the toolbar doesn't jump. */

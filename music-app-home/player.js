@@ -41,11 +41,46 @@ function loadScript(src) {
   });
 }
 
+// The page that actually scrolls: <main> on a desktop frame, the window on a phone.
+function scoreScroller() {
+  const main = document.querySelector("main");
+  if (main && main.scrollHeight > main.clientHeight + 1) return main;
+  return document.scrollingElement || document.documentElement;
+}
+
+// Keep the OSMD cursor in the open band under the pinned practice toolbar, so Listen and a
+// take don't force the musician to chase the notes by hand. OSMD's own FollowCursor uses
+// scrollIntoView and parks the cursor under that toolbar.
+function keepCursorInView(osmd) {
+  const el = osmd && osmd.cursor && osmd.cursor.cursorElement;
+  if (!el || !el.getBoundingClientRect) return;
+  const scroller = scoreScroller();
+  const controls = document.getElementById("controls");
+  const pad = (controls ? controls.getBoundingClientRect().height : 0) + 12;
+  const box = scroller === document.scrollingElement || scroller === document.documentElement
+    ? { top: 0, bottom: window.innerHeight, height: window.innerHeight }
+    : (() => { const r = scroller.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, height: r.height }; })();
+  const visibleTop = box.top + pad;
+  const visibleBottom = box.bottom - 24;
+  const rect = el.getBoundingClientRect();
+  if (rect.top >= visibleTop && rect.bottom <= visibleBottom) return;
+  const band = Math.max(80, visibleBottom - visibleTop);
+  const target = visibleTop + band * 0.3;   // a little below the toolbar, not glued to it
+  const delta = rect.top - target;
+  if (Math.abs(delta) < 4) return;
+  // instant while the music is moving: smooth scroll stacks up and lags behind the cursor
+  if (scroller === document.scrollingElement || scroller === document.documentElement) {
+    window.scrollBy(0, delta);
+  } else {
+    scroller.scrollTop += delta;
+  }
+}
+
 // button toggles Listen / Stop (its .tool-label; the icon stays); tempo is a range input in percent of the score's tempo.
 // passage() gives the picked bars as {first, last} measure indexes (0-based), or null for the
 // whole piece; toStart() puts the cursor on the passage's first note.
 function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) {
-  let piano, playing = false;
+  let piano, playing = false, followWas = true;
   const word = button.querySelector(".tool-label") || button;
   const say = (text, state) => { word.textContent = text; button.dataset.state = state; };
 
@@ -75,12 +110,15 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
     const speed = tempo.value / 100, transport = Tone.getTransport(), draw = Tone.getDraw();
     const events = scoreEvents(osmd.cursor.Iterator, inside);
     if (!events.length) return stop();
+    followWas = osmd.FollowCursor;
+    osmd.FollowCursor = false;   // our keepCursorInView handles the scroll, clear of the toolbar
     transport.cancel();
     transport.position = 0;
     events.forEach((event, i) => transport.schedule(time => {
       for (const note of event.notes) piano.triggerAttackRelease(Tone.Frequency(note.midi, "midi").toFrequency(), note.seconds / speed, time, 0.7);
-      if (i > 0) draw.schedule(() => osmd.cursor.next(), time);   // step 0 is where the cursor already is
+      if (i > 0) draw.schedule(() => { osmd.cursor.next(); keepCursorInView(osmd); }, time);   // step 0 is where the cursor already is
     }, event.seconds / speed));
+    keepCursorInView(osmd);
     const end = events.end ?? events.at(-1).seconds + Math.max(0, ...events.at(-1).notes.map(n => n.seconds));
     if (bars) {
       const beat = 60 / (osmd.Sheet.DefaultStartTempoInBpm || 80);   // one beat of quiet, then back to the first bar
@@ -88,6 +126,7 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
         if (!playing) return;
         transport.stop();
         toStart();
+        keepCursorInView(osmd);
         schedule();
       }, time), (end + beat) / speed);
     } else {
@@ -98,6 +137,7 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
 
   function stop() {
     playing = false;
+    osmd.FollowCursor = followWas;
     if (window.Tone) {
       Tone.getTransport().stop();
       Tone.getTransport().cancel();

@@ -21,7 +21,8 @@
     img.className = "card-thumb";
     img.src = url;
     art.prepend(img);
-    art.classList.add("has-thumb");
+    // next frame so the opacity transition from the staff placeholder actually runs
+    requestAnimationFrame(function () { art.classList.add("has-thumb"); });
   }
 
   function loadOsmd() {

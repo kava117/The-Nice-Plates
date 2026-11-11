@@ -91,6 +91,11 @@ a {
   text-decoration: none;
 }
 
+/* rules like .panel { display: flex } would otherwise show elements marked hidden */
+[hidden] {
+  display: none !important;
+}
+
 ul {
   margin: 0;
   padding: 0;
@@ -410,6 +415,15 @@ p {
   background: color-mix(in srgb, white 12%, var(--accent));
 }
 
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-solid:disabled:hover { border-color: var(--accent); background: var(--accent); }
+
 .theme-toggle {
   display: grid;
   place-items: center;
@@ -496,8 +510,33 @@ main {
   grid-column: 1 / -1;
 }
 
+/* The thumbnail's own shape (thumbs.js draws 480x264), so a wide tile doesn't crop off the title */
 .tiles > li.home-lead .card-art {
-  --art-h: 15rem;
+  height: auto;
+  max-height: 22rem;
+  aspect-ratio: 480 / 264;
+}
+
+.tiles > li.home-lead .card-art img {
+  object-position: top;
+}
+
+/* Wide screens: the lead piece and the actions side by side, not the actions alone on a row */
+@media (min-width: 900px) {
+  .tiles:has(> li.home-lead) {
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    grid-auto-flow: dense;
+  }
+
+  .tiles > li.home-lead {
+    grid-column: 1;
+  }
+
+  .tiles > li.home-lead ~ li:last-child {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+  }
 }
 
 /* 9. Piece tiles --------------------------------------------------------- */
@@ -586,6 +625,8 @@ main {
   color: var(--ink-muted);
 }
 
+[data-tile-progress="off"] .card-practiced { display: none; }
+
 .card-subtitle + .card-practiced {
   margin-top: 4px;
 }
@@ -657,6 +698,7 @@ main {
 
 .stat-value {
   font-family: var(--font-display);
+  font-variant-numeric: lining-nums tabular-nums;   /* Young Serif's default 0 reads as a letter o */
   font-size: 1.75rem;       /* 28px */
   line-height: 1.3;
 }
@@ -725,9 +767,67 @@ main {
 
 }
 
+/* A phone: top bar on one row, the nav on one row under it. The account tile goes;
+   Settings is in the nav. */
+@media (max-width: 600px) {
+  .topbar {
+    gap: 6px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  .topbar-optional,
+  .sidebar .account {
+    display: none;
+  }
+
+  .sidebar {
+    padding: 8px 12px;
+  }
+
+  .nav-list {
+    flex-wrap: nowrap;
+    width: calc(100% + 12px);
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: -6px;             /* a scroller clips; this leaves room for the focus ring */
+    padding: 6px;
+  }
+
+  .nav-list li {
+    flex: 1 0 auto;
+  }
+
+  .nav-link {
+    justify-content: center;
+    height: 40px;
+    padding: 0 10px;
+    font-size: 0.875rem;
+  }
+}
+
+/* A phone: both stats on one row, and Continue before the pieces instead of after all of them. */
 @media (max-width: 480px) {
   .stats {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .stat {
+    padding: 10px 12px;
+  }
+
+  .stat-value {
+    font-size: 1.375rem;
+  }
+
+  .tiles > li:has(> .actions) {
+    order: -1;
   }
 }
 
@@ -766,12 +866,14 @@ main {
   background: var(--surface);
 }
 
+.history-panel {
+  margin-top: 20px;
+}
+
 .history-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 360px;
-  overflow-y: auto;
 }
 
 .history-row {
@@ -822,7 +924,7 @@ main {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
-.panel + .panel {
+.panel:not([hidden]) + .panel {
   margin-top: 20px;
 }
 
@@ -879,47 +981,41 @@ main {
   color: var(--ink-muted);
 }
 
-/* Placeholder heights — wire these up to real data (or set via an inline
-   style like style="height: 62%" from the server) when you're ready. */
-.bar-m { height: 55%; }
-.bar-t { height: 80%; }
-.bar-w { height: 30%; }
-.bar-th { height: 62%; }
-.bar-f { height: 18%; }
-.bar-s { height: 72%; }
-.bar-su { height: 46%; }
+.bar-group.is-today span { color: var(--ink); font-weight: 700; }
+.bar-group:not(.is-today) .bar { opacity: 0.7; }
 
-.chart-legend {
+.goal {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 4px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--ink-muted);
-  white-space: nowrap;
-}
-
-.chart-legend label {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  cursor: pointer;
+  min-width: 10rem;
+  padding-top: 4px;
+  font-size: 0.875rem;
 }
 
-.chart-legend input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
-}
+.goal-text strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.goal-track { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.goal-fill { width: 0; height: 100%; background: var(--accent); transition: width 0.4s ease-out; }
+.goal-edit { font-size: 0.8125rem; color: var(--ink-muted); }
+
+@media (prefers-reduced-motion: reduce) { .goal-fill { transition: none; } }
 
 /* Overall Time --------------------------------------------------------------- */
 
 .overall-chart {
   display: block;
   width: 100%;
-  height: auto;
+  height: 180px;            /* the viewBox stretches; height: auto made it 400px+ on a wide screen */
+}
+
+/* nothing to plot yet: a short placeholder, not two big empty boxes */
+.panel.is-empty .bars {
+  height: 48px;
+}
+
+.panel.is-empty .overall-chart {
+  height: 40px;
 }
 
 .overall-chart .line {
@@ -972,7 +1068,9 @@ main {
 
 .donut-value {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 2.5rem;        /* SVG units: the 120-unit ring is drawn at 76px, so this is ~25px */
+  font-variant-numeric: lining-nums;
+  dominant-baseline: central;
   fill: var(--ink);
 }
 
@@ -993,6 +1091,7 @@ main {
 @media (max-width: 900px) {
   .practice-panel {
     flex-direction: column;
+    align-items: stretch;   /* else the chart shrinks to its labels and the bars bunch up on the left */
     gap: 18px;
   }
 
@@ -1030,7 +1129,8 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0;
+  min-height: 36px;
+  padding: 0 4px;
   border: none;
   background: none;
   font: inherit;
@@ -1096,8 +1196,8 @@ main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -1261,6 +1361,55 @@ main {
   border-color: var(--ink-muted);
 }
 
+/* The browser's grey "Choose File" button, drawn like .btn-ghost instead */
+.input[type="file"] {
+  padding: 5px 8px;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.input[type="file"]:hover::file-selector-button {
+  border-color: var(--ink-muted);
+}
+
+/* Library's add-a-piece form: one row on a wide screen, so the pieces start higher up */
+.upload-form {
+  max-width: none;
+  margin-bottom: 20px;
+}
+
+.upload-details { display: contents; }
+
+@media (min-width: 900px) {
+  .upload-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-form label {
+    grid-column: 1 / -1;
+  }
+
+  .upload-form .btn {
+    align-self: stretch;
+  }
+}
+
 /* Placeholders at full strength: muted colour alone keeps them AA (4.5:1) in both themes. */
 ::placeholder {
   color: var(--ink-muted);
@@ -1352,8 +1501,16 @@ main {
 .settings-save {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
   margin-top: 20px;
 }
+
+.field-hint { margin-top: 4px; font-size: 0.8125rem; color: var(--ink-muted); }
+.field-error { margin-top: 4px; font-size: 0.8125rem; color: var(--accent-2); }
+
+.confirm-delete { margin-top: 14px; }
+.confirm-delete p { margin-bottom: 10px; }
 
 @media (prefers-reduced-motion: reduce) {
   .switch,
@@ -1426,25 +1583,94 @@ main {
   font-size: 1rem;
 }
 
-/* making sure guest page is centered on the screen */
-body[data-auth="guest"] main {
+/* Sign-in page: the welcome tile beside a manuscript page, footer under both. */
+main.login {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  display: grid;
-  place-items: center;
+  padding: 32px;
 }
 
-body[data-auth="guest"] .welcome {
+.login-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(0, 360px);
+  gap: 40px;
   align-items: center;
-  text-align: center;
+  justify-content: center;
+}
+
+.login .site-footer {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.login-art {
+  margin: 0;
+}
+
+.login-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 72vh;
+  object-fit: cover;
+  object-position: top;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-tile);
+}
+
+.login-art figcaption {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.welcome-btn {
+  padding: 12px 22px;
+  font-size: 0.9375rem;
+  letter-spacing: normal;
+}
+
+@media (max-width: 760px) {
+  main.login {
+    padding: 16px;
+  }
+
+  .login-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-content: start;
+  }
+
+  /* a strip of the page above the tile, not a full page to scroll past */
+  .login-art {
+    order: -1;
+  }
+
+  .login-art img {
+    height: 140px;
+    object-position: center 12%;
+  }
+
+  .login-art figcaption {
+    display: none;
+  }
+
+  .welcome-actions,
+  .welcome-actions .btn {
+    width: 100%;
+  }
+
+  .welcome-actions .btn {
+    justify-content: center;
+  }
 }
 
 /* Google sign-in button: a larger ghost button with the multicolor "G". */
 .btn-google {
   gap: 12px;
-  margin-top: 8px;
-  padding: 12px 22px;
-  font-size: 0.9375rem;
-  letter-spacing: normal;
 }
 
 .btn-google svg {
@@ -2245,6 +2471,44 @@ kbd {
     gap: 6px 10px;
   }
 
+  /* Wrapped, the pinned rows took 330px of an 844px screen. One line each; swipe for the rest. */
+  .controls-row:not(.rep-row) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: -6px;             /* a scroller clips; this leaves room for the focus ring */
+    padding: 6px;
+  }
+
+  .controls-row:not(.rep-row) > *,
+  .controls-row:not(.rep-row) .tool-group {
+    flex: none;
+    flex-wrap: nowrap;
+  }
+
+  .controls-row .select-hint {
+    flex: none;
+    width: 15em;
+  }
+
+  /* what you came to do first in view; moving the cursor and Change piece after a swipe */
+  .controls-row > [aria-label="Record yourself"] {
+    order: -2;
+  }
+
+  .controls-row > [aria-label="Listen"] {
+    order: -1;
+  }
+
+  .take-name {
+    display: none;
+  }
+
+  /* the first-time tip under the toolbar says the same thing */
+  .passage-empty {
+    display: none;
+  }
+
   .tempo-word,
   .row-label,
   .rep-ask,
@@ -2255,10 +2519,6 @@ kbd {
 
   .tempo input {
     width: 72px;
-  }
-
-  .bars-input {
-    width: 5.5em;
   }
 
   .rep-row {
@@ -3174,6 +3434,9 @@ body.coach-open main {
 }
 
 .site-footer-links a {
+  display: inline-block;
+  padding: 6px 2px;         /* a finger-sized target without moving the text */
+  margin: -6px 0;
   color: var(--ink-muted);
   font-weight: 600;
   text-decoration: underline;

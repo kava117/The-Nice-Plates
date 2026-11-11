@@ -93,6 +93,17 @@
       e.preventDefault();
       if (!busy) send(form, new FormData(form));
     });
+    var details = form.querySelector("[data-upload-details]");
+    if (details) {   // Library: title, composer and Upload once there's a file to name
+      form.querySelector("input[type=file]").addEventListener("change", function (e) {
+        var file = e.target.files[0];
+        details.hidden = !file;
+        if (!file) return;
+        var title = form.querySelector("input[name=title]");
+        title.placeholder = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim() + " (or type a title)";
+        title.focus();
+      });
+    }
     if (form.hasAttribute("data-upload-on-pick")) {   // Home: picking the file is the whole form
       form.querySelector("input[type=file]").addEventListener("change", function (e) {
         if (e.target.files[0] && !busy) send(form, new FormData(form));

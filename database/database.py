@@ -640,6 +640,14 @@ def deleteUser(database, user_id):
     database.execute("DELETE FROM Pieces WHERE user_id = ?", (user_id,))
     database.execute("DELETE FROM Users WHERE id = ?", (user_id,))
 
+def deleteAccount(user_id):
+    with get_db() as database:
+        deleteUser(database, user_id)
+
+def setUserName(user_id, name):
+    with get_db() as database:
+        database.execute("UPDATE Users SET name = ? WHERE id = ?", (name, user_id))
+
 def deleteStaleGuests(hours=GUEST_HOURS):
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
     with get_db() as database:

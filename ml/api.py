@@ -1,5 +1,5 @@
 """The ml tools as a web API.   Run alone: python ml/api.py   (port 8002)"""
-import logging, os, sys, tempfile, threading
+import logging, os, re, sys, tempfile, threading
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
@@ -171,7 +171,8 @@ def add_piece():
         except Exception:
             logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
             return library_error(f"Could not read {src.name}. Upload a PDF, a photo of sheet music, or a MusicXML file.")
-        piece_id = database.addPiece(user_id(), request.form.get("title") or src.stem,
+        title = (request.form.get("title") or "").strip() or " ".join(re.split(r"[_-]+", src.stem)).strip() or src.stem
+        piece_id = database.addPiece(user_id(), title,
                                      request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
     return redirect(f"/practice?piece={piece_id}")
 

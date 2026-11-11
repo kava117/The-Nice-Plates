@@ -35,7 +35,7 @@
             <div class="actions">
               {% if pieces %}
               <a class="btn btn-solid press btn-stack" href="/practice?piece={{ pieces[0].id }}">
-                Continue practicing
+                {{ "Continue practicing" if seconds.get(pieces[0].id) else "Start practicing" }}
                 <span class="btn-sub">{{ pieces[0].title }}</span>
               </a>
               {% endif %}

@@ -552,7 +552,7 @@ function addPassages(osmd, els, { pieceId, tempo, onRep = () => {}, onPick = () 
     const none = !saved.length && !active && !selecting;
     chips.hidden = selecting;
     chips.classList.toggle("is-alone", !saved.length && !active);   // just Whole piece: room for the empty state beside it
-    empty.hidden = !none;
+    empty.hidden = !none || !!(firstHint && !firstHint.hidden);   // the tip by the score already says it
     selectHint.hidden = !selecting;
     newButton.setAttribute("aria-pressed", selecting);
     newButton.classList.toggle("is-first", none);   // the one way to start: it stands out until there's a passage

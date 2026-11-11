@@ -149,6 +149,27 @@ def test_other_peoples_passages_are_404(user):
     assert db.getSectionRecord(their_sid) is not None
 
 
+def test_delete_a_piece_takes_its_passages_and_takes(user):
+    client, uid = user
+    pid = piece_for(uid)
+    sid = client.post(f"/api/pieces/{pid}/sections", json={"start": 1, "end": 2}).get_json()["id"]
+    client.post(f"/api/sections/{sid}/reps", json={"clean": True})
+    assert client.delete(f"/api/pieces/{pid}").status_code == 204
+    assert db.getPieceForUser(uid, pid) is None
+    with db.get_db() as con:
+        assert con.execute("SELECT COUNT(*) FROM Sections WHERE piece_id = ?", (pid,)).fetchone()[0] == 0
+        assert con.execute("SELECT COUNT(*) FROM Section_Reps WHERE section_id = ?", (sid,)).fetchone()[0] == 0
+    assert client.delete(f"/api/pieces/{pid}").status_code == 404
+
+
+def test_cannot_delete_someone_elses_piece(user):
+    client, _ = user
+    other = make_user()
+    their_piece = piece_for(other)
+    assert client.delete(f"/api/pieces/{their_piece}").status_code == 404
+    assert db.getPieceForUser(other, their_piece) is not None
+
+
 def test_guests_practice_as_the_demo_user(guest):
     pid = piece_for(db.demoUser())
     assert guest.post(f"/api/pieces/{pid}/sections", json={"start": 1, "end": 2}).status_code in (200, 201)

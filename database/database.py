@@ -319,6 +319,23 @@ def getSessions(user_id):
         ).fetchall()
         return [dict(row) for row in rows]
 
+def getSessionHistory(user_id, limit=50):
+    """newest first: each saved session with the titles of the pieces it touched"""
+    with get_db() as database:
+        rows = database.execute(
+            "SELECT id, time_spent, date FROM Sessions WHERE user_id = ? ORDER BY date DESC, id DESC LIMIT ?",
+            (user_id, limit),
+        ).fetchall()
+        history = []
+        for s in rows:
+            titles = database.execute(
+                "SELECT p.id, p.title FROM Session_Pieces sp JOIN Pieces p ON p.id = sp.piece_id WHERE sp.session_id = ? ORDER BY sp.referenced_at",
+                (s["id"],),
+            ).fetchall()
+            history.append({"id": s["id"], "seconds": s["time_spent"], "date": str(s["date"]),
+                            "pieces": [dict(t) for t in titles]})
+        return history
+
 def getSessionPieces(session_id):
     with get_db() as database:
         rows = database.execute(
@@ -497,6 +514,18 @@ def moveSection(section_id, start, end):
             return other["id"]
         database.execute("UPDATE Sections SET start_measure = ?, end_measure = ? WHERE id = ?", (start, end, section_id))
         return None
+
+def deletePiece(user_id, piece_id):
+    """removes a piece and everything hanging off it; returns whether it was this user's"""
+    with get_db() as database:
+        if not database.execute("SELECT 1 FROM Pieces WHERE id = ? AND user_id = ?", (piece_id, user_id)).fetchone():
+            return False
+        database.execute("DELETE FROM Section_Reps WHERE section_id IN (SELECT id FROM Sections WHERE piece_id = ?)", (piece_id,))
+        database.execute("DELETE FROM Sections WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Recordings WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Session_Pieces WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Pieces WHERE id = ?", (piece_id,))
+        return True
 
 def deleteSection(section_id):
     with get_db() as database:

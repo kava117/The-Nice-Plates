@@ -44,7 +44,7 @@
 
   <ul class="library-grid">
     {% for piece in pieces %}
-    <li><a class="card" href="/practice?piece={{ piece.id }}">
+    <li class="card-wrap" data-piece="{{ piece.id }}" data-title="{{ piece.title }}"><a class="card" href="/practice?piece={{ piece.id }}">
       <div class="card-art" data-thumb="{{ piece.id }}"></div>
       <div class="card-caption">
         <div class="card-title">{{ piece.title }}</div>
@@ -82,6 +82,21 @@
       });
       document.querySelector(".library-grid").style.setProperty("--card-min", { compact: "150px", normal: "220px", large: "320px" }[b.dataset.density]);
     });
+
+    // Delete: the card goes at once, with Undo for 5 seconds; the server delete waits until then.
+    const pending = new Map();
+    const sendDelete = id => fetch(`/api/pieces/${id}`, { method: "DELETE", keepalive: true });
+    document.querySelectorAll(".card-delete").forEach(btn => btn.addEventListener("click", () => {
+      const li = btn.closest(".card-wrap"), id = li.dataset.piece;
+      li.hidden = true;
+      pending.set(id, li);
+      toast(`Deleted “${li.dataset.title}”`, {
+        action: "Undo", ms: 5000,
+        onAction: () => { pending.delete(id); li.hidden = false; },
+        onEnd: () => { if (pending.delete(id)) { sendDelete(id); li.remove(); } },
+      });
+    }));
+    addEventListener("pagehide", () => { pending.forEach((_, id) => sendDelete(id)); pending.clear(); });
   </script>
 
 </div>
@@ -118,4 +133,5 @@
 </script>
 <script src="/upload.js"></script>
 <script src="/thumbs.js"></script>
+<script src="/toast.js"></script>
 {% include "footer.html" %}

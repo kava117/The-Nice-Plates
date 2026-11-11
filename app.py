@@ -249,6 +249,15 @@ def read_bars(data):
 def my_section(section_id):
     return database.getSectionForUser(user_id(), section_id) or abort(404)
 
+@app.route("/api/pieces/<int:piece_id>", methods=["DELETE"])
+def api_delete_piece(piece_id):
+    if not database.deletePiece(user_id(), piece_id):
+        abort(404)
+    if session.get("current_piece_id") == piece_id:
+        session.pop("current_piece_id")
+        session.pop("selected_section_id", None)
+    return "", 204
+
 @app.route("/api/pieces/<int:piece_id>/sections")
 def api_sections(piece_id):
     database.getPieceForUser(user_id(), piece_id) or abort(404)
@@ -441,7 +450,7 @@ def progress():
     per_day = [sum(s["time_spent"] for s in sessions if s["date"][:10] == (monday + timedelta(days=i)).isoformat()) for i in range(7)]
     return render_template("progress.html", per_day=per_day, totals=list(accumulate(s["time_spent"] for s in reversed(sessions))),
                            pieces=len(database.getPieces(user_id())), practiced=len(database.getPieceSeconds(user_id())),
-                           unsaved=timer_seconds(), saved=len(sessions))
+                           unsaved=timer_seconds(), saved=len(sessions), history=database.getSessionHistory(user_id()))
 
 @app.route("/settings")
 @onboarding_required

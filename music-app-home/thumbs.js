@@ -1,15 +1,13 @@
-/* Piece thumbnails on Home and Library: a blurred render of each piece's own first page, centred
-   on its title, in place of stock photos of other music.
+/* Piece thumbnails on Home and Library: a sharp render of each piece's own first bars.
 
    Each .card-art[data-thumb=<piece id>] gets an <img> once it nears the screen. The page is drawn
    by OpenSheetMusicDisplay (the practice page's renderer, loaded only when a thumbnail is missing)
-   in an off-screen box, one piece at a time, only its first bars. The strip around the title is
-   cut out on a canvas, saved as a small JPEG in localStorage (pieces never change), and blurred by
-   the .card-art img rule in styles.css. If anything fails the card keeps its plain tinted art. */
+   in an off-screen box, one piece at a time. The top of the page (title + first staff) is cut out
+   on a canvas and saved as a JPEG in localStorage. If anything fails the card keeps its staff art. */
 (function () {
   var arts = Array.prototype.slice.call(document.querySelectorAll("[data-thumb]"));
   if (!arts.length || !window.HTMLCanvasElement) return;
-  var VERSION = "v4", WIDTH = 800, OUT_W = 480, OUT_H = 264, BARS = 8, ZOOM = 0.9;   // ZOOM: share of the page width shown
+  var VERSION = "v6", WIDTH = 1000, OUT_W = 960, OUT_H = 528, BARS = 8, ZOOM = 0.98;
   var queue = [], running = false, osmdReady = null;
 
   function cached(id) { try { return localStorage.getItem("thumb:" + VERSION + ":" + id); } catch (e) { return null; } }
@@ -49,18 +47,6 @@
     });
   }
 
-  // Where the title sits: the biggest text on the page (OSMD draws the title largest).
-  function titleCentre(svg) {
-    var best = null, size = 0;
-    svg.querySelectorAll("text").forEach(function (t) {
-      var s = parseFloat(t.getAttribute("font-size") || getComputedStyle(t).fontSize) || 0;
-      if (s > size && t.textContent.trim()) { size = s; best = t; }
-    });
-    if (!best) return null;
-    var box = best.getBBox();
-    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  }
-
   async function draw(id) {
     await loadOsmd();
     var stage = document.createElement("div");
@@ -70,28 +56,30 @@
     try {
       var r = await fetch("/api/pieces/" + id + "/musicxml");
       if (!r.ok) throw new Error("musicxml " + r.status);
+      // Title and composer already sit in the card caption; the art is the notes themselves.
       var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(stage, {
-        autoResize: false, drawTitle: true, drawComposer: true, drawPartNames: false, drawingParameters: "default",
+        autoResize: false, drawTitle: false, drawComposer: false, drawPartNames: false,
+        drawMeasureNumbers: false, drawingParameters: "compacttight",
       });
       await osmd.load(await r.text());
-      osmd.setOptions({ drawUpToMeasureNumber: BARS });   // the first bars are all a thumbnail shows
+      osmd.setOptions({ drawUpToMeasureNumber: BARS });
+      osmd.zoom = 1.15;
       osmd.render();
       var svg = stage.querySelector("svg");
       var high = svg.height.baseVal.value || svg.getBoundingClientRect().height, wide = svg.width.baseVal.value || WIDTH;
-      var centre = titleCentre(svg);
       var img = await svgImage(svg);
-      // a box the shape of the card's art around the title (paper fills any part above the page)
-      var stripW = wide * ZOOM, stripH = stripW * OUT_H / OUT_W;
-      var c = centre || { x: wide / 2, y: stripH / 2 };
-      var left = Math.max(0, Math.min(c.x - stripW / 2, wide - stripW)), top = Math.min(c.y - stripH * 0.25, high - stripH);   // the title a quarter of the way down, the first staves under it
+      var stripW = wide * ZOOM, stripH = Math.min(high, stripW * OUT_H / OUT_W);
+      var left = Math.max(0, (wide - stripW) / 2), top = 0;
       var canvas = document.createElement("canvas");
       canvas.width = OUT_W; canvas.height = OUT_H;
       var ctx = canvas.getContext("2d");
       ctx.fillStyle = "#fffdf5";
       ctx.fillRect(0, 0, OUT_W, OUT_H);
-      var scale = OUT_W / stripW, skip = Math.max(0, -top);   // source rects must stay on the image
-      ctx.drawImage(img, left, top + skip, stripW, stripH - skip, 0, skip * scale, OUT_W, OUT_H - skip * scale);
-      return canvas.toDataURL("image/jpeg", 0.7);
+      // object-fit: cover from the top of the staff — keep note proportions
+      var scale = Math.max(OUT_W / stripW, OUT_H / stripH);
+      var dw = stripW * scale, dh = stripH * scale;
+      ctx.drawImage(img, left, top, stripW, stripH, (OUT_W - dw) / 2, 0, dw, dh);
+      return canvas.toDataURL("image/jpeg", 0.9);
     } finally {
       stage.remove();
     }

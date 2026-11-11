@@ -1347,25 +1347,94 @@ main {
   font-size: 1rem;
 }
 
-/* making sure guest page is centered on the screen */
-body[data-auth="guest"] main {
+/* Sign-in page: the welcome tile beside a manuscript page, footer under both. */
+main.login {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  display: grid;
-  place-items: center;
+  padding: 32px;
 }
 
-body[data-auth="guest"] .welcome {
+.login-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 560px) minmax(0, 360px);
+  gap: 40px;
   align-items: center;
-  text-align: center;
+  justify-content: center;
+}
+
+.login .site-footer {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.login-art {
+  margin: 0;
+}
+
+.login-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 72vh;
+  object-fit: cover;
+  object-position: top;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-tile);
+}
+
+.login-art figcaption {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.welcome-btn {
+  padding: 12px 22px;
+  font-size: 0.9375rem;
+  letter-spacing: normal;
+}
+
+@media (max-width: 760px) {
+  main.login {
+    padding: 16px;
+  }
+
+  .login-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-content: start;
+  }
+
+  /* a strip of the page above the tile, not a full page to scroll past */
+  .login-art {
+    order: -1;
+  }
+
+  .login-art img {
+    height: 140px;
+    object-position: center 12%;
+  }
+
+  .login-art figcaption {
+    display: none;
+  }
+
+  .welcome-actions,
+  .welcome-actions .btn {
+    width: 100%;
+  }
+
+  .welcome-actions .btn {
+    justify-content: center;
+  }
 }
 
 /* Google sign-in button: a larger ghost button with the multicolor "G". */
 .btn-google {
   gap: 12px;
-  margin-top: 8px;
-  padding: 12px 22px;
-  font-size: 0.9375rem;
-  letter-spacing: normal;
 }
 
 .btn-google svg {

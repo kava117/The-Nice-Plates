@@ -20,7 +20,8 @@
   --on-accent-2: #F6EEDA;
   --line: #D9CBA9;          /* thin dividers and borders */
   --accent-edge: #1E3D28;   /* bottom edge of accent pressables */
-  --edge-neutral: #B8A67C;  /* bottom edge of neutral pressables */
+  --edge-neutral: #B8A67C;  /* soft border of neutral buttons */
+  --control-edge: #857558;  /* text-box borders: 3:1 against every background (WCAG 1.4.11) */
   --sheet-tint: 45%;        /* how strongly --band covers the sheet music */
 
   /* Tokens that do not change with the theme. */
@@ -50,6 +51,7 @@
   --line: #3A3D43;
   --accent-edge: #3F8A5A;
   --edge-neutral: #15171A;
+  --control-edge: #80858E;
   --sheet-tint: 78%;
 }
 
@@ -1041,7 +1043,7 @@ main {
 /* Inputs and selects: flat, not pressable. */
 .input {
   padding: 8px 12px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--ink);
@@ -1049,7 +1051,13 @@ main {
 }
 
 .input:hover {
-  border-color: var(--edge-neutral);
+  border-color: var(--ink-muted);
+}
+
+/* Placeholders at full strength: muted colour alone keeps them AA (4.5:1) in both themes. */
+::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
 }
 
 .field-actions {
@@ -1332,8 +1340,8 @@ body[data-auth="guest"] .welcome {
 
 .bars-input::placeholder {
   color: var(--ink-muted);
-  font-style: italic;
-  opacity: 0.75;
+  font-style: italic;         /* reads as an example, never as a typed selection */
+  opacity: 1;
 }
 
 .tempo {
@@ -1390,7 +1398,7 @@ body[data-auth="guest"] .welcome {
   font: inherit;
   font-size: 0.8125rem;
   padding: 6px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
@@ -1698,7 +1706,7 @@ kbd {
   width: 92px;
   height: 32px;
   padding: 0 8px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
@@ -2449,7 +2457,7 @@ body.coach-open main {
   flex: 1;
   min-width: 0;
   padding: 7px 10px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--ink);
@@ -2465,7 +2473,7 @@ body.coach-open main {
 
 .coach-input::placeholder {
   color: var(--ink-muted);
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .coach-send {

@@ -66,5 +66,15 @@ def test_a_new_signup_gets_the_starter_pieces():
     uid = make_user()
     give_starter_piece(uid)
     pieces = db.getPieces(uid)
-    assert len(pieces) == len(template_ids())
+    assert sorted(p["title"] for p in pieces) == ["Air", "Minuet in G", "Ode to Joy"]
     assert not {p["id"] for p in pieces} & set(template_ids())
+
+
+def test_seeding_adds_missing_starters_once():
+    from app import seed_starter_pieces
+    for p in db.getPieces(db.starterUser()):
+        if p["title"] != "Air":
+            db.deletePiece(db.starterUser(), p["id"])
+    seed_starter_pieces()
+    seed_starter_pieces()
+    assert sorted(p["title"] for p in db.getPieces(db.starterUser())) == ["Air", "Minuet in G", "Ode to Joy"]

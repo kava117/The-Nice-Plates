@@ -206,4 +206,4 @@ def test_a_new_google_account_starts_with_a_piece(guest):
         guest.get("/logout")
         guest.get("/auth/google")   # signing in again doesn't add a second copy
     uid = db.getOrCreateGoogleUser(sub=info["userinfo"]["sub"], name="New", email=info["userinfo"]["email"])["id"]
-    assert [p["title"] for p in db.getPieces(uid)] == ["Air"]
+    assert sorted(p["title"] for p in db.getPieces(uid)) == ["Air", "Minuet in G", "Ode to Joy"]

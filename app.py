@@ -45,14 +45,27 @@ if database.POSTGRES:
 elif os.environ.get("RENDER"):   # Render's disk is wiped on deploy and spin-down
     app.logger.warning("Database: SQLite on Render's disk. Accounts and sessions vanish on restart; set DATABASE_URL.")
 
+STARTER_PIECES = [
+    ("Air", "J. S. Bach", "AirOnG.musicxml"),
+    ("Ode to Joy", "L. van Beethoven", "OdeToJoy.musicxml"),
+    ("Minuet in G", "C. Petzold", "MinuetInG.musicxml"),
+]
+
+def seed_starter_pieces():
+    """What new accounts and guests get a copy of; added by title, so an older database gains the new ones."""
+    have = {p["title"] for p in database.getPieces(database.starterUser())}
+    for title, composer, file in STARTER_PIECES:
+        if title not in have:
+            with open(os.path.join(app.static_folder, file), "rb") as f:
+                database.addPiece(database.starterUser(), title, composer, xml=f.read())
+
 with app.app_context():
     database.init_db()
     database.migrate()
     air = lambda uid: database.addPiece(uid, "Air", "J. S. Bach", xml=open(app.static_folder + "/AirOnG.musicxml", "rb").read())
     if not database.getPieces(database.demoUser()):   # free hosting wipes the disk on restart: keep one piece to try
         air(database.demoUser())
-    if not database.getPieces(database.starterUser()):   # what new accounts and guests get a copy of
-        air(database.starterUser())
+    seed_starter_pieces()
 
 #handles logging in/out and passing credentials when required
 login_manager = LoginManager(app)

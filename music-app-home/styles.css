@@ -1298,6 +1298,8 @@ main {
   margin-bottom: 20px;
 }
 
+.upload-details { display: contents; }
+
 @media (min-width: 900px) {
   .upload-form {
     display: grid;

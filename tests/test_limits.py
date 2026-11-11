@@ -141,6 +141,12 @@ def test_upload_musicxml_end_to_end(user):
     x = client.get(f"/api/pieces/{pid}/musicxml")
     assert x.status_code == 200 and b"score-partwise" in x.data
 
+def test_an_untitled_upload_is_named_after_its_file_without_underscores(user):
+    client, uid = user
+    r = upload(client, "air_on_the-G_string.musicxml", AIR)
+    pid = int(r.location.split("=")[1])
+    assert [p["title"] for p in db.getPieces(uid) if p["id"] == pid] == ["air on the G string"]
+
 @known("Broken features: .mxl served zipped")
 def test_upload_mxl_is_served_as_musicxml_the_page_can_draw(user, tmp_path):
     from music21 import converter

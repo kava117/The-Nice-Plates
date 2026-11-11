@@ -35,9 +35,11 @@
   <form class="field upload-form" id="upload" action="/api/pieces" method="post" enctype="multipart/form-data" data-upload>
     <label for="sheet">Add a piece: a PDF, a photo, or a MusicXML file</label>
     <input class="input" id="sheet" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.musicxml,.xml,.mxl" required>
-    <input class="input" name="title" type="text" placeholder="Title (optional)">
-    <input class="input" name="composer" type="text" placeholder="Composer (optional)">
-    <button type="submit" class="btn btn-solid press">Upload</button>
+    <div class="upload-details" data-upload-details hidden>
+      <input class="input" name="title" type="text" placeholder="Title (optional)">
+      <input class="input" name="composer" type="text" placeholder="Composer (optional)">
+      <button type="submit" class="btn btn-solid press">Upload</button>
+    </div>
   </form>
   {% include "upload_status.html" %}
 

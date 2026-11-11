@@ -8,19 +8,14 @@
       <div class="content">
         <ul class="tiles">
           {% for p in pieces %}
-          {% set m = (seconds.get(p.id, 0) / 60)|round|int %}
           <li>
             <a class="card press" href="/practice?piece={{ p.id }}">
               <div class="card-art">
                 <img src="home_imgs/{{ ["sheet-fur-elise", "sheet-moonlight-sonata", "sheet-ode-to-joy"][loop.index0 % 3] }}.jpg" alt="">
-                <span class="progress" data-progress="{{ [m, 100]|min }}" style="--progress: {{ [m, 100]|min }}%">
-                  <span class="progress-fill"></span>
-                  <span class="progress-label">{{ m }} min practiced</span>
-                  <span class="progress-label progress-label--fill" aria-hidden="true">{{ m }} min practiced</span>
-                </span>
               </div>
               <div class="card-caption">
                 <h2 class="card-title">{{ p.title }}</h2>
+                <p class="card-practiced">{{ seconds.get(p.id, 0) | practiced }}</p>
               </div>
             </a>
           </li>

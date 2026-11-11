@@ -524,45 +524,11 @@ main {
   font-weight: 600;
 }
 
-/* Progress bar (signed in only). Flat: not interactive, so no edge or press.
-   Two copies of the label: the base one in --ink over the track, and a second
-   in --on-accent clipped to the filled width, so text stays readable across
-   the fill boundary. --progress is set inline on each bar. */
-.progress {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;               /* above the image and its tint */
-  width: 136px;
-  height: 28px;
-  overflow: hidden;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: 0.75rem;       /* 12px */
-  font-weight: 600;
-}
-
-.progress-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--progress);
-  background: var(--accent);
-}
-
-.progress-label {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.progress-label--fill {
-  color: var(--on-accent);
-  clip-path: inset(0 calc(100% - var(--progress)) 0 0);
+/* Practice time: a quiet line under the title (it used to be a badge over the art, which read like a grade). */
+.card-practiced {
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
 }
 
 /* 10. Actions tile ------------------------------------------------------- */
@@ -1020,14 +986,6 @@ main {
 
 .library-grid .card-art {
   --art-h: 8.5rem;
-}
-
-/* Smaller progress badge for the compact grid tiles (the default .progress
-   is sized for the wider piece tiles on home.html). */
-.progress--sm {
-  width: 56px;
-  height: 24px;
-  font-size: 0.7rem;
 }
 
 /* 18. Responsive ------------------------------------------------------------- */

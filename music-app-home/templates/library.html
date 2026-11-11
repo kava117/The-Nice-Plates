@@ -49,6 +49,7 @@
       <div class="card-caption">
         <div class="card-title">{{ piece.title }}</div>
         <div class="card-subtitle">{{ piece.composer or "" }}</div>
+        <div class="card-practiced">{{ seconds.get(piece.id, 0) | practiced }}</div>
       </div>
     </a></li>
     {% endfor %}

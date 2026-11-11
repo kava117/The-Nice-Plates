@@ -6,7 +6,7 @@
   var TOURS = {
     "/home": [
       { el: ".nav-list", title: "Getting around", text: "Library holds your pieces, Practice is where you play, and Progress shows how much you've practiced." },
-      { el: ".tiles .card", title: "Your pieces", text: "Click one to practice it. The bar on top shows the minutes you've put in." },
+      { el: ".tiles .card", title: "Your pieces", text: "Click one to practice it. The line under each title shows how long you've practiced it." },
       { el: ".upload-now", title: "Add your music", text: "Upload a PDF, a photo of the page or a MusicXML file. We turn it into sheet music you can play along with." },
       { el: "[data-tour-help]", title: "Help is here", text: "Every page has its own short tour. It's here whenever you need it." },
     ],

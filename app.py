@@ -103,6 +103,19 @@ def inject_year():
     return {"year": date.today().year, "me": me, "guest_account": guest_account}
 
 
+# {{ seconds | practiced }}: the quiet line under a piece's title, like "2h 15m practiced"
+@app.template_filter("practiced")
+def practiced(seconds):
+    m = round((seconds or 0) / 60)
+    if not seconds:
+        return "Not practiced yet"
+    if m < 1:
+        return "Under a minute practiced"
+    if m < 60:
+        return f"{m}m practiced"
+    return f"{m // 60}h {m % 60}m practiced" if m % 60 else f"{m // 60}h practiced"
+
+
 # 
 # the "current_user" data object has these attributes available on logged-in pages:
 # .id = database id value
@@ -403,7 +416,7 @@ def home():
 @app.route("/library")
 @onboarding_required
 def library():
-    return render_template("library.html", pieces=database.getPieces(user_id()))
+    return render_template("library.html", pieces=database.getPieces(user_id()), seconds=database.getPieceSeconds(user_id()))
 
 @app.route("/progress")
 @onboarding_required

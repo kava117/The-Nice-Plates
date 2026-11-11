@@ -766,6 +766,34 @@ main {
   background: var(--surface);
 }
 
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: 11rem 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.history-row:first-child { border-top: 0; }
+.history-when { font-variant-numeric: tabular-nums; opacity: 0.75; }
+.history-pieces a { color: inherit; }
+.history-none { opacity: 0.6; }
+.history-time { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  .history-row { grid-template-columns: 1fr auto; }
+  .history-pieces { grid-column: 1 / -1; grid-row: 2; }
+}
+
 .panel.unsaved {
   display: flex;
   align-items: center;

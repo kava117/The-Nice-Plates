@@ -19,8 +19,8 @@
         tryIt: "Or type bar numbers: put 1–4 in Bars and press Enter." },
       { el: "#play", around: ".tool-group", title: "Hear it", text: "Pick a passage and click Listen to loop it. Lower the tempo to practice it slowly." },
       { el: "#rep", title: "Count each try", text: "After each time through, answer Yes or Not yet. Or turn on Auto-mark and it listens through your microphone and answers for you." },
-      { el: "#record", around: ".tool-group", title: "Record yourself",
-        text: "Record a take of the passage or the whole piece. The session clock starts on its own; click Finish session when you're done for the day." },
+      { el: "#record", around: ".tool-main", title: "Record",
+        text: "Record a take of the passage or the whole piece. The session clock starts on its own; click Finish when you're done for the day." },
       { el: "#coach-toggle", title: "Ask the coach", text: "Stuck on some bars? The coach knows what you've practiced and suggests what to try next." },
     ],
     "/progress": [

@@ -241,6 +241,8 @@ def api_select_section():
 # The library's delete button (after its confirm dialog): the piece and everything saved against it.
 @app.route("/api/pieces/<int:piece_id>", methods=["DELETE"])
 def api_delete_piece(piece_id):
+    if not current_user.is_authenticated:   # signed-out visitors share the Sample User
+        return jsonify(error="login required"), 401
     if not database.deletePiece(user_id(), piece_id):
         abort(404)
     if session.get("current_piece_id") == piece_id:
@@ -264,17 +266,6 @@ def read_bars(data):
 
 def my_section(section_id):
     return database.getSectionForUser(user_id(), section_id) or abort(404)
-
-@app.route("/api/pieces/<int:piece_id>", methods=["DELETE"])
-def api_delete_piece(piece_id):
-    if not current_user.is_authenticated:   # signed-out visitors share the Sample User
-        return jsonify(error="login required"), 401
-    if not database.deletePiece(user_id(), piece_id):
-        abort(404)
-    if session.get("current_piece_id") == piece_id:
-        session.pop("current_piece_id")
-        session.pop("selected_section_id", None)
-    return "", 204
 
 @app.route("/api/account", methods=["PATCH"])
 def api_update_account():

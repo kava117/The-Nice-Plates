@@ -169,7 +169,7 @@ p {
 .frame {
   display: grid;
   grid-template-columns: 216px minmax(0, 1fr);
-  grid-template-rows: 44px minmax(0, 1fr);
+  grid-template-rows: minmax(44px, auto) minmax(0, 1fr);   /* grows with large text instead of clipping */
   height: 100vh;
   height: 100dvh;
 }
@@ -632,7 +632,7 @@ main {
 @media (max-width: 900px) {
   .frame {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 44px auto auto;
+    grid-template-rows: minmax(44px, auto) auto auto;
     height: auto;
     min-height: 100vh;
   }
@@ -1616,8 +1616,9 @@ kbd {
 
 /* 22. Passage row -------------------------------------------------------- */
 
+/* One line when it fits; with large text or 200% zoom the hints drop to a line of their own. */
 .passage-row {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .row-label {
@@ -1703,8 +1704,8 @@ kbd {
 }
 
 .bars-input {
-  width: 92px;
-  height: 32px;
+  width: 6.5em;             /* grows with the text size, so "e.g. 12–16" always fits */
+  min-height: 32px;
   padding: 0 8px;
   border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
@@ -2019,7 +2020,7 @@ kbd {
   }
 
   .bars-input {
-    width: 64px;
+    width: 5.5em;
   }
 
   .rep-row {
@@ -3123,7 +3124,7 @@ body.coach-open main {
 
 .passage-empty,
 .select-hint {
-  flex: 1 1 auto;
+  flex: 1 1 18em;
   min-width: 0;
   font-size: 0.8125rem;
   line-height: 1.35;
@@ -3464,4 +3465,19 @@ label.btn.is-disabled {
 :root[data-sidebar="collapsed"] .sidebar-toggle {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* 200% zoom on a laptop (about 640px wide): the passage row's short labels come in earlier. */
+@media (max-width: 760px) {
+  .wide-only {
+    display: none;
+  }
+
+  .bars-form label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
 }

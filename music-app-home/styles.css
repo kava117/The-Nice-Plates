@@ -24,9 +24,9 @@
   --sheet-tint: 45%;        /* how strongly --band covers the sheet music */
 
   /* Tokens that do not change with the theme. */
-  --depth: 4px;             /* press depth */
+  --depth: 0px;             /* the old 3D press edge, now flat; kept so rules that pad for it still work */
   --sheet-blur: 3px;
-  --radius: 12px;
+  --radius: 8px;            /* buttons, nav items, small panels */
   --radius-tile: 16px;
   --radius-sm: 8px;
 
@@ -141,18 +141,16 @@ p {
   top: 8px;
 }
 
-/* 3. Press effect (3D buttons) ------------------------------------------- */
+/* 3. Press effect --------------------------------------------------------- */
 
-/* Every pressable element carries the `press` class and sets its own --edge.
-   At rest it sits on a hard, unblurred edge; while pressed it drops by exactly
-   the edge depth and the edge disappears, so its bottom stays put.
-   The keyboard state (.is-pressed) is added by press.js. */
+/* Every pressable element carries the `press` class. Flat and calm: no bottom edge,
+   just a quiet colour change on hover and a 1px nudge while pressed. (--edge is still
+   set by some rules; it no longer draws anything.) The keyboard state (.is-pressed) is
+   added by press.js. Focus keeps the visible outline from :focus-visible above. */
 .press {
   --edge: var(--edge-neutral);
-  box-shadow: 0 var(--depth) 0 var(--edge);
   transition:
     transform 80ms ease-out,
-    box-shadow 80ms ease-out,
     background-color 0.15s,
     border-color 0.15s,
     color 0.15s;
@@ -160,8 +158,7 @@ p {
 
 .press:active,
 .press.is-pressed {
-  transform: translateY(var(--depth));
-  box-shadow: 0 0 0 var(--edge);
+  transform: translateY(1px);
 }
 
 /* 4. Page frame ---------------------------------------------------------- */
@@ -280,7 +277,7 @@ p {
 .nav-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;                /* leaves room for each item's bottom edge */
+  gap: 6px;
 }
 
 .nav-link {
@@ -389,12 +386,13 @@ p {
 }
 
 .btn-ghost {
-  --edge: var(--ink);
+  border-color: var(--edge-neutral);
   background: var(--surface);
   color: var(--ink);
 }
 
 .btn-ghost:hover {
+  border-color: var(--ink-muted);
   background: var(--bg);
 }
 

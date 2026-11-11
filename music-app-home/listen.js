@@ -256,7 +256,7 @@ function verdict(pass, number) {
   return { clean: false, why, slips: order.map(i => ({ bar: i, text: sentence(joined(bars.get(i))) })) };
 }
 
-// ---- the Listen button ----
+// ---- the Auto-mark button (it was called Listen; Listen now plays the score) ----
 
 // Hands the microphone's sound over from the audio thread, about 20 ms at a time.
 const TAP = `registerProcessor("tap", class extends AudioWorkletProcessor {
@@ -273,7 +273,7 @@ const TAP = `registerProcessor("tap", class extends AudioWorkletProcessor {
 
 const READY = "Play it through. I’ll mark it when you stop.";
 
-// button: Listen, in the rep row; status: the line beside it ("Was that clean?" while not listening).
+// button: Auto-mark, in the rep row; status: the line beside it ("Was that correct?" while not listening).
 // passages and player: passages.js and player.js; tempo: the tempo slider, a first guess at the pace.
 function addListening(osmd, { button, status }, { passages, player, tempo }) {
   const word = button.querySelector(".listen-word"), asked = status.textContent;
@@ -294,7 +294,7 @@ function addListening(osmd, { button, status }, { passages, player, tempo }) {
     button.setAttribute("aria-pressed", state !== "off");
     button.classList.toggle("is-on", state === "on");
     button.classList.toggle("is-starting", state === "starting");
-    word.textContent = state === "on" ? "Listening" : state === "starting" ? "Starting…" : "Listen";
+    word.textContent = state === "on" ? "Auto-marking" : state === "starting" ? "Starting…" : "Auto-mark";
     button.closest(".rep-row").classList.toggle("is-listening", state === "on");
     if (state === "off") { say(asked); button.style.removeProperty("--level"); }
   }
@@ -340,9 +340,9 @@ function addListening(osmd, { button, status }, { passages, player, tempo }) {
       console.error(err);
       state = "off";
       show();
-      passages.tell(err.name === "NotAllowedError" ? "The microphone is blocked for this page. Allow it from the address bar, then press Listen."
-        : err.name === "NotFoundError" ? "No microphone found. Plug one in, then press Listen."
-        : "Listening couldn’t start. Check the connection, then press Listen again.");
+      passages.tell(err.name === "NotAllowedError" ? "The microphone is blocked for this page. Allow it from the address bar, then press Auto-mark."
+        : err.name === "NotFoundError" ? "No microphone found. Plug one in, then press Auto-mark."
+        : "Auto-mark couldn’t start. Check the connection, then press Auto-mark again.");
     }
   }
 

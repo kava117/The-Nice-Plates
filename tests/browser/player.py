@@ -42,7 +42,7 @@ with sync_playwright() as p:
     play.click()   # Stop
     stopped_at = page.evaluate(where)
     page.wait_for_timeout(1000)
-    assert page.evaluate(where) == stopped_at and "Play" in play.inner_text(), "cursor kept moving after Stop"
+    assert page.evaluate(where) == stopped_at and "Listen" in play.inner_text(), "cursor kept moving after Stop"
 
     # half tempo from the beginning: about half as far in the same time
     page.locator("#cursor-reset").click()
@@ -55,7 +55,7 @@ with sync_playwright() as p:
     # Next while playing stops playback
     play.click(); page.wait_for_timeout(500)
     page.locator("#cursor-next").click()
-    assert "Play" in play.inner_text()
+    assert "Listen" in play.inner_text()
 
     # deep into the piece the score has scrolled, but Play/Stop must still be on screen and clickable
     for width, height in ((1280, 720), (375, 700)):
@@ -65,12 +65,13 @@ with sync_playwright() as p:
         page.wait_for_timeout(1500)                                          # let the smooth scroll finish
         on_top = page.evaluate("""() => {
             const b = document.getElementById('play').getBoundingClientRect();
-            return document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2) === document.getElementById('play');
+            const at = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+            return !!at && at.closest('#play') === document.getElementById('play');   // its icon or label counts
         }""")
         scrolled = page.evaluate("Math.max(document.querySelector('main').scrollTop, window.scrollY)")
-        assert scrolled > 300 and on_top, f"{width} px: scrolled {scrolled}, Play reachable: {on_top}"
+        assert scrolled > 300 and on_top, f"{width} px: scrolled {scrolled}, Listen reachable: {on_top}"
         play.click(); page.wait_for_function("document.getElementById('play').textContent.includes('Stop')")
-        play.click(); assert "Play" in play.inner_text()
+        play.click(); assert "Listen" in play.inner_text()
 
     assert not errors, errors
     browser.close()

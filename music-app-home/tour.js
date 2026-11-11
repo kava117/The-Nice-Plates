@@ -5,34 +5,34 @@
 (function () {
   var TOURS = {
     "/home": [
-      { el: ".nav-list", title: "Getting around", text: "Library holds your pieces, Practice is where you play, and Progress shows your time." },
-      { el: ".tiles .card", title: "Your pieces", text: "Click one to practice it. The bar on top shows the minutes you've put in." },
-      { el: ".upload-now", title: "Add your music", text: "Upload a PDF, a photo of the page or a MusicXML file. It becomes a score you can play along with." },
+      { el: ".nav-list", title: "Getting around", text: "Library holds your pieces, Practice is where you play, and Progress shows how much you've practiced." },
+      { el: ".tiles .card", title: "Your pieces", text: "Click one to practice it. The line under each title shows how long you've practiced it." },
+      { el: ".upload-now", title: "Add your music", text: "Upload a PDF, a photo of the page or a MusicXML file. We turn it into sheet music you can play along with." },
       { el: "[data-tour-help]", title: "Help is here", text: "Every page has its own short tour. It's here whenever you need it." },
     ],
     "/library": [
-      { el: "#upload", title: "Add a piece", text: "A PDF, a photo of the page or a MusicXML file. A photo can take half a minute to read." },
+      { el: "#upload", title: "Add a piece", text: "Upload a PDF, a photo of the page or a MusicXML file. Turning it into sheet music can take up to a minute." },
       { el: ".library-grid .card", title: "Open a piece", text: "Click a piece to practice it." },
     ],
     "/practice": [
-      { el: ".passage-row", title: "Pick a passage", text: "Work on a few bars at a time. Drag across them on the score, or type them here, and Play loops just those.",
-        tryIt: "Try it: type 1-4 in Bars and press Enter." },
-      { el: "#play", around: ".tool-group", title: "Hear it", text: "Play follows along on the score. Slow the tempo right down while you learn it." },
-      { el: "#rep", title: "Count each go", text: "Play it through, then say if it went clean. Or press Listen and it marks each go for you." },
+      { el: ".passage-row", title: "Make a passage", text: "A passage is a few bars you practice on their own. Click + New passage, then drag across those bars on the sheet music.",
+        tryIt: "Or type bar numbers: put 1–4 in Bars and press Enter." },
+      { el: "#play", around: ".tool-group", title: "Hear it", text: "Pick a passage and click Listen to loop it. Lower the tempo to practice it slowly." },
+      { el: "#rep", title: "Count each try", text: "After each time through, answer Yes or Not yet. Or turn on Auto-mark and it listens through your microphone and answers for you." },
       { el: "#timer", around: ".tool-group", title: "Time your practice",
-        text: "Press Start practice when you sit down. When you're done, Stop and save — that minute lands on Progress." },
+        text: "Start practice times your session. Click Finish session when you're done, and the time shows up on Progress." },
       { el: "#coach-toggle", title: "Ask the coach", text: "Stuck on some bars? The coach knows what you've practiced and suggests what to try next." },
     ],
     "/progress": [
       { el: ".panel.unsaved", title: "How time gets here",
-        text: "Nothing shows until a session is saved. On Practice: Start practice, then Stop and save." },
+        text: "Nothing shows here until you finish a session. On Practice, click Start practice, then Finish session." },
       { el: ".practice-panel", title: "This week",
-        text: "Minutes practiced each day. They appear after you press Stop and save on Practice." },
+        text: "Minutes practiced each day, added when you click Finish session on Practice." },
       { el: ".donut-row", title: "Your pieces",
         text: "How many pieces you've practiced, out of everything in your library." },
     ],
     "/settings": [
-      { el: "#settings-account", title: "You and your level", text: "Your account, and the playing levels you picked. Update them any time." },
+      { el: "#settings-account", title: "You and your level", text: "Your account, and the playing levels you picked. You can change them any time." },
     ],
   };
   var OFFER = ["/home", "/practice"];   // the first pages people land on; others have just the ?

@@ -122,9 +122,9 @@ with sync_playwright() as p:
     page.locator("#record").click()
     lane.wait_for(state="visible")
     page.locator("#record").click()
-    assert page.locator("#record").inner_text() == "Record a take" and lane.is_hidden()
+    assert page.locator("#record").inner_text() == "Record yourself" and lane.is_hidden()
     page.wait_for_timeout(4500)
-    assert page.locator("#record").inner_text() == "Record a take", "a cancelled count-in started recording anyway"
+    assert page.locator("#record").inner_text() == "Record yourself", "a cancelled count-in started recording anyway"
 
     assert not errors, errors
     print(f"ok: {len(trail)} pitches, {on:.0%} in tune, new pitch on screen in {max(lags):.0f} ms")

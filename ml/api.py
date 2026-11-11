@@ -170,7 +170,7 @@ def add_piece():
             return library_error(f"Couldn't find sheet music in {src.name}. Try a sharper photo, straight on, in good light.")
         except Exception:
             logging.exception(src.name)  # the page gets a plain message; the server log keeps the cause
-            return library_error(f"Could not read {src.name}. Upload a PDF, a photo of a score, or a MusicXML file.")
+            return library_error(f"Could not read {src.name}. Upload a PDF, a photo of sheet music, or a MusicXML file.")
         piece_id = database.addPiece(user_id(), request.form.get("title") or src.stem,
                                      request.form.get("composer") or None, xml=xml.read_bytes(), midi=mid.read_bytes())
     return redirect(f"/practice?piece={piece_id}")

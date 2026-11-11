@@ -20,13 +20,14 @@
   --on-accent-2: #F6EEDA;
   --line: #D9CBA9;          /* thin dividers and borders */
   --accent-edge: #1E3D28;   /* bottom edge of accent pressables */
-  --edge-neutral: #B8A67C;  /* bottom edge of neutral pressables */
+  --edge-neutral: #B8A67C;  /* soft border of neutral buttons */
+  --control-edge: #857558;  /* text-box borders: 3:1 against every background (WCAG 1.4.11) */
   --sheet-tint: 45%;        /* how strongly --band covers the sheet music */
 
   /* Tokens that do not change with the theme. */
-  --depth: 4px;             /* press depth */
+  --depth: 0px;             /* the old 3D press edge, now flat; kept so rules that pad for it still work */
   --sheet-blur: 3px;
-  --radius: 12px;
+  --radius: 8px;            /* buttons, nav items, small panels */
   --radius-tile: 16px;
   --radius-sm: 8px;
 
@@ -43,13 +44,14 @@
   --band: #263A3B;          /* dark teal */
   --ink: #F0E6CF;
   --ink-muted: #B9B09C;
-  --accent: #3EC5BB;        /* turquoise */
-  --on-accent: #14201F;
+  --accent: #6FBF8A;        /* sage green: the light theme's forest green, lit for a dark page */
+  --on-accent: #14201A;
   --accent-2: #E9DCBC;      /* cream */
   --on-accent-2: #1D1F22;
   --line: #3A3D43;
-  --accent-edge: #2B8A83;
+  --accent-edge: #3F8A5A;
   --edge-neutral: #15171A;
+  --control-edge: #80858E;
   --sheet-tint: 78%;
 }
 
@@ -141,18 +143,16 @@ p {
   top: 8px;
 }
 
-/* 3. Press effect (3D buttons) ------------------------------------------- */
+/* 3. Press effect --------------------------------------------------------- */
 
-/* Every pressable element carries the `press` class and sets its own --edge.
-   At rest it sits on a hard, unblurred edge; while pressed it drops by exactly
-   the edge depth and the edge disappears, so its bottom stays put.
-   The keyboard state (.is-pressed) is added by press.js. */
+/* Every pressable element carries the `press` class. Flat and calm: no bottom edge,
+   just a quiet colour change on hover and a 1px nudge while pressed. (--edge is still
+   set by some rules; it no longer draws anything.) The keyboard state (.is-pressed) is
+   added by press.js. Focus keeps the visible outline from :focus-visible above. */
 .press {
   --edge: var(--edge-neutral);
-  box-shadow: 0 var(--depth) 0 var(--edge);
   transition:
     transform 80ms ease-out,
-    box-shadow 80ms ease-out,
     background-color 0.15s,
     border-color 0.15s,
     color 0.15s;
@@ -160,8 +160,7 @@ p {
 
 .press:active,
 .press.is-pressed {
-  transform: translateY(var(--depth));
-  box-shadow: 0 0 0 var(--edge);
+  transform: translateY(1px);
 }
 
 /* 4. Page frame ---------------------------------------------------------- */
@@ -170,7 +169,7 @@ p {
 .frame {
   display: grid;
   grid-template-columns: 216px minmax(0, 1fr);
-  grid-template-rows: 48px minmax(0, 1fr);
+  grid-template-rows: minmax(44px, auto) minmax(0, 1fr);   /* grows with large text instead of clipping */
   height: 100vh;
   height: 100dvh;
 }
@@ -182,8 +181,8 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 0 24px var(--depth);   /* bottom padding leaves room for the press edge */
+  gap: 8px;
+  padding: 0 16px;
   background: var(--band);
   border-bottom: 1px solid var(--line);
 }
@@ -254,18 +253,18 @@ p {
 .sidebar {
   display: flex;
   flex-direction: column;
-  padding: 16px 12px 20px;
+  padding: 14px 12px 16px;
   overflow-y: auto;
   background: var(--band);
   border-right: 1px solid var(--line);
 }
 
-/* Logo and app name: a plain link, not pressable. */
+/* Logo and app name, at the left of the top bar: a plain link, not pressable. */
 .brand {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-right: auto;       /* everything else sits at the right */
   padding-left: 2px;
   font-family: var(--font-display);
   font-size: 1.1rem;        /* 17.6px */
@@ -280,7 +279,7 @@ p {
 .nav-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;                /* leaves room for each item's bottom edge */
+  gap: 6px;
 }
 
 .nav-link {
@@ -389,12 +388,13 @@ p {
 }
 
 .btn-ghost {
-  --edge: var(--ink);
+  border-color: var(--edge-neutral);
   background: var(--surface);
   color: var(--ink);
 }
 
 .btn-ghost:hover {
+  border-color: var(--ink-muted);
   background: var(--bg);
 }
 
@@ -454,6 +454,11 @@ main {
   max-width: 960px;
 }
 
+/* Home and Library: the cards use the whole width, so a wide screen isn't half empty. */
+.content--wide {
+  max-width: 1600px;
+}
+
 /* Two equal columns; used by the piece/actions tiles and the stat tiles. */
 .tiles,
 .stats {
@@ -462,8 +467,13 @@ main {
   gap: 20px;
 }
 
+/* Home's few tiles (up to 3 pieces and the actions tile) stretch to fill the row. */
+.tiles {
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+
 .stats {
-  margin-top: 20px;
+  margin-bottom: 20px;      /* at the top of Home, above the pieces */
 }
 
 .tiles > li {
@@ -526,45 +536,11 @@ main {
   font-weight: 600;
 }
 
-/* Progress bar (signed in only). Flat: not interactive, so no edge or press.
-   Two copies of the label: the base one in --ink over the track, and a second
-   in --on-accent clipped to the filled width, so text stays readable across
-   the fill boundary. --progress is set inline on each bar. */
-.progress {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;               /* above the image and its tint */
-  width: 136px;
-  height: 28px;
-  overflow: hidden;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: 0.75rem;       /* 12px */
-  font-weight: 600;
-}
-
-.progress-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--progress);
-  background: var(--accent);
-}
-
-.progress-label {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.progress-label--fill {
-  color: var(--on-accent);
-  clip-path: inset(0 calc(100% - var(--progress)) 0 0);
+/* Practice time: a quiet line under the title (it used to be a badge over the art, which read like a grade). */
+.card-practiced {
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
 }
 
 /* 10. Actions tile ------------------------------------------------------- */
@@ -645,6 +621,10 @@ main {
   font-size: 0.8125rem;     /* 13px */
 }
 
+.content--wide ~ .site-footer {
+  max-width: 1600px;        /* ...and with the wide Home and Library */
+}
+
 /* 13. Responsive --------------------------------------------------------- */
 
 /* At 900px and below the sidebar becomes a wrapping row under the top bar
@@ -652,7 +632,7 @@ main {
 @media (max-width: 900px) {
   .frame {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 48px auto auto;
+    grid-template-rows: minmax(44px, auto) auto auto;
     height: auto;
     min-height: 100vh;
   }
@@ -673,10 +653,6 @@ main {
     border-bottom: 1px solid var(--line);
   }
 
-  .brand {
-    margin-bottom: 0;
-  }
-
   .nav-list {
     flex-direction: row;
     flex-wrap: wrap;
@@ -693,9 +669,6 @@ main {
     padding: 20px 16px 32px;
   }
 
-  .tiles {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 @media (max-width: 480px) {
@@ -1004,11 +977,12 @@ main {
   --art-h: 14rem;
 }
 
-/* 17. Library grid (4 columns, more compact tiles than the home .tiles) --- */
+/* 17. Library grid: as many columns as fit; the view size (library.html) sets --card-min --- */
 
 .library-grid {
+  --card-min: 220px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--card-min), 100%), 1fr));
   gap: 20px;
   margin: 0;
   padding: 0;
@@ -1024,14 +998,6 @@ main {
   --art-h: 8.5rem;
 }
 
-/* Smaller progress badge for the compact grid tiles (the default .progress
-   is sized for the wider piece tiles on home.html). */
-.progress--sm {
-  width: 56px;
-  height: 24px;
-  font-size: 0.7rem;
-}
-
 /* 18. Responsive ------------------------------------------------------------- */
 
 @media (max-width: 900px) {
@@ -1041,15 +1007,6 @@ main {
     gap: 12px;
   }
 
-  .library-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 480px) {
-  .library-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 /* ==========================================================================
    Additions for settings.html: form fields, toggle switches, and the
@@ -1086,7 +1043,7 @@ main {
 /* Inputs and selects: flat, not pressable. */
 .input {
   padding: 8px 12px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--ink);
@@ -1094,7 +1051,13 @@ main {
 }
 
 .input:hover {
-  border-color: var(--edge-neutral);
+  border-color: var(--ink-muted);
+}
+
+/* Placeholders at full strength: muted colour alone keeps them AA (4.5:1) in both themes. */
+::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
 }
 
 .field-actions {
@@ -1343,13 +1306,42 @@ body[data-auth="guest"] .welcome {
   cursor: default;
 }
 
-/* Play is the one button used every minute: accent outline, fixed width so Stop doesn't shift the row. */
+/* Listen: a secondary button; fixed width so Stop doesn't shift the row. */
 .tool-play {
-  --edge: var(--accent-edge);
-  min-width: 88px;
+  min-width: 96px;
   justify-content: center;
+}
+
+.tool-icon {
+  flex: none;
+}
+
+/* Start practice is the page's main action: the one solid button in the toolbar. */
+.tool-primary {
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+.tool-primary.is-running {
+  --edge: var(--edge-neutral);
   border-color: var(--accent);
+  background: var(--surface);
   color: var(--accent);
+}
+
+.back-link {
+  gap: 4px;
+  padding-left: 8px;
+}
+
+.bars-input::placeholder {
+  color: var(--ink-muted);
+  font-style: italic;         /* reads as an example, never as a typed selection */
+  opacity: 1;
 }
 
 .tempo {
@@ -1402,11 +1394,11 @@ body[data-auth="guest"] .welcome {
 }
 
 .take-name {
-  width: 8.5em;
+  width: 11em;
   font: inherit;
   font-size: 0.8125rem;
   padding: 6px 8px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
@@ -1430,9 +1422,9 @@ body[data-auth="guest"] .welcome {
   gap: 12px;
 }
 
-/* Record a take keeps one width as it reads Record a take, Cancel, Stop recording: the toolbar doesn't jump. */
+/* Record yourself keeps one width as it reads Record yourself, Cancel, Stop recording: the toolbar doesn't jump. */
 #record {
-  min-width: 10.5em;
+  min-width: 11.5em;
   justify-content: center;
 }
 
@@ -1624,8 +1616,9 @@ kbd {
 
 /* 22. Passage row -------------------------------------------------------- */
 
+/* One line when it fits; with large text or 200% zoom the hints drop to a line of their own. */
 .passage-row {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .row-label {
@@ -1711,10 +1704,10 @@ kbd {
 }
 
 .bars-input {
-  width: 76px;
-  height: 32px;
+  width: 6.5em;             /* grows with the text size, so "e.g. 12–16" always fits */
+  min-height: 32px;
   padding: 0 8px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--ink);
@@ -2027,7 +2020,7 @@ kbd {
   }
 
   .bars-input {
-    width: 64px;
+    width: 5.5em;
   }
 
   .rep-row {
@@ -2465,7 +2458,7 @@ body.coach-open main {
   flex: 1;
   min-width: 0;
   padding: 7px 10px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--control-edge);
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--ink);
@@ -2481,7 +2474,7 @@ body.coach-open main {
 
 .coach-input::placeholder {
   color: var(--ink-muted);
-  opacity: 0.8;
+  opacity: 1;
 }
 
 .coach-send {
@@ -3045,4 +3038,446 @@ body.coach-open main {
 
 .welcome .sign-in-agree {
   margin-top: 4px;
+}
+
+/* 25. Making and deleting passages (passages.js) ------------------------- */
+
+/* + New passage: stands out (solid) until the piece has its first passage. */
+.new-passage {
+  flex: none;
+}
+
+.new-passage.is-first {
+  --edge: var(--accent-edge);
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.new-passage[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--ink);
+}
+
+.chips[hidden],
+.passage-empty[hidden],
+.select-hint[hidden] {
+  display: none;
+}
+
+/* A chip and its delete button read as one pill. */
+.chip-wrap {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.chip-wrap .chip {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-right: 6px;
+}
+
+.chip-wrap.is-on {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.chip-wrap.is-draft {
+  border-style: dashed;
+}
+
+.chip-delete,
+.rep-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.chip-delete {
+  width: 28px;
+  height: 28px;
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.chip-delete:hover,
+.rep-delete:hover {
+  color: var(--rec);
+  background: color-mix(in srgb, var(--rec) 10%, transparent);
+}
+
+.chip-delete:focus-visible {
+  outline-offset: 0;
+}
+
+.passage-empty,
+.select-hint {
+  flex: 1 1 18em;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+.select-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+  padding: 4px 12px;
+  border-left: 3px solid var(--accent);
+  color: var(--ink);
+}
+
+.select-hint > span {
+  flex: 1 1 18em;
+}
+
+.select-hint-more {
+  color: var(--ink-muted);
+}
+
+/* While picking a new passage, the score says it's waiting for a drag. */
+.score-bars.is-selecting .score-bar {
+  cursor: crosshair;
+}
+
+.score-bars.is-selecting .score-bar:hover {
+  background: rgba(47, 93, 62, 0.12);
+}
+
+.chips.is-alone {
+  flex: none;
+}
+
+.rep-question {
+  display: flex;
+  flex: 0 1 24em;
+  flex-direction: column;
+  min-width: 12em;
+  line-height: 1.3;
+}
+
+.rep-help {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 600px) {
+  .wide-only,
+  .select-hint-more,
+  .rep-help {
+    display: none;
+  }
+
+  .rep-question {
+    display: none;            /* the phone layout already drops the question; Yes / Not yet stay */
+  }
+
+  .bars-form label {          /* still named for screen readers; the chips get the room */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+
+/* 26. Toast (toast.js): brief, never in the way ---------------------------- */
+
+.toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  animation: toast-in 0.18s ease-out;
+}
+
+.toast-action {
+  padding: 4px 10px;
+  border: 1.5px solid color-mix(in srgb, var(--bg) 55%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toast-action:hover {
+  background: color-mix(in srgb, var(--bg) 15%, transparent);
+}
+
+.toast-action:focus-visible {
+  outline-color: var(--bg);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+.tool.is-recording .tool-icon {
+  display: none;            /* the pulsing dot takes its place */
+}
+
+/* 27. Upload progress (upload.js, upload_status.html) --------------------- */
+
+.upload-status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.upload-status[hidden] {
+  display: none;
+}
+
+.upload-status.is-error {
+  border-color: var(--rec);
+}
+
+.upload-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.upload-stages li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A ring for each step: filled once done, outlined and bold while current. */
+.upload-stages li::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.upload-stages li.is-current {
+  color: var(--ink);
+}
+
+.upload-stages li.is-current::before {
+  border-color: var(--accent);
+}
+
+.upload-stages li.is-done {
+  color: var(--accent);
+}
+
+.upload-stages li.is-done::before {
+  background: currentColor;
+}
+
+.upload-status.is-error .upload-stages {
+  display: none;              /* a failure says what went wrong, not which step it reached */
+}
+
+.upload-message {
+  font-weight: 600;
+}
+
+.upload-status.is-error .upload-message {
+  color: var(--rec);
+}
+
+.upload-status.is-busy .upload-message::after {
+  content: "";
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-left: 8px;
+  vertical-align: -0.1em;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: upload-spin 0.9s linear infinite;
+}
+
+@keyframes upload-spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.upload-bar[hidden] {
+  display: none;
+}
+
+.upload-bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.upload-actions[hidden] {
+  display: none;
+}
+
+label.btn.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-status.is-busy .upload-message::after {
+    animation: none;
+  }
+}
+
+/* 28. Onboarding skip ----------------------------------------------------- */
+
+.onboarding-skip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 4px 0 24px;
+}
+
+.onboarding-skip-note {
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+/* 29. First-passage hint (passages.js): by the sheet music until the first passage --- */
+
+.first-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--band);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.first-hint[hidden] {
+  display: none;
+}
+
+.first-hint svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+/* 30. A tighter top bar (header.html) ----------------------------------- */
+
+.topbar .theme-toggle,
+.topbar .tour-help {
+  width: 32px;
+  height: 32px;
+}
+
+.topbar .btn {
+  padding: 6px 14px;
+  letter-spacing: 0.02em;
+}
+
+/* 31. Collapsible sidebar (theme.js) ------------------------------------- */
+
+.sidebar-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+  border-color: var(--ink-muted);
+  background: var(--bg);
+}
+
+:root[data-sidebar="collapsed"] .frame {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:root[data-sidebar="collapsed"] .sidebar {
+  display: none;
+}
+
+:root[data-sidebar="collapsed"] .sidebar-toggle {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 200% zoom on a laptop (about 640px wide): the passage row's short labels come in earlier. */
+@media (max-width: 760px) {
+  .wide-only {
+    display: none;
+  }
+
+  .bars-form label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
 }

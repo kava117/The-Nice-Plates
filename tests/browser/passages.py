@@ -30,7 +30,12 @@ with sync_playwright() as p:
     assert page.locator(".score-bar").count() == 37, "one box per bar of Air"
     assert not page.locator("#rep").is_visible()
 
-    # drag from bar 3 to bar 6: a passage, not saved until its first rep
+    # no passages yet: the empty state points to + New passage, which says how
+    assert page.locator("#passage-empty").is_visible()
+    page.locator("#new-passage").click()
+    assert "Drag across the bars you want to practice." in page.locator("#select-hint").inner_text()
+
+    # drag from bar 3 to bar 6: a passage, saved as soon as the drag ends
     def drag(a, b):
         one, two = page.locator(f'.score-bar[data-index="{a}"]').bounding_box(), page.locator(f'.score-bar[data-index="{b}"]').bounding_box()
         page.mouse.move(one["x"] + 20, one["y"] + one["height"] / 2)
@@ -40,17 +45,17 @@ with sync_playwright() as p:
         page.mouse.up()
         page.wait_for_timeout(400)
     drag(2, 5)
-    assert title.inner_text() == "Bars 3-6" and page.evaluate(bar_at) == 2
-    assert page.locator(".chip.is-draft").count() == 1 and api(f"/api/pieces/{piece}/sections") == []
-    assert page.locator(".score-bar.in").count() == 4
+    assert title.inner_text() == "Bars 3–6" and page.evaluate(bar_at) == 2
+    assert [(s["start"], s["end"], s["reps"]) for s in api(f"/api/pieces/{piece}/sections")] == [(3, 6, 0)]
+    assert page.locator(".score-bar.in").count() == 4 and "Passage saved" in page.locator("#toast").inner_text()
 
-    # a rep saves it, and starts the practice timer
+    # a rep starts the practice timer
     page.keyboard.press("y"); page.wait_for_timeout(400)
     saved = api(f"/api/pieces/{piece}/sections")
     assert [(s["start"], s["end"], s["reps"], s["clean"]) for s in saved] == [(3, 6, 1, 1)], saved
     assert page.locator("#timer").inner_text() == "Pause", "a rep should start the timer"
     assert api("/api/practice/state")["section_id"] == saved[0]["id"], "the timer start overwrote the remembered passage"
-    assert note.inner_text() == "Clean: 1 of 3 in a row."
+    assert note.inner_text() == "Correct: 1 of 3 in a row."
 
     # Next stays inside the passage and goes round; Shift+Right a bar at a time
     seen = set()
@@ -67,13 +72,13 @@ with sync_playwright() as p:
     page.locator("#tempo").fill("70"); page.wait_for_timeout(100)
     for _ in range(3):
         page.keyboard.press("y"); page.wait_for_timeout(300)
-    assert note.inner_text() == "3 clean in a row at 46 bpm.", note.inner_text()
+    assert note.inner_text() == "3 correct in a row at 46 bpm.", note.inner_text()
     page.get_by_role("button", name="Try 53 bpm").click()
     assert page.locator("#tempo").input_value() == "80" and page.locator("#tempo-label").inner_text() == "53 bpm"
     page.keyboard.press("n"); page.wait_for_timeout(300)
     page.keyboard.press("n"); page.wait_for_timeout(300)
     assert page.get_by_role("button", name="Slow to 46 bpm").is_visible()
-    page.get_by_role("button", name="Undo").click(); page.wait_for_timeout(300)
+    page.get_by_role("button", name="Undo last answer").click(); page.wait_for_timeout(300)
     assert api(f"/api/pieces/{piece}/sections")[0]["reps"] == 5
 
     # Play loops one bar: the cursor never leaves bar 3 and comes back to its start
@@ -90,7 +95,7 @@ with sync_playwright() as p:
     assert {b for b, _ in path} == {2}, f"left the passage: {path}"
     beats = [t for _, t in path]
     assert any(later < earlier for earlier, later in zip(beats, beats[1:])), "never went round"
-    assert "Play" in page.locator("#play").inner_text()
+    assert "Listen" in page.locator("#play").inner_text()
 
     # arrows on the tempo slider change the tempo, not the cursor
     at = page.evaluate(bar_at)
@@ -104,11 +109,11 @@ with sync_playwright() as p:
     page.locator('.score-bar[data-index="9"]').click(position={"x": 10, "y": 60})
     assert page.evaluate(bar_at) == 9 and not page.locator("#rep").is_visible()
     page.keyboard.press("["); page.keyboard.press("Shift+ArrowRight"); page.keyboard.press("Shift+ArrowRight"); page.keyboard.press("]")
-    assert title.inner_text() == "Bars 10-12", title.inner_text()
+    assert title.inner_text() == "Bars 10–12", title.inner_text()
 
     # a bar number that isn't in the piece is refused
     page.locator("#bars-input").fill("400"); page.keyboard.press("Enter")
-    assert title.inner_text() == "Bars 10-12" and not page.evaluate("document.getElementById('bars-input').validity.valid")
+    assert title.inner_text() == "Bars 10–12" and not page.evaluate("document.getElementById('bars-input').validity.valid")
     page.locator("#bars-input").fill("")
 
     # the two handles move either end of the passage, like a range slider's thumbs
@@ -120,19 +125,26 @@ with sync_playwright() as p:
         assert page.evaluate("getSelection().type") != "Range", "dragging selected text (and can scroll the page under the pointer)"
         return title.inner_text()
     assert page.locator(".passage-handle").count() == 2
-    assert pull("end", 13) == "Bars 10-14" and pull("start", 11) == "Bars 12-14"
+    moving = next(s["id"] for s in api(f"/api/pieces/{piece}/sections") if s["start"] == 10)
+    assert pull("end", 13) == "Bars 10–14" and pull("start", 11) == "Bars 12–14"
     assert pull("start", 13) == "Bar 14", "the start handle can't pass the end"
+    page.wait_for_timeout(900)   # the new bars save after a pause, as the same passage
+    assert [(s["start"], s["end"]) for s in api(f"/api/pieces/{piece}/sections") if s["id"] == moving] == [(14, 14)]
 
     # coming back opens the passage practiced last
-    page.locator(".chip", has_text="3-6").click(); page.wait_for_timeout(300)
+    page.locator(".chip", has_text="3–6").click(); page.wait_for_timeout(300)
     page.reload()
     page.wait_for_function("!document.getElementById('play').disabled"); page.wait_for_timeout(800)
-    assert title.inner_text() == "Bars 3-6" and page.evaluate(bar_at) == 2
+    assert title.inner_text() == "Bars 3–6" and page.evaluate(bar_at) == 2
 
-    # Remove asks first
-    page.get_by_role("button", name="Remove").click()
-    assert "5 reps" in note.inner_text()
-    page.locator("#rep-actions").get_by_role("button", name="Remove").click(); page.wait_for_timeout(400)
+    # Delete is gone at once, with Undo for 5 seconds instead of a question
+    page.locator("#rep-delete").click(); page.wait_for_timeout(300)
+    assert not page.locator("#rep").is_visible() and page.locator(".toast-action").inner_text() == "Undo"
+    page.locator(".toast-action").click(); page.wait_for_timeout(300)
+    assert title.inner_text() == "Bars 3–6" and [s["reps"] for s in api(f"/api/pieces/{piece}/sections") if s["end"] == 6] == [5]
+    for _ in range(page.locator(".chip-delete").count()):
+        page.locator(".chip-delete").first.click(); page.wait_for_timeout(300)
+    page.wait_for_timeout(5500)
     assert api(f"/api/pieces/{piece}/sections") == [] and not page.locator("#rep").is_visible()
 
     # phone width: nothing scrolls sideways, and the rep buttons are on screen

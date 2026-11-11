@@ -103,6 +103,19 @@ def inject_year():
     return {"year": date.today().year, "me": me, "guest_account": guest_account}
 
 
+# {{ seconds | practiced }}: the quiet line under a piece's title, like "2h 15m practiced"
+@app.template_filter("practiced")
+def practiced(seconds):
+    m = round((seconds or 0) / 60)
+    if not seconds:
+        return "Not practiced yet"
+    if m < 1:
+        return "Under a minute practiced"
+    if m < 60:
+        return f"{m}m practiced"
+    return f"{m // 60}h {m % 60}m practiced" if m % 60 else f"{m // 60}h practiced"
+
+
 # 
 # the "current_user" data object has these attributes available on logged-in pages:
 # .id = database id value
@@ -237,6 +250,18 @@ def api_add_section(piece_id):
     section_id, created = database.addSection(piece_id, *bars)
     return jsonify(database.getSectionRecord(section_id)), 201 if created else 200
 
+# Dragging a passage's handles moves its bars; its reps stay with it.
+@app.route("/api/sections/<int:section_id>", methods=["PUT"])
+def api_move_section(section_id):
+    my_section(section_id)
+    bars = read_bars(request.get_json(silent=True) or {})
+    if not bars:
+        return jsonify(error=f"start and end must be bar numbers from 1 to {MAX_BAR}, start first"), 400
+    other = database.moveSection(section_id, *bars)
+    if other:
+        return jsonify(error="those bars are already a passage", passage=database.getSectionRecord(other)), 409
+    return jsonify(database.getSectionRecord(section_id))
+
 @app.route("/api/sections/<int:section_id>", methods=["DELETE"])
 def api_delete_section(section_id):
     my_section(section_id)
@@ -245,6 +270,8 @@ def api_delete_section(section_id):
         session.pop("selected_section_id")
     return "", 204
 
+# "clean" is what the page now calls "correct" ("Was that correct?"); the field, the Section_Reps
+# column and the coach's record keep the old name, so saved data and the coach stay as they were.
 @app.route("/api/sections/<int:section_id>/reps", methods=["POST"])
 def api_add_rep(section_id):
     my_section(section_id)
@@ -353,7 +380,8 @@ def onboarding():
         return redirect(url_for("home"))
     current = database.getUserProficiency(current_user.id)
     if request.method == "POST":
-        levels = read_levels(request.form)
+        # "Skip — I'm just starting out": the first, beginner level in every category
+        levels = dict.fromkeys(database.PROFICIENCY_FIELDS, 1) if request.form.get("skip") == "beginner" else read_levels(request.form)
         if len(levels) == len(database.PROFICIENCY_FIELDS):
             database.setUserProficiency(current_user.id, **levels)
             return redirect(url_for("home") if current["onboarded_at"] is None else url_for("settings"))
@@ -390,7 +418,7 @@ def home():
 @app.route("/library")
 @onboarding_required
 def library():
-    return render_template("library.html", pieces=database.getPieces(user_id()))
+    return render_template("library.html", pieces=database.getPieces(user_id()), seconds=database.getPieceSeconds(user_id()))
 
 @app.route("/progress")
 @onboarding_required

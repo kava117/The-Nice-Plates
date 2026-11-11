@@ -334,7 +334,7 @@ def test_home_and_progress_show_saved_practice(user):
     pid = db.addPiece(uid, "Counted", xml=AIR)
     db.addSession(uid, 3 * 3600 + 25 * 60, piece_ids=[pid])
     home = client.get("/home").get_data(as_text=True)
-    assert "3h 25m" in home and "205 min practiced" in home and "1 day<" in home
+    assert "3h 25m" in home and "3h 25m practiced" in home and "1 day<" in home
     prog = client.get("/progress").get_data(as_text=True)
     assert 'height: 100%' in prog
 
@@ -462,3 +462,17 @@ def test_guest_practice_and_timer_after_sign_in(guest):
     stop = guest.post("/api/timer/stop").get_json()
     assert "time_spent" in stop
     assert guest.get("/progress").status_code == 200
+
+
+def test_practiced_line_reads_like_time_not_a_grade():
+    from support import appmod
+    f = appmod.practiced
+    assert [f(0), f(20), f(60 * 45), f(3600 * 2), f(3600 * 2 + 60 * 15)] == [
+        "Not practiced yet", "Under a minute practiced", "45m practiced", "2h practiced", "2h 15m practiced"]
+
+
+def test_library_shows_practice_time_under_each_title(user):
+    client, uid = user
+    pid = db.addPiece(uid, "Gavotte", None, xml=AIR)
+    db.addSession(uid, 3 * 3600 + 25 * 60, None, piece_ids=[pid])
+    assert "3h 25m practiced" in client.get("/library").get_data(as_text=True)

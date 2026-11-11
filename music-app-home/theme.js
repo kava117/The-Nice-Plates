@@ -1,5 +1,5 @@
-/* Theme handling, shared by both pages.
-   Loaded in <head> WITHOUT defer so the theme is set before first paint.
+/* Theme handling, shared by both pages, and the sidebar's collapsed state.
+   Loaded in <head> WITHOUT defer so both are set before first paint.
    Priority: saved choice, then the OS setting, then light. */
 (function () {
   var KEY = "theme";
@@ -49,5 +49,31 @@
     root.setAttribute("data-theme", next);
     save(next);
     updateLabel();
+  });
+})();
+
+/* The sidebar: the toggle in the top bar hides it so the page gets the full width, and the
+   choice is remembered between visits (data-sidebar="collapsed" on <html>, set before paint). */
+(function () {
+  var KEY = "sidebar", root = document.documentElement;
+  try { if (localStorage.getItem(KEY) === "collapsed") root.setAttribute("data-sidebar", "collapsed"); } catch (e) {}
+
+  function sync() {
+    var button = document.querySelector("[data-sidebar-toggle]");
+    if (!button) return;
+    var collapsed = root.getAttribute("data-sidebar") === "collapsed";
+    var label = collapsed ? "Show the menu" : "Hide the menu";
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", label);
+    button.title = label;
+  }
+  document.addEventListener("DOMContentLoaded", sync);
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest("[data-sidebar-toggle]")) return;
+    var collapsed = root.getAttribute("data-sidebar") !== "collapsed";
+    if (collapsed) root.setAttribute("data-sidebar", "collapsed"); else root.removeAttribute("data-sidebar");
+    try { localStorage.setItem(KEY, collapsed ? "collapsed" : "open"); } catch (e) {}
+    sync();
+    window.dispatchEvent(new Event("resize"));   // the sheet music re-flows into the new width
   });
 })();

@@ -76,11 +76,35 @@ function keepCursorInView(osmd) {
   }
 }
 
+// Beat length (seconds at the score's tempo × the slider) and beats per bar, from the cursor.
+function beatOf(osmd, speed) {
+  const it = osmd.cursor && osmd.cursor.Iterator;
+  const bpm = (it && it.CurrentBpm) || (osmd.Sheet && osmd.Sheet.DefaultStartTempoInBpm) || 80;
+  const time = it && it.CurrentMeasure && it.CurrentMeasure.ActiveTimeSignature;
+  const perBar = (time && time.Numerator) || 4;
+  const denom = (time && time.Denominator) || 4;
+  return { beat: (4 / denom) * 60 / bpm / speed, perBar };
+}
+
+// A short click on Tone's clock, so it lands on the same transport time as the notes and cursor.
+function toneTick(time, first, bus) {
+  const ctx = Tone.getContext().rawContext;
+  const tone = new OscillatorNode(ctx, { frequency: first ? 1760 : 1320 });
+  const level = new GainNode(ctx, { gain: 0 });
+  level.gain.setValueAtTime(0, time);
+  level.gain.linearRampToValueAtTime(first ? 0.5 : 0.35, time + 0.002);
+  level.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+  tone.connect(level).connect(bus);
+  tone.start(time);
+  tone.stop(time + 0.07);
+}
+
 // button toggles Listen / Stop (its .tool-label; the icon stays); tempo is a range input in percent of the score's tempo.
 // passage() gives the picked bars as {first, last} measure indexes (0-based), or null for the
 // whole piece; toStart() puts the cursor on the passage's first note.
-function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) {
-  let piano, playing = false, followWas = true;
+// metro() is true when the metronome should click with Listen; setTicks(on) mutes mid-play.
+function addPlayer(osmd, button, tempo, { passage = () => null, toStart, metro = () => false } = {}) {
+  let piano, playing = false, followWas = true, clickBus = null;
   const word = button.querySelector(".tool-label") || button;
   const say = (text, state) => { word.textContent = text; button.dataset.state = state; };
 
@@ -96,12 +120,17 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
       }).toDestination();
       await Tone.loaded();
     }
+    if (!clickBus) {
+      clickBus = new GainNode(Tone.getContext().rawContext, { gain: metro() ? 1 : 0 });
+      clickBus.connect(Tone.getContext().rawContext.destination);
+    }
     if (!playing) return;   // Stop was pressed while loading
     schedule();
     say("Stop", "playing");
   }
 
   // Plays from the cursor to the end of the piece, or to the end of the passage and round again.
+  // Notes, cursor steps and metronome ticks all share Tone's transport, so they stay locked.
   function schedule() {
     const bars = passage(), at = osmd.cursor.Iterator;
     if (bars && (at.EndReached || at.CurrentMeasureIndex < bars.first || at.CurrentMeasureIndex > bars.last)) toStart();
@@ -114,21 +143,28 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
     osmd.FollowCursor = false;   // our keepCursorInView handles the scroll, clear of the toolbar
     transport.cancel();
     transport.position = 0;
+    clickBus.gain.setValueAtTime(metro() ? 1 : 0, Tone.now());
     events.forEach((event, i) => transport.schedule(time => {
       for (const note of event.notes) piano.triggerAttackRelease(Tone.Frequency(note.midi, "midi").toFrequency(), note.seconds / speed, time, 0.7);
       if (i > 0) draw.schedule(() => { osmd.cursor.next(); keepCursorInView(osmd); }, time);   // step 0 is where the cursor already is
     }, event.seconds / speed));
     keepCursorInView(osmd);
     const end = events.end ?? events.at(-1).seconds + Math.max(0, ...events.at(-1).notes.map(n => n.seconds));
+    const { beat, perBar } = beatOf(osmd, speed);
+    const until = end / speed;
+    for (let t = 0, i = 0; t <= until + 1e-6; t += beat, i++) {
+      const first = i % perBar === 0;
+      transport.schedule(time => toneTick(time, first, clickBus), t);
+    }
     if (bars) {
-      const beat = 60 / (osmd.Sheet.DefaultStartTempoInBpm || 80);   // one beat of quiet, then back to the first bar
+      const gap = 60 / (osmd.Sheet.DefaultStartTempoInBpm || 80);   // one beat of quiet, then back to the first bar
       transport.schedule(time => draw.schedule(() => {
         if (!playing) return;
         transport.stop();
         toStart();
         keepCursorInView(osmd);
         schedule();
-      }, time), (end + beat) / speed);
+      }, time), (end + gap) / speed);
     } else {
       transport.schedule(time => draw.schedule(stop, time), end / speed);
     }
@@ -150,5 +186,9 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart } = {}) 
   button.addEventListener("click", () => playing ? stop() : play());
   tempo.addEventListener("change", () => { if (playing) { stop(); play(); } });   // carry on from the cursor at the new speed
   addEventListener("pagehide", stop);
-  return { stop, get playing() { return playing; } };
+  return {
+    stop,
+    get playing() { return playing; },
+    setTicks(on) { if (clickBus) clickBus.gain.setValueAtTime(on ? 1 : 0, Tone.now()); },
+  };
 }

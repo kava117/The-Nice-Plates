@@ -263,6 +263,26 @@ def api_delete_piece(piece_id):
         session.pop("selected_section_id", None)
     return "", 204
 
+@app.route("/api/account", methods=["PATCH"])
+def api_update_account():
+    if not current_user.is_authenticated:
+        return jsonify(error="login required"), 401
+    name = str((request.get_json(silent=True) or {}).get("name", "")).strip()
+    if not 1 <= len(name) <= 60:
+        return jsonify(error="Name must be 1 to 60 characters."), 400
+    database.setUserName(user_id(), name)
+    return jsonify(name=name)
+
+@app.route("/api/account", methods=["DELETE"])
+def api_delete_account():
+    if not current_user.is_authenticated:
+        return jsonify(error="login required"), 401
+    uid = user_id()
+    logout_user()
+    clear_practice_state()
+    database.deleteAccount(uid)
+    return "", 204
+
 @app.route("/api/pieces/<int:piece_id>/sections")
 def api_sections(piece_id):
     database.getPieceForUser(user_id(), piece_id) or abort(404)

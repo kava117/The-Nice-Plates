@@ -9,20 +9,21 @@
 
       <h1 class="visually-hidden">Settings</h1>
 
-      <!-- TODO: none of these controls are wired up yet; Save and the
-           account buttons do nothing. Values below are SAMPLE DATA. -->
       <div class="content">
-        <form class="settings" action="#" onsubmit="return false">
+        <form class="settings" id="settings" novalidate>
           <section class="panel" aria-labelledby="settings-account">
             <h2 class="section-title" id="settings-account">Account</h2>
             <div class="field">
               <label for="display-name">Display name</label>
-              <input class="input" id="display-name" type="text" value="{{ me.name }}" autocomplete="name">
+              <input class="input" id="display-name" type="text" value="{{ me.name }}" autocomplete="name" maxlength="60" required
+                     {% if not current_user.is_authenticated %}disabled{% endif %}>
+              <p class="field-error" id="name-error" hidden></p>
             </div>
-            {% if not guest_account %}
+            {% if current_user.is_authenticated and not guest_account %}
             <div class="field">
               <label for="email">Email</label>
-              <input class="input" id="email" type="email" value="{{ me.email }}" autocomplete="email">
+              <input class="input" id="email" type="email" value="{{ me.email }}" readonly aria-describedby="email-hint">
+              <p class="field-hint" id="email-hint">From your Google account.</p>
             </div>
             {% endif %}
             {% if current_user.is_authenticated and levels and levels.onboarded_at %}
@@ -53,45 +54,108 @@
             <h2 class="section-title" id="settings-practice">Practice</h2>
             <div class="field">
               <label for="daily-goal">Daily practice goal</label>
-              <select class="input" id="daily-goal">
-                <option>15 minutes</option>
-                <option selected>30 minutes</option>
-                <option>45 minutes</option>
-                <option>1 hour</option>
+              <select class="input" id="daily-goal" aria-describedby="goal-hint">
+                <option value="15">15 minutes</option>
+                <option value="30" selected>30 minutes</option>
+                <option value="45">45 minutes</option>
+                <option value="60">1 hour</option>
               </select>
+              <p class="field-hint" id="goal-hint">Progress shows today against this.</p>
             </div>
             <label class="switch-row">
               <span>
-                <span class="switch-title">Practice reminders</span>
-                <span class="switch-hint">A daily nudge if you haven't practiced yet.</span>
+                <span class="switch-title">Show time practiced on piece tiles</span>
+                <span class="switch-hint">The line under each piece on Home and Library.</span>
               </span>
-              <input class="switch" type="checkbox" checked>
-            </label>
-            <label class="switch-row">
-              <span>
-                <span class="switch-title">Show progress on piece tiles</span>
-                <span class="switch-hint">The progress badge on your home and library tiles.</span>
-              </span>
-              <input class="switch" type="checkbox" checked>
+              <input class="switch" id="tile-progress" type="checkbox" checked>
             </label>
           </section>
 
-          {% if not guest_account %}
+          {% if current_user.is_authenticated and not guest_account %}
           <section class="panel" aria-labelledby="settings-danger">
-            <h2 class="section-title" id="settings-danger">Account actions</h2>
+            <h2 class="section-title" id="settings-danger">Delete account</h2>
+            <p class="switch-hint">Removes your pieces, recordings and practice history. This can't be undone.</p>
             <div class="field-actions">
-              <button type="button" class="btn btn-ghost press">Log out of all devices</button>
-              <button type="button" class="btn btn-danger press">Delete account</button>
+              <button type="button" class="btn btn-danger press" id="delete-start">Delete account</button>
+            </div>
+            <div class="confirm-delete" id="delete-confirm" hidden>
+              <p>Type <strong>delete</strong> to confirm.</p>
+              <div class="field-actions">
+                <input class="input" id="delete-word" autocomplete="off" aria-label="Type delete to confirm">
+                <button type="button" class="btn btn-danger press" id="delete-go" disabled>Delete everything</button>
+                <button type="button" class="btn btn-ghost press" id="delete-cancel">Cancel</button>
+              </div>
             </div>
           </section>
           {% endif %}
 
           <div class="settings-save">
-            <button type="submit" class="btn btn-solid press">Save changes</button>
+            <button type="submit" class="btn btn-solid press" id="save" disabled>Save changes</button>
           </div>
         </form>
       </div>
-      
-    {% include "footer.html" %} 
+
+<script src="/toast.js"></script>
+<script>
+  (() => {
+    const form = document.getElementById("settings");
+    const name = document.getElementById("display-name");
+    const goal = document.getElementById("daily-goal");
+    const tiles = document.getElementById("tile-progress");
+    const save = document.getElementById("save");
+    const err = document.getElementById("name-error");
+    const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch (e) { return d; } };
+    const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+    goal.value = get("daily-goal", "30");
+    tiles.checked = get("tile-progress", "on") !== "off";
+    let saved = { name: name.value, goal: goal.value, tiles: tiles.checked };
+    const dirty = () => name.value.trim() !== saved.name || goal.value !== saved.goal || tiles.checked !== saved.tiles;
+    form.addEventListener("input", () => { save.disabled = !dirty(); err.hidden = true; });
+    window.addEventListener("beforeunload", e => { if (dirty()) e.preventDefault(); });
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const n = name.value.trim();
+      if (!n) { err.textContent = "Enter a name."; err.hidden = false; name.focus(); return; }
+      save.disabled = true;
+      if (n !== saved.name) {
+        const r = await fetch("/api/account", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: n }) });
+        if (!r.ok) {
+          err.textContent = (await r.json().catch(() => ({}))).error || "Couldn't save your name. Try again.";
+          err.hidden = false; save.disabled = false; return;
+        }
+        document.querySelectorAll("[data-user-name]").forEach(el => el.textContent = n);
+        document.querySelectorAll("[data-user-initials]").forEach(el => el.textContent = n.split(/\s+/).slice(0, 2).map(w => w[0]).join(""));
+        document.querySelector(".account")?.setAttribute("aria-label", "Account: " + n);
+      }
+      set("daily-goal", goal.value);
+      set("tile-progress", tiles.checked ? "on" : "off");
+      if (tiles.checked) document.documentElement.removeAttribute("data-tile-progress");
+      else document.documentElement.setAttribute("data-tile-progress", "off");
+      name.value = n;
+      saved = { name: n, goal: goal.value, tiles: tiles.checked };
+      toast("Settings saved");
+    });
+
+    const start = document.getElementById("delete-start");
+    if (start) {
+      const box = document.getElementById("delete-confirm");
+      const word = document.getElementById("delete-word");
+      const go = document.getElementById("delete-go");
+      start.addEventListener("click", () => { box.hidden = false; start.hidden = true; word.focus(); });
+      document.getElementById("delete-cancel").addEventListener("click", () => { box.hidden = true; start.hidden = false; word.value = ""; go.disabled = true; start.focus(); });
+      word.addEventListener("input", () => { go.disabled = word.value.trim().toLowerCase() !== "delete"; });
+      go.addEventListener("click", async () => {
+        go.disabled = true;
+        const r = await fetch("/api/account", { method: "DELETE" });
+        if (r.ok) { saved = { name: name.value.trim(), goal: goal.value, tiles: tiles.checked }; location.href = "/"; }
+        else { go.disabled = false; toast("Couldn't delete the account. Try again."); }
+      });
+    }
+  })();
+</script>
+
+    {% include "footer.html" %}
     </main>
   </div>

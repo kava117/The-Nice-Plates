@@ -52,6 +52,11 @@
   });
 })();
 
+/* Settings that live in this browser: tile progress badges off sets data-tile-progress="off". */
+(function () {
+  try { if (localStorage.getItem("tile-progress") === "off") document.documentElement.setAttribute("data-tile-progress", "off"); } catch (e) {}
+})();
+
 /* The sidebar: the toggle in the top bar hides it so the page gets the full width, and the
    choice is remembered between visits (data-sidebar="collapsed" on <html>, set before paint). */
 (function () {

@@ -625,6 +625,8 @@ main {
   color: var(--ink-muted);
 }
 
+[data-tile-progress="off"] .card-practiced { display: none; }
+
 .card-subtitle + .card-practiced {
   margin-top: 4px;
 }
@@ -1419,8 +1421,16 @@ main {
 .settings-save {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
   margin-top: 20px;
 }
+
+.field-hint { margin-top: 4px; font-size: 0.8125rem; color: var(--ink-muted); }
+.field-error { margin-top: 4px; font-size: 0.8125rem; color: var(--accent-2); }
+
+.confirm-delete { margin-top: 14px; }
+.confirm-delete p { margin-bottom: 10px; }
 
 @media (prefers-reduced-motion: reduce) {
   .switch,

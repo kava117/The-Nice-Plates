@@ -236,6 +236,15 @@ def read_bars(data):
 def my_section(section_id):
     return database.getSectionForUser(user_id(), section_id) or abort(404)
 
+@app.route("/api/pieces/<int:piece_id>", methods=["DELETE"])
+def api_delete_piece(piece_id):
+    if not database.deletePiece(user_id(), piece_id):
+        abort(404)
+    if session.get("current_piece_id") == piece_id:
+        session.pop("current_piece_id")
+        session.pop("selected_section_id", None)
+    return "", 204
+
 @app.route("/api/pieces/<int:piece_id>/sections")
 def api_sections(piece_id):
     database.getPieceForUser(user_id(), piece_id) or abort(404)

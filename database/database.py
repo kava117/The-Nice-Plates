@@ -486,6 +486,18 @@ def moveSection(section_id, start, end):
         database.execute("UPDATE Sections SET start_measure = ?, end_measure = ? WHERE id = ?", (start, end, section_id))
         return None
 
+def deletePiece(user_id, piece_id):
+    """removes a piece and everything hanging off it; returns whether it was this user's"""
+    with get_db() as database:
+        if not database.execute("SELECT 1 FROM Pieces WHERE id = ? AND user_id = ?", (piece_id, user_id)).fetchone():
+            return False
+        database.execute("DELETE FROM Section_Reps WHERE section_id IN (SELECT id FROM Sections WHERE piece_id = ?)", (piece_id,))
+        database.execute("DELETE FROM Sections WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Recordings WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Session_Pieces WHERE piece_id = ?", (piece_id,))
+        database.execute("DELETE FROM Pieces WHERE id = ?", (piece_id,))
+        return True
+
 def deleteSection(section_id):
     with get_db() as database:
         database.execute("DELETE FROM Sections WHERE id = ?", (section_id,))   # its reps go too (ON DELETE CASCADE)

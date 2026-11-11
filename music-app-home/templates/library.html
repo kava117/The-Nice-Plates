@@ -44,14 +44,17 @@
 
   <ul class="library-grid">
     {% for piece in pieces %}
-    <li><a class="card" href="/practice?piece={{ piece.id }}">
+    <li class="card-wrap" data-piece="{{ piece.id }}" data-title="{{ piece.title }}"><a class="card" href="/practice?piece={{ piece.id }}">
       <div class="card-art" data-thumb="{{ piece.id }}"></div>
       <div class="card-caption">
         <div class="card-title">{{ piece.title }}</div>
         <div class="card-subtitle">{{ piece.composer or "" }}</div>
         <div class="card-practiced">{{ seconds.get(piece.id, 0) | practiced }}</div>
       </div>
-    </a></li>
+    </a>
+    <button type="button" class="card-delete press" aria-label="Delete {{ piece.title }}" title="Delete this piece">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+    </button></li>
     {% endfor %}
   </ul>
   <script>
@@ -63,10 +66,26 @@
       });
       document.querySelector(".library-grid").style.setProperty("--card-min", { compact: "150px", normal: "220px", large: "320px" }[b.dataset.density]);
     });
+
+    // Delete: the card goes at once, with Undo for 5 seconds; the server delete waits until then.
+    const pending = new Map();
+    const sendDelete = id => fetch(`/api/pieces/${id}`, { method: "DELETE", keepalive: true });
+    document.querySelectorAll(".card-delete").forEach(btn => btn.addEventListener("click", () => {
+      const li = btn.closest(".card-wrap"), id = li.dataset.piece;
+      li.hidden = true;
+      pending.set(id, li);
+      toast(`Deleted “${li.dataset.title}”`, {
+        action: "Undo", ms: 5000,
+        onAction: () => { pending.delete(id); li.hidden = false; },
+        onEnd: () => { if (pending.delete(id)) { sendDelete(id); li.remove(); } },
+      });
+    }));
+    addEventListener("pagehide", () => { pending.forEach((_, id) => sendDelete(id)); pending.clear(); });
   </script>
 
 </div>
 
 <script src="/upload.js"></script>
 <script src="/thumbs.js"></script>
+<script src="/toast.js"></script>
 {% include "footer.html" %}

@@ -1052,6 +1052,48 @@ main {
   flex-direction: column;
 }
 
+.card-wrap {
+  position: relative;
+}
+
+.card-wrap[hidden] {
+  display: none;
+}
+
+/* Bin in the art's corner: quiet until the card is hovered or focused. */
+.card-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.card-wrap:hover .card-delete,
+.card-delete:focus-visible {
+  opacity: 1;
+}
+
+.card-delete:hover {
+  color: var(--rec);
+}
+
+@media (hover: none) {
+  .card-delete {
+    opacity: 1;
+  }
+}
+
 .library-grid .card-art {
   --art-h: 10rem;
 }

@@ -25,7 +25,7 @@ function scoreEvents(start, keep) {
       for (const note of entry.Notes) {
         if (note.isRest() || (note.NoteTie && note.NoteTie.StartNote !== note)) continue;   // a tie sounds once, for its whole length
         const length = entry.IsGrace ? 1 / 32 : (note.NoteTie ? note.NoteTie.Duration : note.Length).RealValue;
-        notes.push({ midi: note.halfTone + 12, seconds: length * 4 * 60 / bpm, pitch: note.Pitch });
+        notes.push({ midi: note.halfTone + 12, seconds: length * 4 * 60 / bpm, pitch: note.Pitch, staff: entry.ParentSourceStaffEntry.ParentStaff.idInMusicSheet });
       }
     }
     events.push({ seconds, measure: it.CurrentMeasureIndex, notes });

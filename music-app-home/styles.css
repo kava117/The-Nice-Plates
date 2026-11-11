@@ -1056,6 +1056,85 @@ main {
   --art-h: 10rem;
 }
 
+/* Delete: a small button over the card's top-right corner (a sibling of the card's link, not inside it) */
+.library-grid > li {
+  position: relative;
+}
+
+.card-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.card-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+.library-grid > li:hover .card-delete,
+.card-delete:focus-visible {
+  opacity: 1;
+}
+
+.card-delete:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+@media (hover: none) {   /* touch screens have no hover: always show it */
+  .card-delete { opacity: 1; }
+}
+
+/* Confirm dialog (library delete) */
+.confirm-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-tile);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.confirm-dialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.confirm-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.confirm-text {
+  margin: 0 0 20px;
+  font-size: 0.9375rem;
+  color: var(--ink-muted);
+}
+
+.confirm-text strong {
+  color: var(--ink);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* 18. Responsive ------------------------------------------------------------- */
 
 @media (max-width: 900px) {

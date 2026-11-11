@@ -222,6 +222,19 @@ def api_select_section():
     return jsonify(practice_state())
 
 
+# The library's delete button (after its confirm dialog): the piece and everything saved against it.
+@app.route("/api/pieces/<int:piece_id>", methods=["DELETE"])
+def api_delete_piece(piece_id):
+    if not database.deletePiece(user_id(), piece_id):
+        abort(404)
+    if session.get("current_piece_id") == piece_id:
+        session.pop("current_piece_id")
+        session.pop("selected_section_id", None)   # its passages are gone with it
+    if piece_id in session.get("session_piece_ids", []):   # a running timer would save a link to a missing piece
+        session["session_piece_ids"] = [p for p in session["session_piece_ids"] if p != piece_id]
+    return "", 204
+
+
 # ---- Passages: bars picked out of a piece to practice (Sections), and each time through them (Section_Reps) ----
 MAX_BAR = 10000
 

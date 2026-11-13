@@ -4290,7 +4290,10 @@ label.btn.is-disabled {
   gap: 10px;
 }
 
-.review-section { margin: 0; }
+.review-section,
+.review .panel + .panel { margin: 0; }   /* the column's gap spaces them, once */
+
+.review ~ .site-footer { max-width: 880px; }   /* lines up with the column above */
 
 .review-section-head {
   display: flex;

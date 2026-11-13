@@ -34,7 +34,7 @@
   <section class="panel review-section" aria-labelledby="takes-title">
     <div class="review-section-head">
       <h2 class="review-h" id="takes-title">Recordings</h2>
-      <span class="review-count">{{ takes|length }} of {{ max_takes }} kept</span>
+      <span class="review-count" title="A new recording replaces the oldest">{{ takes|length }} of {{ max_takes }} kept</span>
     </div>
     {% if takes %}
     <ul class="take-list" id="take-list">
@@ -51,7 +51,6 @@
       </li>
       {% endfor %}
     </ul>
-    <p class="review-note">The latest {{ max_takes }} recordings of each piece are kept. A new one replaces the oldest.</p>
     {% else %}
     <p class="review-note" id="take-empty">No recordings of this piece yet. On Practice, press Record and play; the take lands here.</p>
     {% endif %}
@@ -74,8 +73,8 @@
             <span class="review-meter" aria-hidden="true"><span style="width: {{ (s.clean * 100 / s.reps)|round|int }}%"></span></span>
             {{ s.clean }} of {{ s.reps }}
           </td>
-          <td>{{ s.best_tempo ~ " %" if s.best_tempo else "–" }}</td>
-          <td>{{ s.last_practiced[:10] if s.last_practiced else "–" }}</td>
+          <td>{{ s.best_tempo ~ "%" if s.best_tempo else "–" }}</td>
+          <td>{% if s.last_practiced %}<time datetime="{{ s.last_practiced }}">{{ s.last_practiced[:10] }}</time>{% else %}–{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -139,7 +138,7 @@
   document.querySelectorAll("time[datetime]").forEach(t => {
     const raw = t.getAttribute("datetime"), d = new Date(raw.includes("T") ? raw : raw.replace(" ", "T") + "Z");
     if (Number.isNaN(d.getTime())) return;
-    t.textContent = t.closest(".session-list")
+    t.textContent = t.closest(".session-list, .review-table")
       ? d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })
       : d.toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
   });

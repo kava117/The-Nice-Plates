@@ -4386,6 +4386,18 @@ label.btn.is-disabled {
 
 .review-table tbody th { font-weight: 600; }
 
+/* A passage's bars go straight back to practicing them. */
+.review-bars {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-bars:hover,
+.review-bars:focus-visible { text-decoration-color: var(--accent); }
+
 .review-meter {
   display: inline-block;
   width: 64px;

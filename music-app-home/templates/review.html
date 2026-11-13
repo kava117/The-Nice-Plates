@@ -73,7 +73,7 @@
       <tbody>
         {% for s in sections %}
         <tr>
-          <th scope="row">{{ s.start if s.start == s.end else s.start ~ "–" ~ s.end }}</th>
+          <th scope="row"><a class="review-bars" href="/practice?piece={{ piece.id }}&amp;passage={{ s.id }}" aria-label="Practice bars {{ s.start }} to {{ s.end }}" title="Practice these bars">{{ s.start if s.start == s.end else s.start ~ "–" ~ s.end }}</a></th>
           <td>{{ s.reps }}</td>
           <td>
             <span class="review-meter" aria-hidden="true"><span style="width: {{ (s.clean * 100 / s.reps)|round|int }}%"></span></span>

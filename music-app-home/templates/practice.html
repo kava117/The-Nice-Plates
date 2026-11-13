@@ -167,7 +167,10 @@
       document.getElementById("score-loading").hidden = true;
       play.disabled = false;
       showTempo();
-      passages.ready((await firstState).section_id);   // back on the passage the last visit left on
+      // a passage named in the link (Review's "Practice these bars"), else the one the last visit left on
+      const linked = Number(new URLSearchParams(location.search).get("passage"));
+      if (linked) history.replaceState(null, "", `/practice?piece=${piece}`);
+      passages.ready(linked || (await firstState).section_id);
     } catch (err) {
       console.error("Couldn't load song:", err);
       const loading = document.getElementById("score-loading");

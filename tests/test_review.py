@@ -27,6 +27,7 @@ def test_review_lists_the_takes_and_the_passages(user):
     page = client.get(f"/review?piece={pid}").get_data(as_text=True)
     assert "Morning run" in page
     assert "2–5" in page and "90%" in page
+    assert f"/practice?piece={pid}&amp;passage={sid}" in page   # the bars open Practice on that passage
 
 
 def test_review_ignores_someone_elses_piece(user):

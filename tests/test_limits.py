@@ -340,7 +340,7 @@ def test_home_and_progress_show_saved_practice(user):
     pid = db.addPiece(uid, "Counted", xml=AIR)
     db.addSession(uid, 3 * 3600 + 25 * 60, piece_ids=[pid])
     home = client.get("/home").get_data(as_text=True)
-    assert 'data-stat="time">3h 25m<' in home and 'data-stat="streak">1<' in home and "day streak" in home
+    assert 'data-stat="time">3h 25m<' in home and 'data-stat="streak">1 day<' in home
     prog = client.get("/progress").get_data(as_text=True)
     assert 'height: 100%' in prog
 

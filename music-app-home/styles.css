@@ -469,166 +469,35 @@ main {
 
 /* Home and Library: the cards use the whole width, so a wide screen isn't half empty. */
 .content--wide {
-  max-width: 1200px;        /* laptop-first: a readable column, not edge-to-edge sprawl */
+  max-width: 1600px;
 }
 
-/* Home: top bar (stats + primary actions), then an even grid of pieces. */
-.home {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.home-top {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px 32px;
-  padding-bottom: 22px;
-  border-bottom: 1.5px solid var(--line);
-}
-
-.home-kicker {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-}
-
-.home-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home-stats li {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.home-stat-value {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums tabular-nums;
-  font-size: 1.375rem;
-  line-height: 1;
-}
-
-.home-stat-label {
-  font-size: 0.875rem;
-  color: var(--ink-muted);
-}
-
-.home-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.home-actions .btn {
-  min-height: 48px;
-  padding-left: 18px;
-  padding-right: 18px;
-  font-size: 0.9375rem;
-  letter-spacing: normal;
-}
-
-.home-actions .btn-stack { min-width: 12rem; }
-.home-actions .upload-now { flex: 0 0 auto; }
-
-.home-grid {
+/* Two equal columns; used by the piece/actions tiles and the stat tiles. */
+.tiles,
+.stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
-.home-grid > li {
-  display: flex;
-  min-width: 0;
-  animation: tile-in 0.4s ease both;
-}
-
-.home-grid > li:nth-child(1) { animation-delay: 0.02s; }
-.home-grid > li:nth-child(2) { animation-delay: 0.08s; }
-.home-grid > li:nth-child(3) { animation-delay: 0.14s; }
-
-@keyframes tile-in {
-  from { opacity: 0; transform: translateY(6px); }
-}
-
-.home-grid .card {
-  width: 100%;
-}
-
-.home-grid .card-art {
-  height: auto;
-  aspect-ratio: 960 / 420;
-  background-color: #fffdf5;
-}
-
-.home-grid .card-title {
-  font-family: var(--font-display);
-  font-size: 1.1875rem;
-  font-weight: 400;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-grid .card-caption {
-  padding: 14px 16px 16px;
-}
-
-.home-more {
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.home-more a { color: var(--ink-muted); }
-.home-more a:hover { color: var(--ink); }
-
-.home-empty {
-  margin: 0;
-  padding: 28px 4px;
-  color: var(--ink-muted);
-  font-size: 1rem;
-  line-height: 1.45;
-}
-
-@media (max-width: 960px) {
-  .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 600px) {
-  .home { gap: 20px; }
-  .home-top { gap: 16px; padding-bottom: 16px; }
-  .home-kicker { font-size: 1.5rem; }
-  .home-actions { width: 100%; }
-  .home-actions .btn,
-  .home-actions .upload-now { flex: 1 1 auto; }
-  .home-grid { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* Library still uses .tiles for its denser card layouts. */
+/* Home's few tiles (up to 3 pieces and the actions tile) stretch to fill the row. */
 .tiles {
-  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-  gap: 20px;
+}
+
+.stats {
+  margin-bottom: 20px;      /* at the top of Home, above the pieces */
 }
 
 .tiles > li {
   display: flex;
   flex-direction: column;
+}
+
+/* Home's piece tiles: the sharp preview fills the tile from the top of the music. */
+.tiles .card-art img {
+  object-fit: cover;
+  object-position: center top;
 }
 
 /* 9. Piece tiles --------------------------------------------------------- */
@@ -723,7 +592,7 @@ main {
 
 /* 10. Actions tile ------------------------------------------------------- */
 
-/* A plain container: not a link, not pressable. Same staff paper as empty cards. */
+/* A plain container: not a link, not pressable. */
 .actions {
   display: flex;
   flex: 1;
@@ -731,14 +600,7 @@ main {
   gap: 12px;
   padding: 16px 16px 20px;  /* extra bottom room for the buttons' edges */
   border-radius: var(--radius-tile);
-  background-color: var(--band);
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0 10px,
-    color-mix(in srgb, var(--ink) 10%, transparent) 10px 11px
-  );
-  background-size: 100% 56px;
-  background-position: center 12%;
+  background: var(--band);
 }
 
 .actions .btn {
@@ -808,7 +670,13 @@ main {
 }
 
 .content--wide ~ .site-footer {
-  max-width: 1600px;        /* ...and with the wide Home and Library */
+  max-width: 1200px;        /* ...and with the wide Home and Library */
+}
+
+/* Pages with a column sit in the middle of a big screen, with the footer under them. */
+.content,
+.content ~ .site-footer {
+  margin-inline: auto;
 }
 
 /* 13. Responsive --------------------------------------------------------- */
@@ -1054,6 +922,29 @@ main {
 
 .bar-group.is-today span { color: var(--ink); font-weight: 700; }
 .bar-group:not(.is-today) .bar { opacity: 0.7; }
+
+/* Progress numbers (progress.html): minutes above each day's bar, the running total by Overall Time. */
+.bar-value {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.bar-group.is-today .bar-value { color: var(--ink); }
+
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-total {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-variant-numeric: lining-nums tabular-nums;
+}
 
 .goal {
   display: flex;
@@ -2257,12 +2148,13 @@ kbd {
   border-style: dashed;
 }
 
+/* "next up": a word in the accent, not a second filled colour on the page */
 .chip-tag {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--accent-2);
-  color: var(--on-accent-2);
+  color: var(--accent);
   font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .chip-hint {
@@ -4103,4 +3995,441 @@ label.btn.is-disabled {
     overflow: hidden;
     clip: rect(0 0 0 0);
   }
+}
+
+/* 32. Practice bar: one quiet line for playing -------------------------- */
+
+.practice-bar {
+  gap: 10px 14px;   /* wraps on a narrow window; on a phone it scrolls (see the 600px rules) */
+}
+
+.practice-bar .back-link {
+  flex: none;
+  color: var(--ink-muted);
+  font-weight: 500;
+  background: transparent;
+}
+
+.practice-bar .back-link:hover { color: var(--ink); }
+
+.practice-bar .tool-main {
+  flex: none;
+  gap: 8px;
+}
+
+/* Record is the one solid button */
+.practice-bar #record:not(.is-recording) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.practice-bar #record:not(.is-recording):hover {
+  border-color: color-mix(in srgb, white 12%, var(--accent));
+  background: color-mix(in srgb, white 12%, var(--accent));
+}
+
+.practice-bar .tempo {
+  flex: none;
+}
+
+.practice-bar .take {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.practice-bar .tool-session {
+  flex: none;
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+
+.practice-bar .tool-session .tool {
+  height: 30px;
+  padding: 0 8px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  background: transparent;
+}
+
+.practice-bar .tool-session .tool:hover {
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.practice-bar .keys {
+  flex: none;
+}
+
+/* the ⋯ menu: zoom, passage by bars, shortcuts */
+.more summary {
+  width: 32px;
+  justify-content: center;
+  padding: 0;
+}
+
+.more-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 340px;
+  max-width: 90vw;
+}
+
+.more-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.more-label {
+  flex: 1 1 auto;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.more-line .tool {
+  min-width: 32px;
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.keys-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.keys-list dt { white-space: nowrap; }
+.keys-list dd { margin: 0; color: var(--ink-muted); }
+
+/* Passage row: just the chips, no right-hand tools */
+.passage-row { align-items: center; }
+
+@media (max-width: 900px) {
+  .practice-bar .tempo-word { display: none; }
+}
+
+/* Rep row: just the question and its two answers. The passage is already named on its chip and on the score,
+   Delete is on the chip (and the Delete key), and the explanation is in the Yes button's description. */
+#rep .rep-delete { display: none; }
+
+#rep .rep-title,
+#rep .rep-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 33. Review page --------------------------------------------------------- */
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 880px;
+}
+
+.review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.review-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.review-title .section-title { margin: 0; }
+
+.review-pick select {
+  max-width: min(360px, 60vw);
+  padding: 7px 10px;
+  border: 1.5px solid var(--control-edge);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.review-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.review-section,
+.review .panel + .panel { margin: 0; }   /* the column's gap spaces them, once */
+
+.review ~ .site-footer { max-width: 880px; }   /* lines up with the column above */
+
+.review-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.review-h {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.review-count,
+.review-link {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.review-link:hover { color: var(--ink); }
+
+.review-note {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.review-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.review-empty .review-note { margin: 0; }
+
+.take-list,
+.session-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.take-row {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 220px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.take-row:first-child { border-top: 0; padding-top: 0; }
+.take-row[hidden] { display: none; }
+
+.take-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.take-name-text {
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.take-when {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.take-audio {
+  width: 100%;
+  height: 36px;
+}
+
+/* The quiet player (review.html's script): a round play button, a hairline you can drag, the time. */
+.take-play {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0 0 0 1px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.take-play:hover,
+.take-play:focus-visible { border-color: var(--accent); }
+.take-play[aria-label^="Pause"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+
+.take-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.take-time {
+  min-width: 2.75rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.take-seek {
+  --at: 0%;
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.take-seek:disabled { cursor: default; opacity: 0.5; }
+
+.take-seek::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to right, var(--accent) var(--at), var(--line) var(--at));
+}
+
+.take-seek::-moz-range-track { height: 2px; border-radius: 1px; background: var(--line); }
+.take-seek::-moz-range-progress { height: 2px; border-radius: 1px; background: var(--accent); }
+
+.take-seek::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  appearance: none;
+  transform: scale(0.0001);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.take-seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0.0001);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.take-row:hover .take-seek:not(:disabled)::-webkit-slider-thumb,
+.take-seek:focus-visible::-webkit-slider-thumb { transform: none; }
+.take-row:hover .take-seek:not(:disabled)::-moz-range-thumb,
+.take-seek:focus-visible::-moz-range-thumb { transform: none; }
+.take-seek:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.take-delete {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.take-delete:hover {
+  background: var(--bg);
+  color: var(--rec);
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-table th,
+.review-table td {
+  padding: 9px 12px 9px 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.review-table thead th {
+  border-top: 0;
+  padding-top: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.review-table tbody th { font-weight: 600; }
+
+/* A passage's bars go straight back to practicing them. */
+.review-bars {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-bars:hover,
+.review-bars:focus-visible { text-decoration-color: var(--accent); }
+
+.review-meter {
+  display: inline-block;
+  width: 64px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 3px;
+  background: var(--line);
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.review-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.session-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+}
+
+.session-list li:first-child { border-top: 0; padding-top: 0; }
+.session-list time { color: var(--ink); }
+.session-list span { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+  .take-row { grid-template-columns: auto 1fr auto; }
+  .take-audio,
+  .take-track { grid-column: 1 / -1; grid-row: 2; }
+  .review-table { display: block; overflow-x: auto; }
 }

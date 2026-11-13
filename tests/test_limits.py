@@ -23,7 +23,7 @@ def upload(client, name, data, url="/api/pieces", **form):
 
 
 # ---------------------------------------------------------------- boot & pages
-PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/privacy", "/terms"]
+PAGES = ["/", "/index", "/home", "/library", "/progress", "/settings", "/practice", "/review", "/privacy", "/terms"]
 APP_PAGES = [p for p in PAGES if p not in ("/", "/index")]   # welcome sends signed-in people to Home
 
 @pytest.mark.parametrize("path", PAGES)
@@ -340,7 +340,7 @@ def test_home_and_progress_show_saved_practice(user):
     pid = db.addPiece(uid, "Counted", xml=AIR)
     db.addSession(uid, 3 * 3600 + 25 * 60, piece_ids=[pid])
     home = client.get("/home").get_data(as_text=True)
-    assert "3h 25m" in home and "3h 25m practiced" in home and "1 day<" in home
+    assert 'data-stat="time">3h 25m<' in home and 'data-stat="streak">1 day<' in home
     prog = client.get("/progress").get_data(as_text=True)
     assert 'height: 100%' in prog
 

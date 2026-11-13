@@ -2125,12 +2125,13 @@ kbd {
   border-style: dashed;
 }
 
+/* "next up": a word in the accent, not a second filled colour on the page */
 .chip-tag {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--accent-2);
-  color: var(--on-accent-2);
+  color: var(--accent);
   font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .chip-hint {

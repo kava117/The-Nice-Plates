@@ -923,6 +923,29 @@ main {
 .bar-group.is-today span { color: var(--ink); font-weight: 700; }
 .bar-group:not(.is-today) .bar { opacity: 0.7; }
 
+/* Progress numbers (progress.html): minutes above each day's bar, the running total by Overall Time. */
+.bar-value {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.bar-group.is-today .bar-value { color: var(--ink); }
+
+.chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-total {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
 .goal {
   display: flex;
   flex: none;

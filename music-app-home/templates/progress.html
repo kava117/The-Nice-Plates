@@ -3,6 +3,7 @@
 {% set active = "progress" %}
 {% set auth = "signed-in" %}
 {% include "header.html" %}
+{% macro dur(s) %}{% if s < 60 %}{{ s }}s{% elif s < 3600 %}{{ s // 60 }}m{% else %}{{ s // 3600 }}h{% if s % 3600 // 60 %} {{ s % 3600 // 60 }}m{% endif %}{% endif %}{% endmacro %}
 
 <div class="content">
 
@@ -34,7 +35,7 @@
       <div class="bars" {% if not saved %}aria-hidden="true"{% endif %}>
         {% set top = per_day|max or 1 %}
         {% for label in ["M", "T", "W", "TH", "F", "S", "SU"] %}
-        <div class="bar-group{% if loop.index0 == today %} is-today{% endif %}"><div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
+        <div class="bar-group{% if loop.index0 == today %} is-today{% endif %}">{% if per_day[loop.index0] %}<small class="bar-value">{{ dur(per_day[loop.index0]) }}</small>{% endif %}<div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
         {% endfor %}
       </div>
     </div>
@@ -48,7 +49,10 @@
   </section>
 
   <section class="panel{% if not saved %} is-empty{% endif %}">
-    <h2 class="section-title">Overall Time</h2>
+    <div class="chart-head">
+      <h2 class="section-title">Overall Time</h2>
+      {% if totals %}<span class="chart-total">{{ dur(totals[-1]) }} in all</span>{% endif %}
+    </div>
     <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend" {% if not saved %}aria-hidden="true"{% endif %}>
       <polyline
         class="line"

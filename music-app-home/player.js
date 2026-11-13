@@ -88,9 +88,9 @@ function beatOf(osmd, speed) {
 
 // A short click on Tone's clock, so it lands on the same transport time as the notes and cursor.
 function toneTick(time, first, bus) {
-  const ctx = Tone.getContext().rawContext;
-  const tone = new OscillatorNode(ctx, { frequency: first ? 1760 : 1320 });
-  const level = new GainNode(ctx, { gain: 0 });
+  const ctx = Tone.getContext().rawContext;   // Tone's wrapped context: the node constructors refuse it, its create* methods don't
+  const tone = ctx.createOscillator(), level = ctx.createGain();
+  tone.frequency.value = first ? 1760 : 1320;
   level.gain.setValueAtTime(0, time);
   level.gain.linearRampToValueAtTime(first ? 0.5 : 0.35, time + 0.002);
   level.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
@@ -121,8 +121,10 @@ function addPlayer(osmd, button, tempo, { passage = () => null, toStart, metro =
       await Tone.loaded();
     }
     if (!clickBus) {
-      clickBus = new GainNode(Tone.getContext().rawContext, { gain: metro() ? 1 : 0 });
-      clickBus.connect(Tone.getContext().rawContext.destination);
+      const ctx = Tone.getContext().rawContext;
+      clickBus = ctx.createGain();
+      clickBus.gain.value = metro() ? 1 : 0;
+      clickBus.connect(ctx.destination);
     }
     if (!playing) return;   // Stop was pressed while loading
     schedule();

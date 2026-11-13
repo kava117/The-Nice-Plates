@@ -148,6 +148,55 @@
     document.querySelectorAll(".take-audio").forEach(a => { if (a !== e.target) a.pause(); });
   }, true);
 
+  // A quiet player per take: play/pause and a seek line in place of the browser's grey bar.
+  // Without this script the native controls stay.
+  const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  const ICON = { play: '<path d="M5 3.5v9l7.5-4.5z"/>', pause: '<path d="M4.5 3h2.5v10H4.5zM9 3h2.5v10H9z"/>' };
+  document.querySelectorAll(".take-row").forEach(row => {
+    const audio = row.querySelector(".take-audio"), name = row.querySelector(".take-name-text").textContent;
+    const play = Object.assign(document.createElement("button"), { type: "button", className: "take-play press" });
+    const seek = Object.assign(document.createElement("input"), { type: "range", className: "take-seek", min: 0, max: 1000, value: 0, disabled: true });
+    const time = Object.assign(document.createElement("span"), { className: "take-time" });
+    seek.setAttribute("aria-label", `Position in ${name}`);
+    const track = document.createElement("div");
+    track.className = "take-track";
+    track.append(seek, time);
+    audio.controls = false;
+    audio.preload = "metadata";
+    audio.after(track);
+    row.prepend(play);
+
+    const icon = state => {
+      play.innerHTML = `<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">${ICON[state]}</svg>`;
+      play.setAttribute("aria-label", `${state === "play" ? "Play" : "Pause"} ${name}`);
+    };
+    const show = () => {
+      const d = audio.duration;
+      if (!Number.isFinite(d)) return;
+      seek.disabled = false;
+      seek.value = Math.round(audio.currentTime / d * 1000);
+      seek.style.setProperty("--at", `${seek.value / 10}%`);
+      time.textContent = audio.paused && !audio.currentTime ? clock(d) : clock(audio.currentTime);
+    };
+    icon("play");
+    play.addEventListener("click", () => audio.paused ? audio.play() : audio.pause());
+    seek.addEventListener("input", () => { if (Number.isFinite(audio.duration)) audio.currentTime = seek.value / 1000 * audio.duration; });
+    audio.addEventListener("play", () => icon("pause"));
+    audio.addEventListener("pause", () => icon("play"));
+    audio.addEventListener("ended", () => { audio.currentTime = 0; show(); });
+    ["timeupdate", "durationchange", "seeked"].forEach(ev => audio.addEventListener(ev, show));
+    // the browser's own recordings often say their length is Infinity until read to the end: seek far, then back
+    audio.addEventListener("loadedmetadata", () => {
+      if (Number.isFinite(audio.duration)) return show();
+      audio.addEventListener("durationchange", function back() {
+        if (!Number.isFinite(audio.duration)) return;
+        audio.removeEventListener("durationchange", back);
+        audio.currentTime = 0;
+      });
+      audio.currentTime = 1e7;
+    }, { once: true });
+  });
+
   // Delete: the row goes at once, with Undo for 5 seconds; the server delete waits until then.
   const pending = new Map();
   const send = id => fetch(`/api/recordings/${id}`, { method: "DELETE", keepalive: true });

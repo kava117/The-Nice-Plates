@@ -4336,7 +4336,7 @@ label.btn.is-disabled {
 
 .take-row {
   display: grid;
-  grid-template-columns: minmax(140px, 220px) 1fr auto;
+  grid-template-columns: auto minmax(120px, 220px) 1fr auto;
   align-items: center;
   gap: 12px;
   padding: 10px 0;
@@ -4370,6 +4370,90 @@ label.btn.is-disabled {
   width: 100%;
   height: 36px;
 }
+
+/* The quiet player (review.html's script): a round play button, a hairline you can drag, the time. */
+.take-play {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0 0 0 1px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.take-play:hover,
+.take-play:focus-visible { border-color: var(--accent); }
+.take-play[aria-label^="Pause"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+
+.take-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.take-time {
+  min-width: 2.75rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  text-align: right;
+}
+
+.take-seek {
+  --at: 0%;
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.take-seek:disabled { cursor: default; opacity: 0.5; }
+
+.take-seek::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to right, var(--accent) var(--at), var(--line) var(--at));
+}
+
+.take-seek::-moz-range-track { height: 2px; border-radius: 1px; background: var(--line); }
+.take-seek::-moz-range-progress { height: 2px; border-radius: 1px; background: var(--accent); }
+
+.take-seek::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  appearance: none;
+  transform: scale(0.0001);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.take-seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0.0001);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.take-row:hover .take-seek:not(:disabled)::-webkit-slider-thumb,
+.take-seek:focus-visible::-webkit-slider-thumb { transform: none; }
+.take-row:hover .take-seek:not(:disabled)::-moz-range-thumb,
+.take-seek:focus-visible::-moz-range-thumb { transform: none; }
+.take-seek:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 .take-delete {
   display: grid;
@@ -4446,7 +4530,8 @@ label.btn.is-disabled {
 .session-list span { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 
 @media (max-width: 640px) {
-  .take-row { grid-template-columns: 1fr auto; }
-  .take-audio { grid-column: 1 / -1; grid-row: 2; }
+  .take-row { grid-template-columns: auto 1fr auto; }
+  .take-audio,
+  .take-track { grid-column: 1 / -1; grid-row: 2; }
   .review-table { display: block; overflow-x: auto; }
 }

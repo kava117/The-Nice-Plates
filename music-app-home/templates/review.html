@@ -31,6 +31,12 @@
     </div>
   </header>
 
+  {% if not takes and not sections and not sessions %}
+  <section class="panel review-empty">
+    <h2 class="review-h">Nothing here for {{ piece.title }} yet</h2>
+    <p class="review-note">Play it on Practice. Your recordings, how each passage is going and your sessions all show up here.</p>
+  </section>
+  {% else %}
   <section class="panel review-section" aria-labelledby="takes-title">
     <div class="review-section-head">
       <h2 class="review-h" id="takes-title">Recordings</h2>
@@ -99,6 +105,7 @@
     <p class="review-note">Finish a practice session on this piece and it shows here.</p>
     {% endif %}
   </section>
+  {% endif %}
   {% endif %}
 </div>
 

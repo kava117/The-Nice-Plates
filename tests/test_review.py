@@ -9,7 +9,7 @@ def test_review_is_in_the_menu_and_loads(user):
     assert 'href="/review"' in home
     page = client.get(f"/review?piece={pid}")
     assert page.status_code == 200
-    assert "Recordings" in page.get_data(as_text=True)
+    assert "Nothing here for Air yet" in page.get_data(as_text=True)   # one quiet panel until something is played
 
 
 def test_review_with_no_pieces_says_so(user):

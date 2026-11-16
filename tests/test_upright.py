@@ -12,7 +12,7 @@ PAGE = REPO / "music-app-home/home_imgs/sheet-fur-elise.jpg"
 def test_a_photo_ends_up_the_right_way_up(tmp_path, held):
     photo = tmp_path / "page.jpg"
     Image.open(PAGE).convert("RGB").rotate(held, expand=True).save(photo)
-    out = upright(photo, tmp_path)
+    out = upright(photo)
     if held == 0:
         assert out == photo   # a page that was fine is left alone
     else:
@@ -22,4 +22,4 @@ def test_a_photo_ends_up_the_right_way_up(tmp_path, held):
 def test_a_photo_with_no_staves_is_left_alone(tmp_path):
     photo = tmp_path / "board.jpg"
     Image.open(REPO / "music-app-home/home_imgs/whiteboard-sketch.jpg").convert("RGB").save(photo)
-    assert upright(photo, tmp_path) == photo
+    assert upright(photo) == photo

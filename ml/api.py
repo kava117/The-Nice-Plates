@@ -99,7 +99,7 @@ def claude_images(src):
         return [("image/png" if src.suffix.lower() == ".png" else "image/jpeg", src.read_bytes())]
 
 
-def upright(src, work):
+def upright(src):
     """A photo turned so its staff lines run across: a phone held sideways (no EXIF tag to say so) or the page upside down.
     Staff lines are the longest dark rows on a page; a line's clef and key signature put more ink at its left end."""
     if src.suffix.lower() == ".pdf":
@@ -131,7 +131,7 @@ def upright(src, work):
             image, turned = image.rotate(180), 180
         if not turned % 360:
             return src
-        out = work / f"upright{src.suffix.lower()}"
+        out = src.with_name(f"{src.stem} upright{src.suffix.lower()}")   # beside the upload: homr copies its page into work
         image.convert("RGB").save(out, quality=95)
         logging.warning("%s was turned %s degrees; read it upright", src.name, turned % 360)
         return out
@@ -182,7 +182,7 @@ def read_sheet(src, work, claude_ok):  # homr first wherever it can run; Claude 
     if src.suffix.lower() not in PHOTOS:
         with CONVERT:
             return _to_musicxml(src, work)
-    src = upright(src, work)
+    src = upright(src)
     if homr_ok():
         try:
             with CONVERT:   # only homr needs the memory; Claude reads in parallel

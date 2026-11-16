@@ -4112,6 +4112,39 @@ label.btn.is-disabled {
 .keys-list dt { white-space: nowrap; }
 .keys-list dd { margin: 0; color: var(--ink-muted); }
 
+/* Buttons that read as buttons: a firmer edge than the hairline, one height, icon then word.
+   Library is the way back, so it reads as a link. */
+.practice-bar .tool {
+  height: 36px;
+  border-color: var(--edge-neutral);
+}
+
+.practice-bar .back-link,
+.practice-bar .tool-session .tool { border-color: transparent; }
+
+.practice-bar .tool .tool-icon { color: var(--ink-muted); }
+.practice-bar .tool:hover .tool-icon,
+.practice-bar .tool.is-on .tool-icon { color: var(--accent); }
+.practice-bar #record .tool-icon { color: inherit; }
+
+/* The metronome is a switch: a dot that fills when it clicks. */
+.metro-dot {
+  width: 8px;
+  height: 8px;
+  margin-left: 2px;
+  border: 1.5px solid var(--edge-neutral);
+  border-radius: 50%;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#metro.is-on .metro-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.practice-bar .more summary { width: auto; padding: 0 10px; gap: 6px; }
+.practice-bar .more summary .wide-only { font-size: 0.8125rem; }
+
 /* Passage row: just the chips, no right-hand tools */
 .passage-row { align-items: center; }
 

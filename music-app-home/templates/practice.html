@@ -1,6 +1,6 @@
 {# Practice page: renders one piece from the library, or the demo score.
    Kept for playing: one bar (Listen, Record, tempo, metronome), the passages and the rep
-   count for the picked passage. Saved takes, the coach and the sessions are on Review. passages.js explains how picking a passage works. #}
+   count for the picked passage, and the coach beside the score. Saved takes and sessions are on Review. passages.js explains how picking a passage works. #}
 {% set title = "Practice" %}
 {% set active = "practice" %}
 {% set auth = "signed-in" %}
@@ -8,7 +8,7 @@
 
 
 <div id="controls">
-  {# Playing only: Listen and Record, the tempo and the metronome. What comes after (takes, the coach) lives on Review. #}
+  {# Listen and Record, the tempo and the metronome; the coach and the ⋯ menu at the end. Saved takes live on Review. #}
   <div class="controls-row practice-bar">
     <a class="tool press back-link" href="/library" title="Back to Library to pick another piece" aria-label="Library">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
@@ -21,7 +21,7 @@
     </div>
 
     <label class="tempo" title="Playback and recording speed"><span class="tempo-word">Tempo</span> <input id="tempo" type="range" min="40" max="200" step="10" value="100"> <span id="tempo-label">100 %</span></label>
-    <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: clicks with Listen and while you record">Metronome</button>
+    <button type="button" id="metro" class="tool press" aria-pressed="false" title="Metronome: clicks with Listen and while you record"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3h5L19 21H5L9.5 3zM12 16l4.5-8M7 16h10"/></svg>Metronome<span class="metro-dot" aria-hidden="true"></span></button>
 
     <span id="take" class="take" role="status"></span>
 
@@ -31,9 +31,11 @@
       <button id="stop" class="tool press" hidden title="End this session and add its time to Progress">Finish</button>
     </div>
 
+    <button type="button" id="coach-toggle" class="tool press" aria-expanded="false" aria-controls="coach" title="Ask about your practice (C)"><svg class="tool-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 4v-4H4z"/></svg>Coach</button>
+
     <details class="keys more" id="keys">
       <summary class="tool press" title="Zoom, bars and keyboard shortcuts (?)" aria-label="More">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg><span class="wide-only">More</span>
       </summary>
       <div class="keys-panel more-panel">
         <div class="more-line">
@@ -57,6 +59,7 @@
           <dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt><dd>Undo that delete, for 5 seconds</dd>
           <dt><kbd>Y</kbd> <kbd>N</kbd></dt><dd>That was correct, or not yet</dd>
           <dt><kbd>L</kbd></dt><dd>Auto-mark: hears each go and marks it for you</dd>
+          <dt><kbd>C</kbd></dt><dd>Open or close the coach</dd>
           <dt><kbd>Esc</kbd></dt><dd>Deselect the passage: back to the whole piece</dd>
           <dt><kbd>+</kbd> <kbd>-</kbd></dt><dd>Zoom</dd>
         </dl>
@@ -106,12 +109,38 @@
 </p>
 <div id="score"></div>
 
+<aside class="coach" id="coach" aria-labelledby="coach-title" hidden>
+  <header class="coach-head">
+    <div class="coach-heading">
+      <h2 class="coach-title" id="coach-title">Coach</h2>
+      <p class="coach-sub" id="coach-sub" hidden></p>
+    </div>
+    <button type="button" class="link-button" id="coach-restart" hidden>Start over</button>
+    <button type="button" class="coach-close" id="coach-close" aria-label="Close the coach">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </header>
+  <p class="visually-hidden" id="coach-said" aria-live="polite"></p>
+  <div class="coach-thread" id="coach-thread">
+    <div class="coach-empty" id="coach-empty">
+      <p class="coach-lead" id="coach-lead">How’s practice going?</p>
+      <p class="coach-knows">I’ve got your log here: your sessions, passages and every rep you’ve marked.</p>
+      <div class="coach-asks" id="coach-asks"></div>
+    </div>
+  </div>
+  <form class="coach-form" id="coach-form">
+    <textarea class="coach-input" id="coach-input" rows="1" maxlength="1000" placeholder="Bars 9 to 12 keep falling apart…" aria-label="Your question"></textarea>
+    <button type="submit" class="coach-send press" id="coach-send" disabled>Ask</button>
+  </form>
+</aside>
+
 <script src="/opensheetmusicdisplay.min.js"></script>
 <script src="/player.js"></script>
 <script src="/toast.js"></script>
 <script src="/passages.js"></script>
 <script src="/listen.js"></script>
 <script src="/live.js"></script>
+<script src="/coach.js"></script>
 <script>
   // from the library; with no ?piece= the server picks the piece looked at last; none at all = the demo score
   const piece = new URLSearchParams(location.search).get("piece") || {{ latest_piece | tojson }};
@@ -144,7 +173,7 @@
   }, {
     pieceId: piece && +piece, tempo,
     playing: () => player.playing,
-    onPick: () => { player.stop(); listening.picked(); showClock(); },   // "Practicing: bars 3–6" names the picked bars
+    onPick: () => { player.stop(); coach.refresh(); listening.picked(); showClock(); },   // the coach's suggestions and "Practicing: bars 3–6" name the picked bars
     onRep: () => { void ensureSession(); },   // reps are practice: the timer runs
   });
   const showTempo = () => {
@@ -155,6 +184,16 @@
 
   // ---- Listen (listen.js): hears each go at the passage and marks the rep, on this device ----
   const listening = addListening(osmd, { button: $("listen"), status: $("rep-ask") }, { passages, player, tempo });
+
+  // ---- Coach (coach.js): questions about this musician's practice, beside the score; the same thread as on Review ----
+  const coach = addCoach({
+    panel: $("coach"), toggle: $("coach-toggle"), close: $("coach-close"), restart: $("coach-restart"), sub: $("coach-sub"), said: $("coach-said"),
+    thread: $("coach-thread"), empty: $("coach-empty"), lead: $("coach-lead"), asks: $("coach-asks"),
+    form: $("coach-form"), input: $("coach-input"), send: $("coach-send"),
+  }, {
+    pieceId: piece && +piece, passage: () => passages.bars, score: passages,
+    title: () => {{ piece_title | tojson }} || ((osmd.Sheet && osmd.Sheet.TitleString) || "").trim(),   // else as printed on the score
+  });
 
   async function loadSong(url) {
     try {
@@ -168,6 +207,7 @@
       document.getElementById("score-loading").hidden = true;
       play.disabled = false;
       showTempo();
+      coach.refresh();   // the piece's title, under the coach's name
       // a passage named in the link (Review's "Practice these bars"), else the one the last visit left on
       const linked = Number(new URLSearchParams(location.search).get("passage"));
       if (linked) history.replaceState(null, "", `/practice?piece=${piece}`);
@@ -238,6 +278,7 @@
     "y": () => passages.rep(true),
     "n": () => passages.rep(false),
     "l": () => listening.toggle(),
+    "c": () => coach.toggle(),
     "Delete": () => passages.deleteActive(), "Backspace": () => passages.deleteActive(),
     "Escape": () => keys.open ? (keys.open = false) : passages.clear(),
     "+": () => zoom(0.1), "=": () => zoom(0.1), "-": () => zoom(-0.1),

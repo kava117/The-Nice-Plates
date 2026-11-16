@@ -75,11 +75,11 @@ def test_delete_a_take(user):
     assert db.getRecording(other, theirs) is not None
 
 
-def test_practice_is_only_for_playing(user):
+def test_practice_is_for_playing_with_the_coach_beside(user):
     client, uid = user
     db.addPiece(uid, "Air", None, xml=AIR)
     page = client.get("/practice").get_data(as_text=True)
-    for gone in ('id="coach"', 'id="take-pick"', 'id="cursor-prev"', 'id="take-name"'):
+    for gone in ('id="take-pick"', 'id="cursor-prev"', 'id="take-name"'):   # saved takes are on Review
         assert gone not in page
-    for kept in ('id="play"', 'id="record"', 'id="tempo"', 'id="metro"', 'id="live-lane"'):
+    for kept in ('id="play"', 'id="record"', 'id="tempo"', 'id="metro"', 'id="live-lane"', 'id="coach-toggle"', 'id="coach"'):
         assert kept in page

@@ -21,7 +21,8 @@
       { el: "#rep", title: "Count each try", text: "After each time through, answer Yes or Not yet. Or turn on Auto-mark and it listens through your microphone and answers for you." },
       { el: "#record", around: ".tool-main", title: "Record",
         text: "Record a take of the passage or the whole piece. The session clock starts on its own; click Finish when you're done for the day." },
-      { el: "[href='/review']", title: "Review", text: "Your recordings, how each passage is going and the coach are on Review, so this page stays for playing." },
+      { el: "#coach-toggle", title: "Ask the coach", text: "Stuck on some bars? The coach knows your sessions and every rep you've marked, and suggests what to try next." },
+      { el: "[href='/review']", title: "Review", text: "Your recordings and how each passage is going are on Review." },
     ],
     "/progress": [
       { el: ".panel.unsaved", title: "How time gets here",

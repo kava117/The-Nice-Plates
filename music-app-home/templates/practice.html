@@ -121,6 +121,7 @@
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score", {
     autoResize: true,
     drawTitle: true,
+    autoBeam: true,   // scanned pieces arrive without beams; eighths and sixteenths are grouped by the beat (beams in the file stay)
     // Manual next/prev still follow; Listen and a take use keepCursorInView (player.js) so the
     // cursor stays under the pinned toolbar instead of scrolling under it.
     followCursor: true,

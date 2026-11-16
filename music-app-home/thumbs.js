@@ -9,7 +9,7 @@
   if (!arts.length || !window.HTMLCanvasElement) return;
   // The card is 960 x 420. A piece's first bars are drawn as wide as it takes for them to wrap into a block
   // about that shape (a single long line would be a thin strip in a big white card), then cut from the top.
-  var VERSION = "v8", WIDTHS = [900, 720, 580, 470], OUT_W = 960, OUT_H = 420, BARS = 16;
+  var VERSION = "v9", WIDTHS = [900, 720, 580, 470], OUT_W = 960, OUT_H = 420, BARS = 16;
   var queue = [], running = false, osmdReady = null;
 
   function cached(id) { try { return localStorage.getItem("thumb:" + VERSION + ":" + id); } catch (e) { return null; } }
@@ -61,7 +61,7 @@
       // Title and composer already sit in the card caption; the art is the notes themselves.
       var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(stage, {
         autoResize: false, drawTitle: false, drawComposer: false, drawPartNames: false,
-        drawMeasureNumbers: false, drawingParameters: "compacttight",
+        drawMeasureNumbers: false, drawingParameters: "compacttight", autoBeam: true,
       });
       await osmd.load(await r.text());
       osmd.setOptions({ drawUpToMeasureNumber: BARS });

@@ -89,9 +89,6 @@
           </section>
           {% endif %}
 
-          <div class="settings-save">
-            <button type="submit" class="btn btn-solid press" id="save" disabled>Save changes</button>
-          </div>
         </form>
       </div>
 
@@ -102,40 +99,39 @@
     const name = document.getElementById("display-name");
     const goal = document.getElementById("daily-goal");
     const tiles = document.getElementById("tile-progress");
-    const save = document.getElementById("save");
     const err = document.getElementById("name-error");
     const get = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch (e) { return d; } };
     const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
     goal.value = get("daily-goal", "30");
     tiles.checked = get("tile-progress", "on") !== "off";
-    let saved = { name: name.value, goal: goal.value, tiles: tiles.checked };
-    const dirty = () => name.value.trim() !== saved.name || goal.value !== saved.goal || tiles.checked !== saved.tiles;
-    form.addEventListener("input", () => { save.disabled = !dirty(); err.hidden = true; });
-    window.addEventListener("beforeunload", e => { if (dirty()) e.preventDefault(); });
 
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
+    // Each setting saves the moment it changes: goal and tile line at once, the name when you leave the box or press Enter.
+    form.addEventListener("submit", e => { e.preventDefault(); name.blur(); });
+    form.addEventListener("input", () => { err.hidden = true; });
+    let savedName = name.value;
+    name.addEventListener("change", async () => {
       const n = name.value.trim();
-      if (!n) { err.textContent = "Enter a name."; err.hidden = false; name.focus(); return; }
-      save.disabled = true;
-      if (n !== saved.name) {
-        const r = await fetch("/api/account", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: n }) });
-        if (!r.ok) {
-          err.textContent = (await r.json().catch(() => ({}))).error || "Couldn't save your name. Try again.";
-          err.hidden = false; save.disabled = false; return;
-        }
-        document.querySelectorAll("[data-user-name]").forEach(el => el.textContent = n);
-        document.querySelectorAll("[data-user-initials]").forEach(el => el.textContent = n.split(/\s+/).slice(0, 2).map(w => w[0]).join(""));
-        document.querySelector(".account")?.setAttribute("aria-label", "Account: " + n);
+      if (!n) { err.textContent = "Enter a name."; err.hidden = false; name.value = savedName; return; }
+      if (n === savedName) { name.value = n; return; }
+      const r = await fetch("/api/account", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: n }) });
+      if (!r.ok) {
+        err.textContent = (await r.json().catch(() => ({}))).error || "Couldn't save your name. Try again.";
+        err.hidden = false;
+        return;
       }
-      set("daily-goal", goal.value);
+      savedName = name.value = n;
+      document.querySelectorAll("[data-user-name]").forEach(el => el.textContent = n);
+      document.querySelectorAll("[data-user-initials]").forEach(el => el.textContent = n.split(/\s+/).slice(0, 2).map(w => w[0]).join(""));
+      document.querySelector(".account")?.setAttribute("aria-label", "Account: " + n);
+      toast("Name saved");
+    });
+    goal.addEventListener("change", () => { set("daily-goal", goal.value); toast("Daily goal saved"); });
+    tiles.addEventListener("change", () => {
       set("tile-progress", tiles.checked ? "on" : "off");
       if (tiles.checked) document.documentElement.removeAttribute("data-tile-progress");
       else document.documentElement.setAttribute("data-tile-progress", "off");
-      name.value = n;
-      saved = { name: n, goal: goal.value, tiles: tiles.checked };
-      toast("Settings saved");
+      toast(tiles.checked ? "Time shows on piece tiles" : "Time hidden on piece tiles");
     });
 
     const start = document.getElementById("delete-start");
@@ -149,7 +145,7 @@
       go.addEventListener("click", async () => {
         go.disabled = true;
         const r = await fetch("/api/account", { method: "DELETE" });
-        if (r.ok) { saved = { name: name.value.trim(), goal: goal.value, tiles: tiles.checked }; location.href = "/"; }
+        if (r.ok) location.href = "/";
         else { go.disabled = false; toast("Couldn't delete the account. Try again."); }
       });
     }

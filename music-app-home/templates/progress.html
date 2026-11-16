@@ -3,6 +3,7 @@
 {% set active = "progress" %}
 {% set auth = "signed-in" %}
 {% include "header.html" %}
+{% macro dur(s) %}{% if s < 60 %}{{ s }}s{% elif s < 3600 %}{{ s // 60 }}m{% else %}{{ s // 3600 }}h{% if s % 3600 // 60 %} {{ s % 3600 // 60 }}m{% endif %}{% endif %}{% endmacro %}
 
 <div class="content">
 
@@ -31,13 +32,10 @@
   <section class="panel practice-panel{% if not saved %} is-empty{% endif %}" aria-label="Practice time this week">
     <div class="practice-chart">
       <h2 class="section-title">Practice Time</h2>
-      {% if not saved %}
-      <p class="chart-empty">Your week will fill in here once a session is saved.</p>
-      {% endif %}
       <div class="bars" {% if not saved %}aria-hidden="true"{% endif %}>
         {% set top = per_day|max or 1 %}
         {% for label in ["M", "T", "W", "TH", "F", "S", "SU"] %}
-        <div class="bar-group{% if loop.index0 == today %} is-today{% endif %}"><div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
+        <div class="bar-group{% if loop.index0 == today %} is-today{% endif %}">{% if per_day[loop.index0] %}<small class="bar-value">{{ dur(per_day[loop.index0]) }}</small>{% endif %}<div class="bar" style="height: {{ (per_day[loop.index0] * 100 / top)|round|int }}%"></div><span>{{ label }}</span></div>
         {% endfor %}
       </div>
     </div>
@@ -51,10 +49,10 @@
   </section>
 
   <section class="panel{% if not saved %} is-empty{% endif %}">
-    <h2 class="section-title">Overall Time</h2>
-    {% if not saved %}
-    <p class="chart-empty">Each saved session adds a point on this line.</p>
-    {% endif %}
+    <div class="chart-head">
+      <h2 class="section-title">Overall Time</h2>
+      {% if totals %}<span class="chart-total">{{ dur(totals[-1]) }} in all</span>{% endif %}
+    </div>
     <svg class="overall-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Overall practice time trend" {% if not saved %}aria-hidden="true"{% endif %}>
       <polyline
         class="line"
@@ -93,7 +91,7 @@
       <li class="history-row">
         <time class="history-when" datetime="{{ s.date }}">{{ s.date[:16] }}</time>
         <span class="history-pieces">
-          {% for p in s.pieces %}<a href="/practice?piece={{ p.id }}">{{ p.title }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="history-none">No piece recorded</span>{% endfor %}
+          {% for p in s.pieces %}<a href="/practice?piece={{ p.id }}">{{ p.title }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="history-none" aria-label="No piece">–</span>{% endfor %}
         </span>
         {% set m = (s.seconds / 60)|round|int %}
         <span class="history-time">{% if s.seconds < 60 %}{{ s.seconds }} s{% elif m < 60 %}{{ m }} min{% else %}{{ m // 60 }} h {{ m % 60 }} min{% endif %}</span>

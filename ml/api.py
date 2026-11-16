@@ -99,6 +99,47 @@ def claude_images(src):
         return [("image/png" if src.suffix.lower() == ".png" else "image/jpeg", src.read_bytes())]
 
 
+def upright(src):
+    """A photo turned so its staff lines run across: a phone held sideways (no EXIF tag to say so) or the page upside down.
+    Staff lines are the longest dark rows on a page; a line's clef and key signature put more ink at its left end."""
+    if src.suffix.lower() == ".pdf":
+        return src
+    try:
+        import numpy as np
+        from PIL import Image, ImageOps
+        image = ImageOps.exif_transpose(Image.open(src))
+        def ink(img):
+            g = img.convert("L"); g.thumbnail((1000, 1000))
+            a = np.asarray(g, dtype=float)
+            return a < a.mean() - a.std()
+        def sideways(img):   # the longest dark lines run up and down
+            dark = ink(img)
+            return np.percentile(dark.mean(axis=0), 98) > 1.5 * np.percentile(dark.mean(axis=1), 98)
+        def lean(img):   # ink at the left end of the staves over ink at the right end; above 1 when the right way up
+            dark = ink(img); rows = dark.mean(axis=1)
+            across = dark[np.convolve(rows > 0.5 * rows.max(), np.ones(9), "same") > 0]   # the staves and a little around them
+            if not across.size:
+                return 1.0
+            on = np.where(across.mean(axis=0) > 0.3 * across.mean(axis=0).max())[0]
+            edge = max(1, (on[-1] - on[0]) // 8)
+            return across[:, on[0]:on[0] + edge].mean() / max(across[:, on[-1] - edge:on[-1]].mean(), 1e-6)
+        turned = 0
+        if sideways(image):   # it has to turn one way or the other: the one with the clefs on the left
+            left, right = image.rotate(90, expand=True), image.rotate(270, expand=True)
+            image, turned = (left, 90) if lean(left) >= lean(right) else (right, 270)
+        elif lean(image) < 1 / 1.3:   # upside down only when it's clear: a wrong flip ruins a page that was fine
+            image, turned = image.rotate(180), 180
+        if not turned % 360:
+            return src
+        out = src.with_name(f"{src.stem} upright{src.suffix.lower()}")   # beside the upload: homr copies its page into work
+        image.convert("RGB").save(out, quality=95)
+        logging.warning("%s was turned %s degrees; read it upright", src.name, turned % 360)
+        return out
+    except Exception:
+        logging.exception("couldn't check which way up %s is", src.name)
+        return src
+
+
 class NoMusic(Exception):
     pass
 
@@ -115,7 +156,7 @@ def claude_reads(src):  # small servers can't fit homr; with an ANTHROPIC_API_KE
             model=os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5"), max_tokens=64000,   # Haiku: $0.10 in / $0.50 out per million tokens, a twentieth of Sonnet
             messages=[{"role": "user", "content": [*images,
                       {"type": "text", "text": "Transcribe this sheet music, every page in order, as one complete MusicXML score (score-partwise, every note and rest, correct key and time signature). "
-                                               "The photo may be blurred, tilted or dim: read what you can and make your best guess at the rest. "
+                                               "The photo may be blurred, tilted, dim, sideways or upside down: read the music the right way up, what you can, and make your best guess at the rest. "
                                                "Reply with only the XML, or with only NO_MUSIC if there is no sheet music in it at all."}]}],
         ) as stream:
             reply = stream.get_final_message()
@@ -141,6 +182,7 @@ def read_sheet(src, work, claude_ok):  # homr first wherever it can run; Claude 
     if src.suffix.lower() not in PHOTOS:
         with CONVERT:
             return _to_musicxml(src, work)
+    src = upright(src)
     if homr_ok():
         try:
             with CONVERT:   # only homr needs the memory; Claude reads in parallel
@@ -190,7 +232,10 @@ def add_recording(piece_id):
     audio = request.files["file"].read()
     if not audio:   # the microphone gave nothing (denied mid-take, or stopped at once)
         return jsonify(error="the recording is empty"), 400
-    name = (request.form.get("name") or "").strip()[:100] or f"{piece['title']}, take {len(database.getRecordings(user_id(), piece_id)) + 1}"
+    takes = database.getRecordings(user_id(), piece_id)
+    named = [re.search(r", take (\d+)$", t["name"] or "") for t in takes]
+    number = max([len(takes), *(int(m.group(1)) for m in named if m)]) + 1   # counts on past the oldest takes dropped at the limit
+    name = (request.form.get("name") or "").strip()[:100] or f"{piece['title']}, take {number}"
     return jsonify(id=database.addRecording(piece_id, audio, name), name=name)
 
 
@@ -204,6 +249,12 @@ def list_recordings(piece_id):
 def play_recording(recording_id):
     row = database.getRecording(user_id(), recording_id) or abort(404)
     return send_file(BytesIO(row["audio"]), mimetype="audio/webm")
+
+
+@api.delete("/recordings/<int:recording_id>")
+def delete_recording(recording_id):
+    database.deleteRecording(user_id(), recording_id) or abort(404)
+    return "", 204
 
 
 if __name__ == "__main__":

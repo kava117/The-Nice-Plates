@@ -4466,3 +4466,246 @@ label.btn.is-disabled {
   .take-track { grid-column: 1 / -1; grid-row: 2; }
   .review-table { display: block; overflow-x: auto; }
 }
+
+/* 34. Welcome page (index.html, welcome.js) ----------------------------------
+   Words on the left; on the right a piano built in CSS 3D, Ode to Joy on its stand,
+   playing itself the way Practice does: a cursor on the note, the key going down,
+   a rep dot each time round. Paper, ink and wood keep their colours in both themes. */
+
+.hello {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 30rem) minmax(0, 620px);
+  gap: clamp(24px, 6vw, 72px);
+  align-items: center;
+  justify-content: center;
+  padding-block: 24px;
+}
+
+.hello-kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.hello-title {
+  margin: 14px 0 16px;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4.4vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.hello-text {
+  max-width: 38ch;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.hello-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.hello-btn {
+  min-height: 48px;
+  padding: 12px 22px;
+  font-size: 0.9375rem;
+  letter-spacing: normal;
+}
+
+.hello-note {
+  max-width: 46ch;
+  margin: 22px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.hello .sign-in-agree { margin-top: 8px; max-width: 46ch; }
+
+/* The stage: the camera looks down at the keys from in front and a little above. */
+.hello-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 480px;
+  perspective: 1600px;
+  perspective-origin: 50% 20%;
+}
+
+.piano {
+  --lean-x: 0deg;
+  --lean-y: 0deg;
+  --wood: #2b241d;
+  position: relative;
+  width: 480px;
+  height: 150px;
+  transform-style: preserve-3d;
+  transform: translateY(96px) rotateX(calc(58deg + var(--lean-x))) rotateZ(calc(-14deg + var(--lean-y)));
+}
+
+.piano-keys {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* A white key: an ivory top, pivoting at the back like a real one, and a front face hanging below it. */
+.key {
+  position: absolute;
+  top: 0;
+  width: 31px;
+  height: 150px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(to bottom, #efe7d4, #fbf8f0 60%, #f4eddd);
+  box-shadow: inset -1px 0 0 rgba(45, 36, 24, 0.16);
+  transform-origin: 50% 0;
+  transform-style: preserve-3d;
+  transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.key::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+  border-radius: 0 0 3px 3px;
+  background: #d8ccb2;
+  transform-origin: 50% 0;
+  transform: rotateX(-90deg);
+}
+
+.key.is-down {
+  transform: rotateX(-4.5deg);
+  background: linear-gradient(to bottom, #e6dcc5, #f3ecdc 60%, #ebe2cd);
+}
+
+.key-black {
+  width: 20px;
+  height: 94px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(to bottom, #120f0c, #2a241e 70%, #3a332b);
+  box-shadow: none;
+  transform: translateZ(11px);
+}
+
+.key-black::after {
+  height: 11px;
+  background: #0e0c09;
+}
+
+/* Wood: a rail at the back the stand rests on, cheeks at each end, and the case under the keys. */
+.piano-rail {
+  position: absolute;
+  bottom: 100%;
+  left: -16px;
+  right: -16px;
+  height: 30px;
+  background: var(--wood);
+  transform-origin: 50% 100%;
+  transform: rotateX(-90deg);
+}
+
+.piano::before,
+.piano::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  bottom: -14px;
+  width: 16px;
+  border-radius: 0 0 4px 4px;
+  background: var(--wood);
+  transform: translateZ(14px);
+}
+
+.piano::before { left: -16px; }
+.piano::after { right: -16px; }
+
+.piano-front {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: -16px;
+  right: -16px;
+  height: 34px;
+  background: linear-gradient(to bottom, #3a3128, var(--wood));
+  transform-origin: 50% 0;
+  transform: translateZ(14px) rotateX(-90deg);
+}
+
+.piano-stand {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 400px;
+  height: 240px;
+  margin-left: -200px;
+  transform-origin: 50% 100%;
+  transform: translateZ(30px) rotateX(-78deg);
+}
+
+.piano-page {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  box-shadow: 0 1px 0 rgba(45, 36, 24, 0.1), 0 18px 40px rgba(45, 36, 24, 0.12);
+}
+
+.piano-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 54px;
+  width: 560px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(45, 36, 24, 0.26), transparent);
+  filter: blur(6px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* The page on the stand */
+.sheet { fill: #fffdf5; }
+.sheet-line { stroke: #2d2418; stroke-width: 1; }
+.sheet-ink,
+.sheet-head { fill: #2d2418; }
+.sheet-head.is-open { fill: #fffdf5; stroke: #2d2418; stroke-width: 1.6; }
+.sheet-stem { stroke: #2d2418; stroke-width: 1.3; }
+.sheet-title { fill: #2d2418; font-family: var(--font-display); font-size: 17px; }
+.sheet-small { fill: #5e5040; font-family: var(--font-body); font-size: 9px; }
+.sheet-clef { fill: #2d2418; font-family: "Noto Music", serif; font-size: 62px; }
+.sheet-time { fill: #2d2418; font-family: var(--font-display); font-size: 23px; }
+.sheet-cursor { fill: #2f5d3e; opacity: 0.18; transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+.sheet-note.is-now .sheet-head:not(.is-open),
+.sheet-note.is-now .sheet-ink { fill: #2f5d3e; }
+.sheet-note.is-now .sheet-head.is-open,
+.sheet-note.is-now .sheet-stem { stroke: #2f5d3e; }
+.sheet-dot { fill: none; stroke: #8a7d66; stroke-width: 1.4; transition: fill 0.3s, stroke 0.3s; }
+.sheet-dot.is-clean { fill: #2f5d3e; stroke: #2f5d3e; }
+
+@media (max-width: 1100px) {
+  .hello { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: left; }
+  .hello-copy { max-width: 34rem; }
+  .hello-stage { order: -1; width: 100%; height: 360px; }
+  .piano { scale: 0.78; }
+}
+
+@media (max-width: 560px) {
+  .hello-stage { height: 260px; overflow: hidden; }
+  .piano { scale: 0.5; translate: -12px 0; }
+  .piano-shadow { width: 300px; bottom: 40px; }
+  .hello-actions,
+  .hello-actions .btn { width: 100%; justify-content: center; }
+}
